@@ -160,7 +160,23 @@ app.post('/order/:id/pay/mock-success', async (req,res)=>{
 })
 
 // ---- ORDINE INVIATO ----
-app.get('/order/:id/placed', (req,res)=>{
+app.get('/order/:id/placed', (req,res)=>{// ---- CALL WAITER (mock) ----
+app.post('/:restaurant/table/:code/call', (req,res)=>{
+  const { restaurant, code } = req.params
+  const r = db.data.restaurants.find(x=>x.slug===restaurant)
+  const t = r && db.data.tables.find(x=>x.restaurant_id===r.id && x.code===code)
+  if(!r || !t) return res.status(404).send('Not found')
+
+  // Log + eventuale "stampatina" in spool
+  const msg = [CALL] Cameriera richiesta - ${r.name} Tavolo ${t.code} - ${nowISO()}
+  console.log(msg)
+  if(process.env.PRINT_TO_FILES === 'true'){
+    const dir = process.env.PRINT_SPOOL_DIR || './spool'
+    if(!fs.existsSync(dir)) fs.mkdirSync(dir,{recursive:true})
+    fs.writeFileSync(require('path').join(dir, call_${t.code}_${Date.now()}.txt), msg+'\n')
+  }
+  res.status(204).end()
+})
   const order = db.data.orders.find(x=>x.id===req.params.id)
   const items = db.data.order_items.filter(x=>x.order_id===req.params.id)
   res.render('placed', { order, items })
