@@ -147,6 +147,54 @@ app.get('/menu', (req, res) => {
     `);
   });
 });
+// ==== ROTTE BASE ====
+
+app.get('/', (req, res) => res.redirect('/menu'));
+
+app.get('/menu', (req, res) => {
+  const tableCode = req.query.table || '';
+
+  // Dati esempio (puoi ampliarli subito)
+  const antipasti = [
+    { nome:"Bruschette", prezzo:4.00 },
+    { nome:"Olive & Taralli", prezzo:3.50 },
+    { nome:"Fritti misti", prezzo:6.50 },
+    { nome:"Caprese", prezzo:7.00 },
+    { nome:"Parmigiana", prezzo:7.50 },
+  ];
+
+  const pizzeClassiche = [
+    { nome:"Margherita", prezzo:5.00 },
+    { nome:"Marinara", prezzo:4.50 },
+    { nome:"Diavola", prezzo:7.00 },
+    { nome:"Prosciutto e Funghi", prezzo:7.50 },
+    { nome:"Quattro Stagioni", prezzo:8.00 },
+    { nome:"Capricciosa", prezzo:8.00 },
+  ];
+
+  const pizzeSpeciali = [
+    { nome:"Bufalina DOP", prezzo:9.00 },
+    { nome:"Crudo & Burrata", prezzo:10.50 },
+    { nome:"Salsiccia & Friarielli", prezzo:9.50 },
+    { nome:"Tartufo", prezzo:12.00 },
+    { nome:"Mortadella & Pistacchio", prezzo:11.50 },
+  ];
+
+  const bibite = [
+    { nome:"Acqua naturale 50cl", prezzo:1.50 },
+    { nome:"Acqua frizzante 50cl", prezzo:1.50 },
+    { nome:"Cola", prezzo:3.00 },
+    { nome:"Aranciata", prezzo:3.00 },
+    { nome:"Birra chiara 33cl", prezzo:4.00 },
+    { nome:"Birra artigianale 33cl", prezzo:5.50 },
+  ];
+
+  res.render('menu', { tableCode, antipasti, pizzeClassiche, pizzeSpeciali, bibite });
+});
+
+// API finte per far funzionare i bottoni
+app.post('/api/call-waiter', (req, res) => res.json({ ok:true }));
+app.post('/api/pay-at-counter', (req, res) => res.json({ ok:true }));
 
 // ==== AVVIO SERVER ====
 const PORT = process.env.PORT || 3000;
