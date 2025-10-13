@@ -1,1 +1,24 @@
-
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ordine inviato</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="placed-body">
+  <div class="placed-card">
+    <h1>✅ Ordine inviato!</h1>
+    <p>Codice ordine: <b><%= order.code %></b></p>
+    <p>Metodo: <b><%= order.pay_method %></b></p>
+    <h3>Riepilogo</h3>
+    <ul>
+      <% items.forEach(i => { %>
+        <li><b><%= i.qty %>×</b> <%= i.name %></li>
+      <% }) %>
+    </ul>
+    <p><b>Totale:</b> € <%= (order.total_cents/100).toFixed(2) %></p>
+    <a href="/">Torna al menù</a>
+  </div>
+</body>
+</html>
