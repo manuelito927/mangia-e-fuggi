@@ -16,11 +16,11 @@ import fs from 'fs'
 import { db, nowISO } from './db.js'
 
 dotenv.config()
-const _filename = fileURLToPath(import.meta.url);
-const _dirname  = path.dirname(_filename);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(_filename);
 
 // ====== BASE ======
-const __filename = fileURLToPath(import.meta.url)
+const _filename = fileURLToPath(import.meta.url)
 const _dirname = path.dirname(_filename)
 const app = express()
 
