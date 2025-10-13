@@ -17,8 +17,8 @@ import { db, nowISO } from './db.js'
 // ==== CONFIGURAZIONE BASE ====
 dotenv.config()
 
-const __filename = fileURLToPath(import.meta.url)
-const _dirname = path.dirname(_filename)
+const __filename = fileURLToPath(import.meta.url);
+const _dirname = path.dirname(_filename);
 
 const app = express()
 
@@ -48,34 +48,35 @@ function euro(cents) {
 
 async function printOrder(orderId) {
   try {
-    const o = db.data.orders.find(x => x.id === orderId)
-    if (!o) return
-    const r = db.data.restaurants.find(x => x.id === o.restaurant_id)
-    const items = db.data.order_items.filter(x => x.order_id === orderId)
-    const lines = []
+    const o = db.data.orders.find(x => x.id === orderId);
+    if (!o) return;
+    const r = db.data.restaurants.find(x => x.id === o.restaurant_id);
+    const items = db.data.order_items.filter(x => x.order_id === orderId);
 
-    lines.push(=== ${r?.name || 'RISTORANTE'} ===)
-    lines.push(ORDINE: ${o.code})
-    lines.push(TAVOLO: ${db.data.tables.find(t => t.id === o.table_id)?.code || ''})
-    lines.push(DATA: ${o.created_at})
-    lines.push('-----------------------------')
-    items.forEach(it =>
-      lines.push(${it.qty} x ${it.name}  € ${(it.price_cents * it.qty / 100).toFixed(2)}${it.notes ? '\n  NOTE: ' + it.notes : ''})
-    )
-    lines.push('-----------------------------')
-    lines.push(TOTALE: € ${euro(o.total_cents)})
-    lines.push(PAGAMENTO: ${o.pay_method})
-    const payload = lines.join('\n') + '\n\n'
+    const lines = [];
+    lines.push(=== ${r?.name || 'RISTORANTE'} ===);
+    lines.push(ORDINE: ${o.code});
+    lines.push(TAVOLO: ${db.data.tables.find(t => t.id === o.table_id)?.code || ''});
+    lines.push(DATA: ${o.created_at});
+    lines.push('-----------------------------');
+    items.forEach(it => {
+      lines.push(${it.qty} x ${it.name}  € ${(it.price_cents * it.qty / 100).toFixed(2)}${it.notes ? '\n  NOTE: ' + it.notes : ''});
+    });
+    lines.push('-----------------------------');
+    lines.push(TOTALE: € ${(o.total_cents / 100).toFixed(2)});
+    lines.push(PAGAMENTO: ${o.pay_method});
 
-    // Scrittura file locale (debug)
+    const payload = lines.join('\n') + '\n\n';
+
     if (process.env.PRINT_TO_FILES === 'true') {
-      const dir = process.env.PRINT_SPOOL_DIR || './spool'
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-      fs.writeFileSync(path.join(dir, order_${o.code}.txt), payload, 'utf8')
+      const dir = process.env.PRINT_SPOOL_DIR || './spool';
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const name = path.join(dir, order_${o.code}.txt);
+      fs.writeFileSync(name, payload, 'utf8');
     }
 
   } catch (e) {
-    console.error('printOrder error', e.message)
+    console.error('printOrder error', e.message);
   }
 }
 
