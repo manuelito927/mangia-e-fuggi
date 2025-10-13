@@ -1,4 +1,4 @@
-// ===== MANGIA&FUGGI SERVER STABILE =====
+// ===== MANGIA&FUGGI – SERVER STABILE =====
 
 import express from 'express';
 import path from 'path';
@@ -16,6 +16,7 @@ import { db, nowISO } from './db.js';
 
 dotenv.config();
 
+// __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
 const _dirname = path.dirname(_filename);
 
@@ -49,15 +50,15 @@ async function printOrder(orderId) {
     const table = db.data.tables.find(t => t.id === o.table_id);
 
     const lines = [];
-    lines.push(`=== ${r?.name || 'RISTORANTE'} ===`);
-    lines.push(`ORDINE: ${o.code}`);
-    lines.push(`TAVOLO: ${table?.code || ''}`)
-    lines.push(`DATA: ${o.created_at}`);
+    lines.push(=== ${r?.name || 'RISTORANTE'} ===);
+    lines.push(ORDINE: ${o.code});
+    lines.push(TAVOLO: ${table?.code || ''});
+    lines.push(DATA: ${o.created_at});
     lines.push('-----------------------------');
 
     items.forEach(it => {
       const tot = ((it.price_cents * it.qty) / 100).toFixed(2);
-      lines.push(${it.qty} x ${it.name}  € ${tot}${it.notes ? `\n  NOTE: ${it.notes} : ''}`);
+      lines.push(${it.qty} x ${it.name}  € ${tot}${it.notes ? '\n  NOTE: ' + it.notes : ''});
     });
 
     lines.push('-----------------------------');
