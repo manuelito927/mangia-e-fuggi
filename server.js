@@ -103,7 +103,7 @@ app.get('/:restaurant/table/:code', async (req,res)=>{
     return { ...p, category_name_img: catImg(c?.name||'') }
   })
 
-  res.render('menu', { r, t, cats, prods: prodsDecorated })
+  res.render('menu', { r, t, cats, prods: prodsDecorated, pizzas: prodsDecorated })
 })
 
 // ---- CREA ORDINE ----
