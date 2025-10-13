@@ -1,1 +1,45 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= restaurant.name %> - Mangia&Fuggi</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="restaurant-body">
+  <header>
+    <h1><%= restaurant.name %></h1>
+    <p><%= restaurant.description %></p>
+  </header>
 
+  <main>
+    <section class="menu-list">
+      <h2>Menù completo</h2>
+      <% restaurant.menu.forEach(item => { %>
+        <div class="menu-item">
+          <img src="<%= item.image %>" alt="<%= item.name %>">
+          <div class="info">
+            <h3><%= item.name %></h3>
+            <p><%= item.description %></p>
+            <span class="price">€ <%= item.price.toFixed(2) %></span>
+            <button class="add-btn" onclick="addToCart('<%= item.name %>')">Aggiungi</button>
+          </div>
+        </div>
+      <% }) %>
+    </section>
+  </main>
+
+  <footer>
+    <button class="checkout-btn" onclick="checkout()">Vai al carrello 🛒</button>
+  </footer>
+
+  <script>
+    function addToCart(name) {
+      alert(name + " aggiunto al carrello!");
+    }
+    function checkout() {
+      window.location.href = "/pay";
+    }
+  </script>
+</body>
+</html>
