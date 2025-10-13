@@ -1,1 +1,59 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mangia&Fuggi - Menù</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="menu-body">
+  <header>
+    <h1 class="brand">🍕 Mangia&Fuggi</h1>
+    <p class="subtitle">Ordina inquadrando il QR del tuo tavolo</p>
+  </header>
 
+  <main class="menu-container">
+    <h2>Le nostre pizze</h2>
+    <div class="menu-section">
+      <% pizzas.forEach(pizza => { %>
+        <div class="menu-item">
+          <img src="<%= pizza.image %>" alt="<%= pizza.name %>">
+          <div class="info">
+            <h3><%= pizza.name %></h3>
+            <p><%= pizza.description %></p>
+            <span class="price">€ <%= pizza.price.toFixed(2) %></span>
+            <button class="add-btn" onclick="addToCart('<%= pizza.name %>')">Aggiungi</button>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+
+    <h2>Bevande</h2>
+    <div class="menu-section">
+      <% drinks.forEach(drink => { %>
+        <div class="menu-item">
+          <img src="<%= drink.image %>" alt="<%= drink.name %>">
+          <div class="info">
+            <h3><%= drink.name %></h3>
+            <span class="price">€ <%= drink.price.toFixed(2) %></span>
+            <button class="add-btn" onclick="addToCart('<%= drink.name %>')">Aggiungi</button>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </main>
+
+  <footer>
+    <button class="checkout-btn" onclick="checkout()">Vai al carrello 🛒</button>
+  </footer>
+
+  <script>
+    function addToCart(item) {
+      alert(item + " aggiunto al carrello!");
+    }
+    function checkout() {
+      window.location.href = "/pay";
+    }
+  </script>
+</body>
+</html>
