@@ -54,7 +54,7 @@ async function printOrder(orderId) {
     const items = db.data.order_items.filter(x => x.order_id === orderId);
 
     const lines = [];
-    lines.push(=== ${r?.name || 'RISTORANTE'} ===);
+    lines.push(${r?.name || 'RISTORANTE'});
     lines.push(ORDINE: ${o.code});
     lines.push(TAVOLO: ${db.data.tables.find(t => t.id === o.table_id)?.code || ''});
     lines.push(DATA: ${o.created_at});
