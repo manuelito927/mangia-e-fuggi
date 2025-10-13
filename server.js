@@ -49,7 +49,7 @@ async function printOrder(orderId) {
     const table = db.data.tables.find(t => t.id === o.table_id);
 
     const lines = [];
-    lines.push('=== ${r?.name || 'RISTORANTE'} ===');
+    lines.push(`=== ${r?.name || 'RISTORANTE'} ===`);
     lines.push(ORDINE: ${o.code});
     lines.push(TAVOLO: ${table?.code || ''});
     lines.push(DATA: ${o.created_at});
