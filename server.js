@@ -50,7 +50,7 @@ async function printOrder(orderId) {
 
     const lines = [];
     lines.push(`=== ${r?.name || 'RISTORANTE'} ===`);
-    lines.push(ORDINE: ${o.code});
+    lines.push(`ORDINE: ${o.code}`);
     lines.push(TAVOLO: ${table?.code || ''});
     lines.push(DATA: ${o.created_at});
     lines.push('-----------------------------');
