@@ -1,4 +1,4 @@
-// ===== MANGIA&FUGGI — server.js (pulito) =====
+/ ===== MANGIA&FUGGI — server.js (pulito) =====
 
 import express from "express";
 import path from "path";
