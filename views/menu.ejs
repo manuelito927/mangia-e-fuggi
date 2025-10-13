@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Mangia & Fuggi – Menu</title>
 
-    <!-- Font eleganti -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
-    <!-- Stile -->
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -34,54 +31,38 @@
     </header>
 
     <main class="wrap">
-      <!-- Antipasti -->
       <section class="section">
         <h2 class="section-title">Antipasti</h2>
         <div class="rows">
           <% antipasti.forEach(p => { %>
-            <div class="row">
-              <div class="name"><%= p.nome %></div>
-              <div class="price">€ <%= p.prezzo.toFixed(2) %></div>
-            </div>
+            <div class="row"><div class="name"><%= p.nome %></div><div class="price">€ <%= p.prezzo.toFixed(2) %></div></div>
           <% }) %>
         </div>
       </section>
 
-      <!-- Pizze classiche -->
       <section class="section">
         <h2 class="section-title">Pizze classiche</h2>
         <div class="rows">
           <% pizzeClassiche.forEach(p => { %>
-            <div class="row">
-              <div class="name"><%= p.nome %></div>
-              <div class="price">€ <%= p.prezzo.toFixed(2) %></div>
-            </div>
+            <div class="row"><div class="name"><%= p.nome %></div><div class="price">€ <%= p.prezzo.toFixed(2) %></div></div>
           <% }) %>
         </div>
       </section>
 
-      <!-- Pizze speciali -->
       <section class="section">
         <h2 class="section-title">Pizze speciali</h2>
         <div class="rows">
           <% pizzeSpeciali.forEach(p => { %>
-            <div class="row">
-              <div class="name"><%= p.nome %></div>
-              <div class="price">€ <%= p.prezzo.toFixed(2) %></div>
-            </div>
+            <div class="row"><div class="name"><%= p.nome %></div><div class="price">€ <%= p.prezzo.toFixed(2) %></div></div>
           <% }) %>
         </div>
       </section>
 
-      <!-- Bibite -->
       <section class="section">
         <h2 class="section-title">Bibite</h2>
         <div class="rows">
           <% bibite.forEach(p => { %>
-            <div class="row">
-              <div class="name"><%= p.nome %></div>
-              <div class="price">€ <%= p.prezzo.toFixed(2) %></div>
-            </div>
+            <div class="row"><div class="name"><%= p.nome %></div><div class="price">€ <%= p.prezzo.toFixed(2) %></div></div>
           <% }) %>
         </div>
       </section>
@@ -90,27 +71,10 @@
     <div id="toast" class="toast" hidden></div>
 
     <script>
-      function toast(msg) {
-        const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.hidden = false;
-        setTimeout(() => t.hidden = true, 1800);
-      }
-
-      document.getElementById('btn-call')?.addEventListener('click', async () => {
-        await fetch('/api/call-waiter', {method:'POST'});
-        toast('La cameriera è stata avvisata ✅');
-      });
-
-      document.getElementById('btn-pay')?.addEventListener('click', async () => {
-        // qui in futuro reindirizzi a SumUp/Stripe
-        toast('Pagamento online in arrivo…');
-      });
-
-      document.getElementById('btn-cash')?.addEventListener('click', async () => {
-        await fetch('/api/pay-at-counter', {method:'POST'});
-        toast('Paga alla cassa selezionato ✅');
-      });
+      function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.hidden=false;setTimeout(()=>t.hidden=true,1800);}
+      document.getElementById('btn-call')?.addEventListener('click', async ()=>{await fetch('/api/call-waiter',{method:'POST'});toast('La cameriera è stata avvisata ✅')});
+      document.getElementById('btn-pay')?.addEventListener('click', async ()=>{toast('Pagamento online in arrivo…')});
+      document.getElementById('btn-cash')?.addEventListener('click', async ()=>{await fetch('/api/pay-at-counter',{method:'POST'});toast('Paga alla cassa selezionato ✅')});
     </script>
   </body>
 </html>
