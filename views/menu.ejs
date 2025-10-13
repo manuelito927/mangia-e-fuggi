@@ -15,9 +15,18 @@
   <main class="container">
     <h2>Le nostre pizze</h2>
 
-    <div class="menu-section">
+    <!-- Filtri categoria -->
+    <div class="filters" id="filters">
+      <div class="pill active" data-cat="all">Tutto</div>
+      <% cats.forEach(c => { %>
+        <div class="pill" data-cat="<%= c.id %>"><%= c.name %></div>
+      <% }) %>
+    </div>
+
+    <!-- Lista prodotti -->
+    <div class="menu-section" id="list">
       <% (prods||[]).forEach(p => { %>
-        <div class="menu-item">
+        <div class="menu-item" data-cat="<%= p.category_id %>">
           <img src="<%= p.img || p.category_name_img || '/img/fallback.jpg' %>" alt="<%= p.name %>">
           <div class="info">
             <h3><%= p.name %></h3>
@@ -25,17 +34,73 @@
           </div>
           <div class="cta">
             <span class="price">€ <%= ((p.price_cents||0)/100).toFixed(2) %></span>
-            <button class="add-btn" onclick="addToCart('<%= p.id %>')">Aggiungi</button>
+            <button class="add-btn" onclick='addToCart(<%- JSON.stringify({ id:p.id, name:p.name, price_cents:p.price_cents }) %>)'>Aggiungi</button>
           </div>
         </div>
       <% }) %>
     </div>
   </main>
 
+  <!-- Barra carrello -->
+  <div class="cartbar">
+    <div class="row">
+      <div class="cartinfo" id="cartInfo">Carrello vuoto</div>
+      <button class="btn ghost" onclick="callWaiter()">Chiama cameriera</button>
+      <button class="btn cash"  onclick="checkout('cassa')">Paga in cassa</button>
+      <button class="btn pay"   onclick="checkout('online')">Paga online</button>
+    </div>
+  </div>
+
   <script>
-    function addToCart(id){
-      alert('Aggiunto al carrello: ' + id);
-      // qui poi collegheremo il vero carrello
+    // ---- Stato carrello (localStorage) ----
+    const KEY = 'cart_<%= r.slug %>_<%= t.code %>';
+    const cart = JSON.parse(localStorage.getItem(KEY) || '[]');
+
+    function save(){ localStorage.setItem(KEY, JSON.stringify(cart)); renderCartInfo(); }
+    function addToCart(p){
+      const idx = cart.findIndex(i => i.id===p.id);
+      if(idx>=0) cart[idx].qty += 1;
+      else cart.push({ id:p.id, name:p.name, price_cents:p.price_cents, qty:1, notes:'' });
+      save();
+    }
+    function totalCents(){ return cart.reduce((s,i)=> s + i.price_cents*i.qty, 0); }
+    function renderCartInfo(){
+      const el = document.getElementById('cartInfo');
+      const tot = (totalCents()/100).toFixed(2);
+      const items = cart.reduce((s,i)=>s+i.qty,0);
+      el.innerHTML = items ? Articoli: ${items} <small>Totale € ${tot}</small> : 'Carrello vuoto';
+    }
+    renderCartInfo();
+
+    // ---- Filtri categorie ----
+    document.getElementById('filters').addEventListener('click', (e)=>{
+      const pill = e.target.closest('.pill'); if(!pill) return;
+      document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+      pill.classList.add('active');
+      const cat = pill.dataset.cat;
+      document.querySelectorAll('.menu-item').forEach(it=>{
+        it.style.display = (cat==='all' || it.dataset.cat===cat) ? '' : 'none';
+      });
+    });
+
+    // ---- Checkout ----
+    async function checkout(method){
+      if(!cart.length){ alert('Carrello vuoto'); return; }
+      const body = {
+        items: cart.map(i => ({ product_id:i.id, qty:i.qty, notes:i.notes })),
+        pay_method: method
+      };
+      const res = await fetch(/<%= r.slug %>/table/<%= t.code %>/order, {
+        method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body)
+      });
+      if(res.redirected){ localStorage.removeItem(KEY); window.location = res.url; return; }
+      const text = await res.text(); alert(text || 'Ordine inviato');
+    }
+
+    // ---- Chiama Cameriera ----
+    async function callWaiter(){
+      await fetch(/<%= r.slug %>/table/<%= t.code %>/call, { method:'POST' });
+      alert('La cameriera sta arrivando 🤌');
     }
   </script>
 </body>
