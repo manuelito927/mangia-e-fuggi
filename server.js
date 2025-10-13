@@ -18,7 +18,7 @@ dotenv.config();
 
 // __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
-const _dirname = path.dirname(_filename);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -50,27 +50,27 @@ async function printOrder(orderId) {
     const table = db.data.tables.find(t => t.id === o.table_id);
 
     const lines = [];
-    lines.push(=== ${r?.name || 'RISTORANTE'} ===);
-    lines.push(ORDINE: ${o.code});
-    lines.push(TAVOLO: ${table?.code || ''});
-    lines.push(DATA: ${o.created_at});
+    lines.push(`=== ${r?.name || 'RISTORANTE'} ===`);
+    lines.push(`ORDINE: ${o.code}`);
+    lines.push(`TAVOLO: ${table?.code || ''}`);
+    lines.push(`DATA: ${o.created_at}`);
     lines.push('-----------------------------');
 
     items.forEach(it => {
       const tot = ((it.price_cents * it.qty) / 100).toFixed(2);
-      lines.push(${it.qty} x ${it.name}  € ${tot}${it.notes ? '\n  NOTE: ' + it.notes : ''});
+      lines.push(`${it.qty} x ${it.name}  € ${tot}${it.notes ? '\n  NOTE: ' + it.notes : ''}`);
     });
 
     lines.push('-----------------------------');
-    lines.push(TOTALE: € ${(o.total_cents / 100).toFixed(2)});
-    lines.push(PAGAMENTO: ${o.pay_method});
+    lines.push(`TOTALE: € ${(o.total_cents / 100).toFixed(2)}`);
+    lines.push(`PAGAMENTO: ${o.pay_method}`);
 
     const payload = lines.join('\n') + '\n';
 
     if (process.env.PRINT_TO_FILES === 'true') {
       const dir = process.env.PRINT_SPOOL_DIR || './spool';
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(path.join(dir, order_${o.code}.txt), payload, 'utf8');
+      fs.writeFileSync(path.join(dir, `order_${o.code}.txt`), payload, 'utf8');
     }
 
   } catch (e) {
@@ -80,4 +80,4 @@ async function printOrder(orderId) {
 
 // ==== AVVIO SERVER ====
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(✅ Server avviato sulla porta ${PORT}));
+app.listen(PORT, () => console.log(`✅ Server avviato sulla porta ${PORT}`));
