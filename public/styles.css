@@ -1,34 +1,70 @@
-:root{--bg:#FAF3E7;--card:#FFFFFF;--text:#2E2A27;--muted:#8A817C;--accent:#C05E2B;--shadow:0 10px 24px rgba(0,0,0,.07)}
+:root{
+  --bg:#f8f5f2;            /* caldo */
+  --card:#ffffff;
+  --text:#2b2b2b;
+  --muted:#6f6f6f;
+  --brand:#d8492b;         /* rosso pomodoro */
+  --brand-dark:#b33b22;
+  --shadow:0 8px 24px rgba(0,0,0,.06);
+  --radius:18px;
+}
+
 *{box-sizing:border-box}
-body{margin:0;background:#FAF3E7;color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:15px;line-height:1.35}
-.container{max-width:1000px;margin:0 auto;padding:14px}
-.header{display:flex;align-items:center;justify-content:space-between}
-.brand{display:flex;gap:10px;align-items:center;font-weight:900}
-.logo{width:28px;height:28px;border-radius:8px;background:conic-gradient(from 45deg,#F9C77B,#E8743B,#8C3C1E)}
-.table-pill{background:#2E2A27;color:#fff;padding:6px 10px;border-radius:999px;font-size:12px}
-.nav{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.badge{background:#fff;border:1px solid #eee;padding:6px 12px;border-radius:999px;text-decoration:none;color:inherit}
-.searchbar{display:flex;gap:8px;margin:10px 0 12px}
-.searchbar input{flex:1;border:1px solid #e6e0db;border-radius:10px;padding:10px 12px;font-size:14px}
-.category{margin:16px 0 8px;font-weight:800}
-.list{display:flex;flex-direction:column;gap:8px}
-.row{display:grid;grid-template-columns:1fr 130px;gap:10px;align-items:center;background:#fff;border:1px solid #eee;border-radius:12px;padding:10px;box-shadow:var(--shadow)}
-.left{display:flex;gap:10px;align-items:center}
-.thumb{width:78px;height:78px;border-radius:10px;overflow:hidden;box-shadow:inset 0 0 0 1px #eee;flex-shrink:0}
-.thumb img{width:100%;height:100%;object-fit:cover}
-.meta{display:flex;flex-direction:column;gap:4px}
-.meta .title{font-weight:800}
-.meta .desc{font-size:12px;opacity:.9}
-.note{font-size:12px;padding:6px;border-radius:8px;border:1px solid #e6e0db}
-.right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-.price{font-weight:900}
-.qty{display:flex;gap:6px;align-items:center}
-.qty button{width:30px;height:30px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:900;cursor:pointer}
-.qty input{width:40px;text-align:center;padding:6px;border-radius:8px;border:1px solid #e6e0db}
-.sticky-cart{position:sticky;bottom:8px;z-index:5}
-.cartbar{display:flex;justify-content:space-between;align-items:center;background:#2E2A27;color:#fff;border-radius:12px;padding:10px 12px;box-shadow:var(--shadow)}
-.cartbar .actions{display:flex;gap:8px}
-.btn{padding:8px 12px;border:0;border-radius:10px;background:#fff;color:#2E2A27;font-weight:800;cursor:pointer}
-.btn.alt{background:var(--accent);color:#fff}
-.footer{opacity:.75;font-size:12px;margin:18px 0}
-.row.one{grid-template-columns:1fr}
+html,body{margin:0;padding:0}
+body{
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.45;
+}
+
+.header{
+  position:sticky; top:0; z-index:10;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px; background:var(--bg); border-bottom:1px solid #eee;
+}
+.brand{ font-weight:800; letter-spacing:.5px }
+.meta{ color:var(--muted) }
+
+.container{ max-width:1000px; margin:28px auto; padding:0 16px }
+
+h1,h2,h3{ margin:0 0 12px }
+h2{ font-size:28px; margin-bottom:18px }
+h3{ font-size:18px }
+
+.menu-section{ display:grid; gap:16px }
+
+.menu-item{
+  display:grid; grid-template-columns:110px 1fr auto;
+  gap:16px; align-items:center;
+  background:var(--card); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:12px;
+}
+
+.menu-item img{
+  width:110px; height:85px; object-fit:cover;
+  border-radius:14px; background:#f1f1f1
+}
+
+.info p{ margin:6px 0; color:var(--muted); font-size:14px }
+
+.price{
+  display:inline-block; min-width:86px; text-align:right;
+  font-weight:800; font-size:16px; margin-right:8px;
+}
+
+.add-btn{
+  appearance:none; border:0; border-radius:999px;
+  padding:10px 16px; font-weight:700; cursor:pointer;
+  background:var(--brand); color:white;
+  box-shadow:0 6px 14px rgba(216,73,43,.25);
+}
+.add-btn:hover{ background:var(--brand-dark) }
+
+@media (max-width:720px){
+  .menu-item{ grid-template-columns:90px 1fr; grid-template-areas:
+    "img info" "img cta" }
+  .menu-item img{ grid-area:img; width:90px; height:70px }
+  .info{ grid-area:info }
+  .cta{ grid-area:cta; display:flex; justify-content:flex-end; gap:8px }
+}
