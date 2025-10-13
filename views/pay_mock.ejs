@@ -1,1 +1,20 @@
-
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamento</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="pay-body">
+  <div class="pay-card">
+    <h1>Pagamento online (demo)</h1>
+    <p>Ordine <b><%= order.code %></b></p>
+    <p>Importo: <b>€ <%= (order.total_cents/100).toFixed(2) %></b></p>
+    <form method="post" action="/order/<%= order.id %>/pay/mock-success">
+      <button type="submit">Simula pagamento riuscito</button>
+    </form>
+    <p style="opacity:.7;margin-top:8px">Per pagamenti reali imposta SUMUP_PAYMENT_LINK_PREFIX nel .env</p>
+  </div>
+</body>
+</html>
