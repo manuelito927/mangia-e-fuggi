@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="/styles.css"><title>Admin</title></head>
+<body><div class="container">
+  <div class="header"><div class="brand">Dashboard</div><a class="btn" href="/logout">Esci</a></div>
+  <div class="row one"><div class="meta"><div class="title">Ristoranti</div>
+    <ul><% restaurants.forEach(r=> { %><li><a href="/admin/<%= r.slug %>"><%= r.name %></a></li><% }) %></ul>
+  </div></div>
+
+  <div class="row one"><div class="meta"><div class="title">Ultimi ordini</div>
+    <table width="100%"><tr><th>Codice</th><th>Totale</th><th>Stato</th><th>Metodo</th><th>Data</th></tr>
+      <% orders.forEach(o=> { %><tr><td><%= o.code %></td><td>€ <%= (o.total_cents/100).toFixed(2) %></td><td><%= o.status %></td><td><%= o.pay_method %></td><td><%= o.created_at %></td></tr><% }) %>
+    </table>
+  </div></div>
+</div></body></html>
