@@ -60,9 +60,16 @@ async function printOrder(orderId) {
     const items = db.data.order_items.filter((x) => x.order_id === orderId);
     const table = db.data.tables.find((t) => t.id === o.table_id);
 
-    const lines = [];
-    // ⬇️ QUESTA è la riga che prima ti dava errore: deve essere tra backtick ...
-    lines.push(=== ${r?.name || "RISTORANTE"} ===);
+   const lines = [];
+lines.push(=== ${r?.name || "RISTORANTE"} ===);
+lines.push(ORDINE: ${o.code});
+lines.push(TAVOLO: ${table?.code || ""});
+lines.push(DATA: ${o.created_at});
+lines.push('-----------------------------');
+items.forEach((it) => {
+  const tot = ((it.price_cents * it.qty) / 100).toFixed(2);
+  lines.push(${it.qty} x ${it.name}  € ${tot}${it.notes ? "\n  NOTE: " + it.notes : ""});
+});
     lines.push(ORDINE: ${o.code});
     lines.push(TAVOLO: ${table?.code || ""});
     lines.push(DATA: ${o.created_at});
