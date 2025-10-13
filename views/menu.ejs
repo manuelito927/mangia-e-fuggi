@@ -1,107 +1,116 @@
 <!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/styles.css">
-  <title><%= r.name %> – Tavolo <%= t.code %></title>
-</head>
-<body>
-  <header class="header">
-    <div class="brand"><%= r.name.toUpperCase() %></div>
-    <div class="meta">Tavolo <strong><%= t.code %></strong></div>
-  </header>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mangia & Fuggi – Menu</title>
 
-  <main class="container">
-    <h2>Le nostre pizze</h2>
+    <!-- Font eleganti -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Filtri categoria -->
-    <div class="filters" id="filters">
-      <div class="pill active" data-cat="all">Tutto</div>
-      <% cats.forEach(c => { %>
-        <div class="pill" data-cat="<%= c.id %>"><%= c.name %></div>
-      <% }) %>
-    </div>
+    <!-- Stile -->
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg"></div>
 
-    <!-- Lista prodotti -->
-    <div class="menu-section" id="list">
-      <% (prods||[]).forEach(p => { %>
-        <div class="menu-item" data-cat="<%= p.category_id %>">
-          <img src="<%= p.img || p.category_name_img || '/img/fallback.jpg' %>" alt="<%= p.name %>">
-          <div class="info">
-            <h3><%= p.name %></h3>
-            <% if (p.description) { %><p><%= p.description %></p><% } %>
-          </div>
-          <div class="cta">
-            <span class="price">€ <%= ((p.price_cents||0)/100).toFixed(2) %></span>
-            <button class="add-btn" onclick='addToCart(<%- JSON.stringify({ id:p.id, name:p.name, price_cents:p.price_cents }) %>)'>Aggiungi</button>
+    <header class="header">
+      <div class="header-inner">
+        <div class="brand">
+          <img src="/img/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'">
+          <div>
+            <h1 class="title">Mangia & Fuggi</h1>
+            <div class="subtitle"><%= tableCode ? ('Tavolo: ' + tableCode) : 'Benvenuto!' %></div>
           </div>
         </div>
-      <% }) %>
-    </div>
-  </main>
 
-  <!-- Barra carrello -->
-  <div class="cartbar">
-    <div class="row">
-      <div class="cartinfo" id="cartInfo">Carrello vuoto</div>
-      <button class="btn ghost" onclick="callWaiter()">Chiama cameriera</button>
-      <button class="btn cash"  onclick="checkout('cassa')">Paga in cassa</button>
-      <button class="btn pay"   onclick="checkout('online')">Paga online</button>
-    </div>
-  </div>
+        <nav class="actions">
+          <button id="btn-call" class="btn">Chiama cameriera</button>
+          <button id="btn-pay" class="btn">Paga online</button>
+          <button id="btn-cash" class="btn btn-ghost">Paga alla cassa</button>
+        </nav>
+      </div>
+    </header>
 
-  <script>
-    // ---- Stato carrello (localStorage) ----
-    const KEY = 'cart_<%= r.slug %>_<%= t.code %>';
-    const cart = JSON.parse(localStorage.getItem(KEY) || '[]');
+    <main class="wrap">
+      <!-- Antipasti -->
+      <section class="section">
+        <h2 class="section-title">Antipasti</h2>
+        <div class="rows">
+          <% antipasti.forEach(p => { %>
+            <div class="row">
+              <div class="name"><%= p.nome %></div>
+              <div class="price">€ <%= p.prezzo.toFixed(2) %></div>
+            </div>
+          <% }) %>
+        </div>
+      </section>
 
-    function save(){ localStorage.setItem(KEY, JSON.stringify(cart)); renderCartInfo(); }
-    function addToCart(p){
-      const idx = cart.findIndex(i => i.id===p.id);
-      if(idx>=0) cart[idx].qty += 1;
-      else cart.push({ id:p.id, name:p.name, price_cents:p.price_cents, qty:1, notes:'' });
-      save();
-    }
-    function totalCents(){ return cart.reduce((s,i)=> s + i.price_cents*i.qty, 0); }
-    function renderCartInfo(){
-      const el = document.getElementById('cartInfo');
-      const tot = (totalCents()/100).toFixed(2);
-      const items = cart.reduce((s,i)=>s+i.qty,0);
-      el.innerHTML = items ? Articoli: ${items} <small>Totale € ${tot}</small> : 'Carrello vuoto';
-    }
-    renderCartInfo();
+      <!-- Pizze classiche -->
+      <section class="section">
+        <h2 class="section-title">Pizze classiche</h2>
+        <div class="rows">
+          <% pizzeClassiche.forEach(p => { %>
+            <div class="row">
+              <div class="name"><%= p.nome %></div>
+              <div class="price">€ <%= p.prezzo.toFixed(2) %></div>
+            </div>
+          <% }) %>
+        </div>
+      </section>
 
-    // ---- Filtri categorie ----
-    document.getElementById('filters').addEventListener('click', (e)=>{
-      const pill = e.target.closest('.pill'); if(!pill) return;
-      document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
-      pill.classList.add('active');
-      const cat = pill.dataset.cat;
-      document.querySelectorAll('.menu-item').forEach(it=>{
-        it.style.display = (cat==='all' || it.dataset.cat===cat) ? '' : 'none';
+      <!-- Pizze speciali -->
+      <section class="section">
+        <h2 class="section-title">Pizze speciali</h2>
+        <div class="rows">
+          <% pizzeSpeciali.forEach(p => { %>
+            <div class="row">
+              <div class="name"><%= p.nome %></div>
+              <div class="price">€ <%= p.prezzo.toFixed(2) %></div>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+
+      <!-- Bibite -->
+      <section class="section">
+        <h2 class="section-title">Bibite</h2>
+        <div class="rows">
+          <% bibite.forEach(p => { %>
+            <div class="row">
+              <div class="name"><%= p.nome %></div>
+              <div class="price">€ <%= p.prezzo.toFixed(2) %></div>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" hidden></div>
+
+    <script>
+      function toast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.hidden = false;
+        setTimeout(() => t.hidden = true, 1800);
+      }
+
+      document.getElementById('btn-call')?.addEventListener('click', async () => {
+        await fetch('/api/call-waiter', {method:'POST'});
+        toast('La cameriera è stata avvisata ✅');
       });
-    });
 
-    // ---- Checkout ----
-    async function checkout(method){
-      if(!cart.length){ alert('Carrello vuoto'); return; }
-      const body = {
-        items: cart.map(i => ({ product_id:i.id, qty:i.qty, notes:i.notes })),
-        pay_method: method
-      };
-      const res = await fetch(/<%= r.slug %>/table/<%= t.code %>/order, {
-        method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body)
+      document.getElementById('btn-pay')?.addEventListener('click', async () => {
+        // qui in futuro reindirizzi a SumUp/Stripe
+        toast('Pagamento online in arrivo…');
       });
-      if(res.redirected){ localStorage.removeItem(KEY); window.location = res.url; return; }
-      const text = await res.text(); alert(text || 'Ordine inviato');
-    }
 
-    // ---- Chiama Cameriera ----
-    async function callWaiter(){
-      await fetch(/<%= r.slug %>/table/<%= t.code %>/call, { method:'POST' });
-      alert('La cameriera sta arrivando 🤌');
-    }
-  </script>
-</body>
+      document.getElementById('btn-cash')?.addEventListener('click', async () => {
+        await fetch('/api/pay-at-counter', {method:'POST'});
+        toast('Paga alla cassa selezionato ✅');
+      });
+    </script>
+  </body>
 </html>
