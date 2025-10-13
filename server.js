@@ -77,6 +77,76 @@ async function printOrder(orderId) {
     console.error('printOrder error', e);
   }
 }
+// ==== ROTTE BASE ====
+
+// reindirizza la home alla pagina menu (comodo per i QR)
+app.get('/', (req, res) => {
+  res.redirect('/menu');
+});
+
+// pagina menu: se esiste views/menu.ejs la usa, altrimenti mostra un fallback
+app.get('/menu', (req, res) => {
+  // esempio: leggo ?table=12
+  const tableCode = req.query.table || '';
+
+  // provo a renderizzare la view "menu"
+  res.render('menu', { tableCode }, (err, html) => {
+    if (!err) return res.send(html);
+
+    // Fallback HTML se non esiste la view o dà errore
+    res.send(`
+      <!doctype html>
+      <html lang="it">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Mangia & Fuggi – Menu</title>
+          <style>
+            body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 24px; }
+            .wrap { max-width: 860px; margin: 0 auto; }
+            h1 { margin: 0 0 8px; }
+            .sub { color: #666; margin-bottom: 24px; }
+            .grid { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; }
+            .cat { font-weight: 600; margin-top: 24px; }
+            .line { padding: 8px 0; border-bottom: 1px dashed #ddd; }
+            .btns { display: flex; gap: 12px; margin-top: 24px; }
+            button, a.btn { padding: 10px 14px; border-radius: 10px; border: 0; cursor: pointer; background:#111; color:#fff; text-decoration:none; }
+          </style>
+        </head>
+        <body>
+          <div class="wrap">
+            <h1>Mangia & Fuggi</h1>
+            <div class="sub">${tableCode ? `Tavolo: <b>${tableCode}</b>` : 'Benvenuto!'}</div>
+
+            <div class="cat">Antipasti</div>
+            <div class="grid">
+              <div class="line">Bruschette</div><div class="line">€ 4,00</div>
+              <div class="line">Olive & Taralli</div><div class="line">€ 3,50</div>
+            </div>
+
+            <div class="cat">Pizze</div>
+            <div class="grid">
+              <div class="line">Margherita</div><div class="line">€ 5,00</div>
+              <div class="line">Diavola</div><div class="line">€ 7,00</div>
+            </div>
+
+            <div class="cat">Bibite</div>
+            <div class="grid">
+              <div class="line">Acqua</div><div class="line">€ 1,50</div>
+              <div class="line">Birra</div><div class="line">€ 4,00</div>
+            </div>
+
+            <div class="btns">
+              <a class="btn" href="#">Chiama cameriera</a>
+              <a class="btn" href="#">Paga online</a>
+              <a class="btn" href="#">Paga alla cassa</a>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+  });
+});
 
 // ==== AVVIO SERVER ====
 const PORT = process.env.PORT || 3000;
