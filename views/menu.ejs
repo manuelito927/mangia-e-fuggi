@@ -8,7 +8,7 @@
 </head>
 <body>
   <header class="header">
-    <div class="brand"><%= r.name %></div>
+    <div class="brand"><%= r.name.toUpperCase() %></div>
     <div class="meta">Tavolo <strong><%= t.code %></strong></div>
   </header>
 
@@ -16,12 +16,14 @@
     <h2>Le nostre pizze</h2>
 
     <div class="menu-section">
-      <% (prods || []).forEach(p => { %>
+      <% (prods||[]).forEach(p => { %>
         <div class="menu-item">
           <img src="<%= p.img || p.category_name_img || '/img/fallback.jpg' %>" alt="<%= p.name %>">
           <div class="info">
             <h3><%= p.name %></h3>
             <% if (p.description) { %><p><%= p.description %></p><% } %>
+          </div>
+          <div class="cta">
             <span class="price">€ <%= ((p.price_cents||0)/100).toFixed(2) %></span>
             <button class="add-btn" onclick="addToCart('<%= p.id %>')">Aggiungi</button>
           </div>
@@ -33,7 +35,7 @@
   <script>
     function addToCart(id){
       alert('Aggiunto al carrello: ' + id);
-      // qui in seguito invieremo al server l’item con qty/notes
+      // qui poi collegheremo il vero carrello
     }
   </script>
 </body>
