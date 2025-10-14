@@ -20,7 +20,7 @@
     .btn.small{padding:4px 10px;border-radius:16px}
     .btn:disabled{opacity:.5;cursor:not-allowed}
     .cart h3{margin:0 0 10px}
-    .cart ul{list-style:none;padding:0;margin:0}
+    .cart ul{list-style:none;padding:0;margin:0;max-height:50vh;overflow:auto}
     .cart li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee}
     .cart .tot{display:flex;justify-content:space-between;font-weight:700;margin-top:8px}
     @media (max-width:900px){.container{grid-template-columns:1fr}}
@@ -33,46 +33,50 @@
 
   <div class="container">
     <main>
+      <!-- ANTIPASTI -->
       <section class="card">
         <h2>Antipasti</h2>
-        <div class="item" data-name="Bruschette" data-price="4.00">
-          <div><div class="name">Bruschette</div><div class="desc">Pomodoro, basilico, olio EVO</div></div>
-          <div class="price">€ 4,00</div>
-          <div class="qty"><button class="btn small" onclick="dec('Bruschette')">−</button><span id="q-Bruschette">0</span><button class="btn small" onclick="inc('Bruschette',4.00)">+</button></div>
-        </div>
-        <div class="item" data-name="Olive & Taralli" data-price="3.50">
-          <div><div class="name">Olive &amp; Taralli</div><div class="desc">Selezione tipica pugliese</div></div>
-          <div class="price">€ 3,50</div>
-          <div class="qty"><button class="btn small" onclick="dec('Olive & Taralli')">−</button><span id="q-Olive & Taralli">0</span><button class="btn small" onclick="inc('Olive & Taralli',3.50)">+</button></div>
-        </div>
+        <%= include('partials/item', {name:'Bruschette', desc:'Pomodoro, basilico, olio EVO', price:4.00}) %>
+        <%= include('partials/item', {name:'Olive & Taralli', desc:'Selezione tipica pugliese', price:3.50}) %>
+        <%= include('partials/item', {name:'Caprese', desc:'Mozzarella, pomodoro, origano', price:7.00}) %>
+        <%= include('partials/item', {name:'Parmigiana', desc:'Melanzane, pomodoro, grana', price:7.50}) %>
+        <%= include('partials/item', {name:'Fritto misto', desc:'Arancini, crocchè, panelle', price:8.00}) %>
       </section>
 
+      <!-- PIZZE CLASSICHE -->
       <section class="card">
         <h2>Pizze classiche</h2>
-        <div class="item" data-name="Margherita" data-price="5.00">
-          <div><div class="name">Margherita</div><div class="desc">Pomodoro, mozzarella, basilico</div></div>
-          <div class="price">€ 5,00</div>
-          <div class="qty"><button class="btn small" onclick="dec('Margherita')">−</button><span id="q-Margherita">0</span><button class="btn small" onclick="inc('Margherita',5.00)">+</button></div>
-        </div>
-        <div class="item" data-name="Diavola" data-price="7.00">
-          <div><div class="name">Diavola</div><div class="desc">Salame piccante</div></div>
-          <div class="price">€ 7,00</div>
-          <div class="qty"><button class="btn small" onclick="dec('Diavola')">−</button><span id="q-Diavola">0</span><button class="btn small" onclick="inc('Diavola',7.00)">+</button></div>
-        </div>
+        <%= include('partials/item', {name:'Margherita', desc:'Pomodoro, mozzarella, basilico', price:5.00}) %>
+        <%= include('partials/item', {name:'Marinara', desc:'Pomodoro, aglio, origano', price:4.50}) %>
+        <%= include('partials/item', {name:'Diavola', desc:'Salame piccante', price:7.00}) %>
+        <%= include('partials/item', {name:'Prosciutto e funghi', desc:'Cotto e champignon', price:7.50}) %>
+        <%= include('partials/item', {name:'Quattro formaggi', desc:'Mozzarella, gorgonzola, grana, provola', price:8.00}) %>
       </section>
 
+      <!-- PIZZE GOURMET -->
+      <section class="card">
+        <h2>Pizze gourmet</h2>
+        <%= include('partials/item', {name:'Bufalina', desc:'Pomodoro, bufala DOP, basilico', price:9.00}) %>
+        <%= include('partials/item', {name:'Tartufo', desc:'Crema di tartufo, provola, speck', price:11.00}) %>
+        <%= include('partials/item', {name:'Mortazza', desc:'Pistacchio, stracciatella, mortadella', price:10.50}) %>
+        <%= include('partials/item', {name:'Nduja & Burrata', desc:'’Nduja calabrese, burrata', price:10.00}) %>
+      </section>
+
+      <!-- BEVANDE -->
       <section class="card">
         <h2>Bevande</h2>
-        <div class="item" data-name="Acqua" data-price="1.50">
-          <div><div class="name">Acqua</div><div class="desc">Naturale o frizzante</div></div>
-          <div class="price">€ 1,50</div>
-          <div class="qty"><button class="btn small" onclick="dec('Acqua')">−</button><span id="q-Acqua">0</span><button class="btn small" onclick="inc('Acqua',1.50)">+</button></div>
-        </div>
-        <div class="item" data-name="Birra" data-price="4.00">
-          <div><div class="name">Birra</div><div class="desc">Chiara alla spina</div></div>
-          <div class="price">€ 4,00</div>
-          <div class="qty"><button class="btn small" onclick="dec('Birra')">−</button><span id="q-Birra">0</span><button class="btn small" onclick="inc('Birra',4.00)">+</button></div>
-        </div>
+        <%= include('partials/item', {name:'Acqua', desc:'Naturale o frizzante', price:1.50}) %>
+        <%= include('partials/item', {name:'Coca-Cola', desc:'Lattina 33cl', price:2.50}) %>
+        <%= include('partials/item', {name:'Birra', desc:'Chiara alla spina', price:4.00}) %>
+        <%= include('partials/item', {name:'Vino della casa', desc:'Bicchiere', price:3.50}) %>
+      </section>
+
+      <!-- DESSERT -->
+      <section class="card">
+        <h2>Dessert</h2>
+        <%= include('partials/item', {name:'Tiramisù', desc:'Classico', price:4.50}) %>
+        <%= include('partials/item', {name:'Panna cotta', desc:'Frutti di bosco', price:4.00}) %>
+        <%= include('partials/item', {name:'Cheesecake', desc:'Ricotta e pistacchio', price:4.50}) %>
       </section>
     </main>
 
@@ -86,11 +90,33 @@
 
   <script>
     const cart = new Map();
-    function inc(name, price){ const it = cart.get(name)||{price,qty:0}; it.qty++; cart.set(name,it); document.getElementById('q-'+name).textContent=it.qty; renderCart();}
-    function dec(name){const it=cart.get(name)||{qty:0,price:0}; it.qty=Math.max(0,it.qty-1); if(it.qty===0)cart.delete(name); else cart.set(name,it); document.getElementById('q-'+name).textContent=it.qty||0; renderCart();}
-    function euro(n){return "€ "+n.toFixed(2).replace(".",",");}
-    function renderCart(){const ul=document.getElementById('cart'); ul.innerHTML=""; let tot=0; for(const [n,it] of cart.entries()){tot+=it.qty*it.price; const li=document.createElement('li'); li.innerHTML=`<span>${it.qty} × ${n}</span><span>${euro(it.qty*it.price)}</span>`; ul.appendChild(li);} document.getElementById('total').textContent=euro(tot);}
-    async function checkout(){const items=Array.from(cart.entries()).map(([n,it])=>({name:n,price:it.price,qty:it.qty})); if(items.length===0)return alert("Aggiungi almeno un prodotto"); const tableCode=null; const total=items.reduce((s,i)=>s+i.price*i.qty,0); const r=await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tableCode,items,total})}); const js=await r.json(); if(js.ok){alert("Ordine inviato! ID: "+js.order_id); cart.clear(); renderCart(); document.querySelectorAll("[id^='q-']").forEach(e=>e.textContent="0");} else alert("Errore: "+(js.error||"Impossibile inviare"));}
+    function inc(name, price){ const it = cart.get(name)||{price,qty:0}; it.qty++; cart.set(name,it); document.getElementById('q-'+cssId(name)).textContent=it.qty; renderCart();}
+    function dec(name){const it=cart.get(name)||{qty:0,price:0}; it.qty=Math.max(0,it.qty-1); if(it.qty===0)cart.delete(name); else cart.set(name,it); document.getElementById('q-'+cssId(name)).textContent=it.qty||0; renderCart();}
+    function euro(n){return "€ "+Number(n).toFixed(2).replace(".",",");}
+    function cssId(s){ return s.replace(/[^a-z0-9]+/gi,'_'); }
+
+    function renderCart(){
+      const ul=document.getElementById('cart'); ul.innerHTML="";
+      let tot=0;
+      for(const [n,it] of cart.entries()){
+        tot+=it.qty*it.price;
+        const li=document.createElement('li');
+        li.innerHTML=`<span>${it.qty} × ${n}</span><span>${euro(it.qty*it.price)}</span>`;
+        ul.appendChild(li);
+      }
+      document.getElementById('total').textContent=euro(tot);
+    }
+
+    async function checkout(){
+      const items=Array.from(cart.entries()).map(([n,it])=>({name:n,price:it.price,qty:it.qty}));
+      if(items.length===0){ alert("Aggiungi almeno un prodotto"); return; }
+      const tableCode=null;
+      const total=items.reduce((s,i)=>s+i.price*i.qty,0);
+      const r=await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tableCode,items,total})});
+      const js=await r.json();
+      if(js.ok){ alert("Ordine inviato!"); cart.clear(); renderCart(); document.querySelectorAll("[id^='q-']").forEach(e=>e.textContent="0"); }
+      else{ alert("Errore: "+(js.error||"impossibile inviare")); }
+    }
   </script>
 </body>
 </html>
