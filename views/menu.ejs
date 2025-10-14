@@ -4,157 +4,196 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mangia & Fuggi – Menu</title>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css" />
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu; background:#f6efe9;}
+    header{max-width:1100px;margin:24px auto 12px;display:flex;align-items:center;justify-content:space-between}
+    .title{font-weight:700;font-size:28px}
+    .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 340px;gap:18px}
+    .card{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+    h2{font-size:20px;margin:8px 0 12px}
+    .item{display:grid;grid-template-columns:1fr auto 120px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px dashed #e7d6c9}
+    .name{font-weight:600}
+    .desc{font-style:italic;color:#6b6b6b;font-size:14px}
+    .price{font-weight:600;white-space:nowrap}
+    .qty{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+    .btn{border:0;border-radius:22px;padding:6px 12px;background:#7b4b3a;color:#fff;cursor:pointer}
+    .btn.small{padding:4px 10px;border-radius:16px}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .cart h3{margin:0 0 10px}
+    .cart ul{list-style:none;padding:0;margin:0}
+    .cart li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee}
+    .cart .tot{display:flex;justify-content:space-between;font-weight:700;margin-top:8px}
+    .top-actions{display:flex;gap:10px}
+    @media (max-width:900px){.container{grid-template-columns:1fr}}
+  </style>
 </head>
 <body>
-  <div class="bg"></div>
-
-  <header class="header">
-    <div class="header-inner">
-      <div class="brand">
-        <img src="/img/logo.png" class="logo" alt="Logo" onerror="this.style.display='none'">
-        <div>
-          <h1 class="title">Mangia & Fuggi</h1>
-          <div class="subtitle"><%= tableCode ? ('Tavolo: ' + tableCode) : 'Benvenuto!' %></div>
-        </div>
-      </div>
-
-      <nav class="actions">
-        <button id="btn-call" class="btn">Chiama cameriera</button>
-        <button id="btn-pay" class="btn">Paga online</button>
-        <button id="btn-cash" class="btn btn-ghost">Paga alla cassa</button>
-      </nav>
+  <header>
+    <div class="title">Mangia &amp; Fuggi</div>
+    <div class="top-actions">
+      <button class="btn" onclick="callWaiter()">Chiama cameriera</button>
+      <button class="btn" onclick="payAtCounter()">Paga alla cassa</button>
     </div>
   </header>
 
-  <!-- Layout a 2 colonne: lista (sx) + carrello (dx) -->
-  <div class="wrap layout">
-    <main id="content">
-      <% function section(titolo, arr){ %>
-        <section class="section">
-          <h2 class="section-title"><%= titolo %></h2>
+  <div class="container">
+    <!-- COLONNA MENU -->
+    <main>
+      <section class="card">
+        <h2>Antipasti</h2>
+        <div class="item" data-name="Bruschette" data-price="4.00">
+          <div>
+            <div class="name">Bruschette</div>
+            <div class="desc">Pomodoro, basilico, olio EVO</div>
+          </div>
+          <div class="price">€ 4,00</div>
+          <div class="qty">
+            <button class="btn small" onclick="dec('Bruschette')">−</button>
+            <span id="q-Bruschette">0</span>
+            <button class="btn small" onclick="inc('Bruschette',4.00)">+</button>
+          </div>
+        </div>
 
-          <!-- lista verticale: ogni riga = nome/descr a sx + prezzo e +/- allineati a dx -->
-          <ul class="vlist">
-            <% arr.forEach(p => { %>
-              <li class="item">
-                <div class="i-left">
-                  <div class="i-name"><%= p.nome %></div>
-                  <% if (p.descr) { %><div class="i-desc"><em><%= p.descr %></em></div><% } %>
-                </div>
-                <div class="i-right">
-                  <div class="i-price">€ <%= p.prezzo.toFixed(2) %></div>
-                  <div class="i-qty">
-                    <button class="q minus" data-name="<%= p.nome %>" data-price="<%= p.prezzo %>">−</button>
-                    <span class="qv" data-qv="<%= p.nome %>">0</span>
-                    <button class="q plus" data-name="<%= p.nome %>" data-price="<%= p.prezzo %>">+</button>
-                  </div>
-                </div>
-              </li>
-            <% }) %>
-          </ul>
-        </section>
-      <% } %>
+        <div class="item" data-name="Olive & Taralli" data-price="3.50">
+          <div>
+            <div class="name">Olive &amp; Taralli</div>
+            <div class="desc">Selezione tipica pugliese</div>
+          </div>
+          <div class="price">€ 3,50</div>
+          <div class="qty">
+            <button class="btn small" onclick="dec('Olive & Taralli')">−</button>
+            <span id="q-Olive & Taralli">0</span>
+            <button class="btn small" onclick="inc('Olive & Taralli',3.50)">+</button>
+          </div>
+        </div>
+      </section>
 
-      <%- section('Antipasti', antipasti) %>
-      <%- section('Pizze classiche', pizzeClassiche) %>
-      <%- section('Pizze gourmet', pizzeGourmet) %>
-      <%- section('Bevande', bevande) %>
-      <%- section('Dessert', dessert) %>
+      <section class="card">
+        <h2>Pizze classiche</h2>
+        <div class="item" data-name="Margherita" data-price="5.00">
+          <div>
+            <div class="name">Margherita</div>
+            <div class="desc">Fior di latte, pomodoro, basilico</div>
+          </div>
+          <div class="price">€ 5,00</div>
+          <div class="qty">
+            <button class="btn small" onclick="dec('Margherita')">−</button>
+            <span id="q-Margherita">0</span>
+            <button class="btn small" onclick="inc('Margherita',5.00)">+</button>
+          </div>
+        </div>
+
+        <div class="item" data-name="Diavola" data-price="7.00">
+          <div>
+            <div class="name">Diavola</div>
+            <div class="desc">Salame piccante</div>
+          </div>
+          <div class="price">€ 7,00</div>
+          <div class="qty">
+            <button class="btn small" onclick="dec('Diavola')">−</button>
+            <span id="q-Diavola">0</span>
+            <button class="btn small" onclick="inc('Diavola',7.00)">+</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Bevande</h2>
+        <div class="item" data-name="Acqua" data-price="1.50">
+          <div>
+            <div class="name">Acqua</div>
+            <div class="desc">Naturale o frizzante</div>
+          </div>
+          <div class="price">€ 1,50</div>
+          <div class="qty">
+            <button class="btn small" onclick="dec('Acqua')">−</button>
+            <span id="q-Acqua">0</span>
+            <button class="btn small" onclick="inc('Acqua',1.50)">+</button>
+          </div>
+        </div>
+
+        <div class="item" data-name="Birra" data-price="4.00">
+          <div>
+            <div class="name">Birra</div>
+            <div class="desc">Chiara</div>
+          </div>
+          <div class="price">€ 4,00</div>
+          <div class="qty">
+            <button class="btn small" onclick="dec('Birra')">−</button>
+            <span id="q-Birra">0</span>
+            <button class="btn small" onclick="inc('Birra',4.00)">+</button>
+          </div>
+        </div>
+      </section>
     </main>
 
-    <!-- Carrello laterale fisso -->
-    <aside id="cart-side" class="cart-side">
-      <h3 class="cart-title">Il tuo ordine</h3>
-      <ul id="cart-list" class="cart-list"></ul>
-      <div class="cart-total">
-        <div>Totale</div><div id="cart-total">€ 0,00</div>
-      </div>
-      <button id="btn-checkout" class="btn btn-wide">Conferma ordine</button>
+    <!-- COLONNA CARRELLO -->
+    <aside class="card cart">
+      <h3>Carrello</h3>
+      <ul id="cart"></ul>
+      <div class="tot"><span>Totale</span><span id="total">€ 0,00</span></div>
+      <button class="btn" style="width:100%;margin-top:10px" onclick="checkout()">Conferma ordine</button>
     </aside>
   </div>
 
-  <div id="toast" class="toast" hidden></div>
-
   <script>
-    const tableCode = "<%= tableCode %>";
-    const cart = new Map(); // name -> { price, qty }
+    const cart = new Map(); // name -> {price, qty}
 
-    const euro = n => "€ " + Number(n).toFixed(2).replace(".", ",");
+    function inc(name, price){
+      const cur = cart.get(name) || { price, qty:0 };
+      cur.qty++; cart.set(name, cur);
+      document.getElementById("q-"+name).textContent = cur.qty;
+      renderCart();
+    }
+    function dec(name){
+      const cur = cart.get(name) || { qty:0, price:0 };
+      cur.qty = Math.max(0, cur.qty-1);
+      if(cur.qty===0) cart.delete(name); else cart.set(name, cur);
+      document.getElementById("q-"+name).textContent = cur.qty || 0;
+      renderCart();
+    }
+    function euro(n){ return "€ " + n.toFixed(2).replace(".", ","); }
 
     function renderCart(){
-      const list = document.getElementById('cart-list');
-      list.innerHTML = "";
-      let total = 0;
-
-      cart.forEach((v, name) => {
-        const li = document.createElement('li');
-        li.className = 'cart-row';
-        li.innerHTML = `
-          <div class="cr-left">
-            <div class="cr-name">${name}</div>
-            <div class="cr-sub">${euro(v.price)} × ${v.qty}</div>
-          </div>
-          <div class="cr-right">${euro(v.price * v.qty)}</div>
-        `;
-        list.appendChild(li);
-        total += v.price * v.qty;
-      });
-
-      document.getElementById('cart-total').textContent = euro(total);
+      const ul = document.getElementById("cart");
+      ul.innerHTML = "";
+      let tot = 0;
+      for (const [name, it] of cart.entries()){
+        tot += it.qty * it.price;
+        const li = document.createElement("li");
+        li.innerHTML = `<span>${it.qty} × ${name}</span><span>${euro(it.qty*it.price)}</span>`;
+        ul.appendChild(li);
+      }
+      document.getElementById("total").textContent = euro(tot);
     }
 
-    function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.hidden=false; setTimeout(()=>t.hidden=true,1600); }
+    async function checkout(){
+      const items = Array.from(cart.entries()).map(([name, it]) => ({
+        name, price: it.price, qty: it.qty
+      }));
+      if(items.length === 0){ alert("Aggiungi almeno un prodotto"); return; }
 
-    // + / − laterali
-    document.querySelectorAll('.q.plus').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const name = btn.dataset.name, price = Number(btn.dataset.price);
-        const curr = cart.get(name) || { price, qty:0 };
-        curr.qty++; cart.set(name, curr);
-        document.querySelector(`[data-qv="${CSS.escape(name)}"]`).textContent = curr.qty;
-        renderCart();
-      });
-    });
-    document.querySelectorAll('.q.minus').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const name = btn.dataset.name, price = Number(btn.dataset.price);
-        const curr = cart.get(name) || { price, qty:0 };
-        if (curr.qty > 0) curr.qty--;
-        if (curr.qty === 0) cart.delete(name); else cart.set(name, curr);
-        document.querySelector(`[data-qv="${CSS.escape(name)}"]`).textContent = curr.qty || 0;
-        renderCart();
-      });
-    });
+      const tableCode = new URLSearchParams(location.search).get("table") || null;
+      const total = items.reduce((s,i)=>s+i.price*i.qty,0);
 
-    // Pulsanti header
-    document.getElementById('btn-call')?.addEventListener('click', async ()=>{
-      await fetch('/api/call-waiter',{method:'POST'});
-      toast('La cameriera è stata avvisata ✅');
-    });
-    document.getElementById('btn-pay')?.addEventListener('click', async ()=>{
-      const r = await fetch('/api/pay-online',{method:'POST'}).then(r=>r.json());
-      if (r.url && r.url !== '#') location.href = r.url; else toast('Pagamento online in arrivo…');
-    });
-    document.getElementById('btn-cash')?.addEventListener('click', async ()=>{
-      await fetch('/api/pay-at-counter',{method:'POST'}); toast('Paga alla cassa selezionato ✅');
-    });
-
-    // Checkout → aggancio stampa/file lato server
-    document.getElementById('btn-checkout').addEventListener('click', async ()=>{
-      const items = Array.from(cart.entries()).map(([name, v]) => ({ name, price: v.price, qty: v.qty }));
-      const total = items.reduce((s, it)=> s + it.price*it.qty, 0);
-      if (items.length === 0) return toast('Aggiungi qualcosa al carrello');
-      const resp = await fetch('/api/checkout',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
+      const r = await fetch("/api/checkout", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ tableCode, items, total })
-      }).then(r=>r.json());
-      if (resp.ok){ toast('Ordine inviato ✅'); }
-      else { toast('Errore invio ordine'); }
-    });
+      });
+      const js = await r.json();
+      if(js.ok){
+        alert("Ordine inviato! ID: " + js.order_id);
+        cart.clear(); renderCart();
+        document.querySelectorAll("[id^='q-']").forEach(el => el.textContent = "0");
+      }else{
+        alert("Errore: " + (js.error || "impossibile inviare"));
+      }
+    }
+
+    async function callWaiter(){ alert("Chiamata cameriera inviata!"); }
+    async function payAtCounter(){ alert("Paga alla cassa: comunica il numero tavolo"); }
   </script>
 </body>
 </html>
