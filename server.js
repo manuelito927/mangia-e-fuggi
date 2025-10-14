@@ -1,5 +1,4 @@
 // ===== MANGIA & FUGGI - SERVER COMPLETO =====
-
 import express from "express";
 import path from "path";
 import bodyParser from "body-parser";
@@ -34,9 +33,12 @@ app.use(session({
 }));
 
 // ==== ROTTE BASE ====
-app.get("/", (req, res) => res.redirect("/menu"));
-app.get("/menu", (req, res) => res.render("menu"));
-app.get("/admin", (req, res) => res.render("admin"));
+app.get("/", (_req, res) => res.redirect("/menu"));
+app.get("/menu", (_req, res) => res.render("menu"));
+app.get("/admin", (_req, res) => {
+  // Passo le chiavi a EJS così la dashboard funziona subito
+  res.render("admin", { SUPABASE_URL: process.env.SUPABASE_URL, SUPABASE_KEY: process.env.SUPABASE_KEY });
+});
 
 // ==== API CHECKOUT ====
 app.post("/api/checkout", async (req, res) => {
