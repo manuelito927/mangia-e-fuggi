@@ -1,4 +1,4 @@
-// ===== MANGIA&FUGGI – SERVER PULITO =====
+// ===== MANGIA&FUGGI – SERVER COMPLETO (menu + carrello + aggancio stampa) =====
 import express from "express";
 import path from "path";
 import bodyParser from "body-parser";
@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 dotenv.config();
 
@@ -32,9 +33,10 @@ app.use(
   })
 );
 
-// ---- ROTTE ----
+// ---- HOME → MENU ----
 app.get("/", (_req, res) => res.redirect("/menu"));
 
+// ---- MENU (dati demo) ----
 app.get("/menu", (req, res, next) => {
   try {
     const tableCode = req.query.table || "";
@@ -88,10 +90,54 @@ app.get("/menu", (req, res, next) => {
   }
 });
 
-// API finte per i pulsanti (ora rispondono OK)
-app.post("/api/call-waiter", (_req, res) => res.json({ ok: true }));
-app.post("/api/pay-at-counter", (_req, res) => res.json({ ok: true }));
-app.post("/api/pay-online", (_req, res) => res.json({ ok: true, url: "#" }));
+// ---- API PULSANTI ----
+app.post("/api/call-waiter", (_req, res) => {
+  // Aggancio: se vuoi generare un ticket per la stampante quando chiamano la cameriera
+  if (process.env.PRINT_TO_FILES === "true") {
+    const dir = process.env.PRINT_SPOOL_DIR || path.join(__dirname, "spool");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const payload = `CALL WAITER\n${new Date().toISOString()}\n\n`;
+    fs.writeFileSync(path.join(dir, `call_${Date.now()}.txt`), payload, "utf8");
+  }
+  res.json({ ok: true });
+});
+
+app.post("/api/pay-at-counter", (_req, res) => {
+  res.json({ ok: true });
+});
+
+// Finto avvio pagamento online (poi sostituisci con SumUp/Stripe)
+app.post("/api/pay-online", (_req, res) => {
+  // quando integri SumUp qui restituisci l'URL di pagamento vero
+  res.json({ ok: true, url: "#" });
+});
+
+// ---- CHECKOUT (scrive “ticket” su file se attivo) ----
+app.post("/api/checkout", (req, res) => {
+  const { tableCode, items, total } = req.body || {};
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ ok: false, error: "Nessun articolo nel carrello" });
+  }
+
+  // se abiliti PRINT_TO_FILES genera un file .txt in spool/ con il dettaglio ordine
+  if (process.env.PRINT_TO_FILES === "true") {
+    const dir = process.env.PRINT_SPOOL_DIR || path.join(__dirname, "spool");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    const lines = [];
+    lines.push("=== ORDINE MANGIA&FUGGI ===");
+    if (tableCode) lines.push(`TAVOLO: ${tableCode}`);
+    lines.push("---------------------------");
+    items.forEach((it) => lines.push(`${it.qty} x ${it.name}  € ${(it.qty * it.price).toFixed(2)}`));
+    lines.push("---------------------------");
+    lines.push(`TOTALE: € ${Number(total).toFixed(2)}`);
+    lines.push(new Date().toISOString());
+
+    fs.writeFileSync(path.join(dir, `order_${Date.now()}.txt`), lines.join("\n") + "\n", "utf8");
+  }
+
+  res.json({ ok: true });
+});
 
 // ---- AVVIO ----
 const PORT = process.env.PORT || 3000;
