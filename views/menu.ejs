@@ -1,80 +1,78 @@
 <!doctype html>
 <html lang="it">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mangia & Fuggi – Menu</title>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mangia & Fuggi – Menu</title>
 
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <div class="bg"></div>
+  <!-- Font eleganti -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <header class="header">
-      <div class="header-inner">
-        <div class="brand">
-          <img src="/img/logo.png" alt="Logo" class="logo" onerror="this.style.display='none'">
-          <div>
-            <h1 class="title">Mangia & Fuggi</h1>
-            <div class="subtitle"><%= tableCode ? ('Tavolo: ' + tableCode) : 'Benvenuto!' %></div>
-          </div>
+  <!-- Stile -->
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="bg"></div>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <img src="/img/logo.png" class="logo" alt="Logo" onerror="this.style.display='none'">
+        <div>
+          <h1 class="title">Mangia & Fuggi</h1>
+          <div class="subtitle"><%= tableCode ? ('Tavolo: ' + tableCode) : 'Benvenuto!' %></div>
         </div>
-
-        <nav class="actions">
-          <button id="btn-call" class="btn">Chiama cameriera</button>
-          <button id="btn-pay" class="btn">Paga online</button>
-          <button id="btn-cash" class="btn btn-ghost">Paga alla cassa</button>
-        </nav>
       </div>
-    </header>
 
-    <main class="wrap">
+      <nav class="actions">
+        <button id="btn-call" class="btn">Chiama cameriera</button>
+        <button id="btn-pay" class="btn">Paga online</button>
+        <button id="btn-cash" class="btn btn-ghost">Paga alla cassa</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <% function section(titolo, arr){ %>
       <section class="section">
-        <h2 class="section-title">Antipasti</h2>
+        <h2 class="section-title"><%= titolo %></h2>
         <div class="rows">
-          <% antipasti.forEach(p => { %>
-            <div class="row"><div class="name"><%= p.nome %></div><div class="price">€ <%= p.prezzo.toFixed(2) %></div></div>
+          <% arr.forEach(p => { %>
+            <div class="row">
+              <div class="name">
+                <div class="n"><%= p.nome %></div>
+                <% if (p.descr) { %><div class="d"><em><%= p.descr %></em></div><% } %>
+              </div>
+              <div class="price">€ <%= p.prezzo.toFixed(2) %></div>
+            </div>
           <% }) %>
         </div>
       </section>
+    <% } %>
 
-      <section class="section">
-        <h2 class="section-title">Pizze classiche</h2>
-        <div class="rows">
-          <% pizzeClassiche.forEach(p => { %>
-            <div class="row"><div class="name"><%= p.nome %></div><div class="price">€ <%= p.prezzo.toFixed(2) %></div></div>
-          <% }) %>
-        </div>
-      </section>
+    <%- section('Antipasti', antipasti) %>
+    <%- section('Pizze classiche', pizzeClassiche) %>
+    <%- section('Pizze gourmet', pizzeGourmet) %>
+    <%- section('Bevande', bevande) %>
+    <%- section('Dessert', dessert) %>
+  </main>
 
-      <section class="section">
-        <h2 class="section-title">Pizze speciali</h2>
-        <div class="rows">
-          <% pizzeSpeciali.forEach(p => { %>
-            <div class="row"><div class="name"><%= p.nome %></div><div class="price">€ <%= p.prezzo.toFixed(2) %></div></div>
-          <% }) %>
-        </div>
-      </section>
+  <div id="toast" class="toast" hidden></div>
 
-      <section class="section">
-        <h2 class="section-title">Bibite</h2>
-        <div class="rows">
-          <% bibite.forEach(p => { %>
-            <div class="row"><div class="name"><%= p.nome %></div><div class="price">€ <%= p.prezzo.toFixed(2) %></div></div>
-          <% }) %>
-        </div>
-      </section>
-    </main>
+  <script>
+    function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.hidden=false; setTimeout(()=>t.hidden=true,1800); }
 
-    <div id="toast" class="toast" hidden></div>
-
-    <script>
-      function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.hidden=false;setTimeout(()=>t.hidden=true,1800);}
-      document.getElementById('btn-call')?.addEventListener('click', async ()=>{await fetch('/api/call-waiter',{method:'POST'});toast('La cameriera è stata avvisata ✅')});
-      document.getElementById('btn-pay')?.addEventListener('click', async ()=>{toast('Pagamento online in arrivo…')});
-      document.getElementById('btn-cash')?.addEventListener('click', async ()=>{await fetch('/api/pay-at-counter',{method:'POST'});toast('Paga alla cassa selezionato ✅')});
-    </script>
-  </body>
+    document.getElementById('btn-call')?.addEventListener('click', async ()=>{
+      await fetch('/api/call-waiter',{method:'POST'}); toast('La cameriera è stata avvisata ✅');
+    });
+    document.getElementById('btn-pay')?.addEventListener('click', async ()=>{
+      const r = await fetch('/api/pay-online',{method:'POST'}).then(r=>r.json());
+      toast('Pagamento online in arrivo…'); if (r.url && r.url !== '#') location.href = r.url;
+    });
+    document.getElementById('btn-cash')?.addEventListener('click', async ()=>{
+      await fetch('/api/pay-at-counter',{method:'POST'}); toast('Paga alla cassa selezionato ✅');
+    });
+  </script>
+</body>
 </html>
