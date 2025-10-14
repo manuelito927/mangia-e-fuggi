@@ -5,49 +5,90 @@
   <title>Gestione Ordini - Mangia & Fuggi</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body{font-family:Poppins,Arial;background:#f9f7f4;margin:0;padding:20px;}
-    h1{text-align:center;color:#7a2e1f;}
-    .order{background:white;border-radius:12px;padding:15px;margin:10px 0;box-shadow:0 0 5px rgba(0,0,0,0.1);}
-    button{background:#7a2e1f;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;}
-    button:hover{background:#a8442e;}
+    body{font-family:Poppins,Arial,system-ui;background:#f9f7f4;margin:0;padding:22px;}
+    h1{color:#7a2e1f;text-align:center;margin:0 0 16px}
+    .wrap{max-width:1100px;margin:0 auto}
+    .order{background:#fff;border-radius:12px;padding:14px 16px;margin:12px 0;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+    .head{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+    .id{font-family:ui-monospace,Consolas;font-size:12px;color:#666}
+    .badge{background:#efe2dd;color:#7a2e1f;border-radius:999px;padding:4px 10px;font-size:12px}
+    .items{margin-top:10px;border-top:1px dashed #ead8cf;padding-top:10px}
+    .row{display:flex;justify-content:space-between;margin:4px 0}
+    .actions{display:flex;gap:8px}
+    button{background:#7a2e1f;color:#fff;border:none;border-radius:8px;padding:6px 10px;cursor:pointer}
+    button:hover{background:#a8442e}
+    .muted{color:#666}
   </style>
 </head>
 <body>
-  <h1>📋 Ordini ricevuti</h1>
-  <div id="orders"></div>
+  <div class="wrap">
+    <h1>📋 Ordini ricevuti</h1>
+    <div id="orders"></div>
+  </div>
 
   <script>
-    const supabase = window.supabase.createClient(
-      "<INSERISCI_TUO_SUPABASE_URL>",
-      "<INSERISCI_TUA_ANON_KEY>"
-    );
+    const url = "<%= SUPABASE_URL %>";
+    const key = "<%= SUPABASE_KEY %>";
+    const supabase = window.supabase.createClient(url, key);
 
-    async function caricaOrdini() {
-      const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+    async function load() {
+      // prendo ordini + righe (nested select)
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, table_code, total, created_at, order_items(name, qty, price)")
+        .order("created_at", { ascending: false });
       if (error) { console.error(error); return; }
-      mostra(data);
+      render(data || []);
     }
 
-    function mostra(ordini) {
-      const div = document.getElementById("orders");
-      div.innerHTML = "";
-      ordini.forEach(o => {
+    function euro(n){ return "€ " + Number(n||0).toFixed(2).replace(".", ","); }
+
+    function render(list){
+      const root = document.getElementById("orders");
+      root.innerHTML = "";
+      if (list.length === 0) {
+        root.innerHTML = '<p class="muted" style="text-align:center">Nessun ordine.</p>';
+        return;
+      }
+      list.forEach(o => {
         const el = document.createElement("div");
         el.className = "order";
+        const items = (o.order_items||[]).map(it => `
+          <div class="row"><span>${it.qty} × ${it.name}</span><span>${euro(it.qty*it.price)}</span></div>
+        `).join("");
         el.innerHTML = `
-          <strong>ID:</strong> ${o.id}<br>
-          <strong>Tavolo:</strong> ${o.table_code || '-'}<br>
-          <strong>Totale:</strong> €${o.total}<br>
-          <strong>Data:</strong> ${new Date(o.created_at).toLocaleString()}<br>
-          <button onclick="window.print()">🖨️ Stampa</button>
+          <div class="head">
+            <div>
+              <div class="id">ID: ${o.id}</div>
+              <div class="muted">Tavolo: <strong>${o.table_code || "-"}</strong></div>
+              <div class="muted">Data: ${new Date(o.created_at).toLocaleString()}</div>
+            </div>
+            <div class="badge">Totale: <strong>${euro(o.total)}</strong></div>
+            <div class="actions">
+              <button onclick="printOrder('${o.id}')">🖨️ Stampa</button>
+            </div>
+          </div>
+          <div class="items">${items || '<div class="muted">Nessun dettaglio</div>'}</div>
         `;
-        div.appendChild(el);
+        root.appendChild(el);
       });
     }
 
-    caricaOrdini();
-    supabase.channel('public:orders')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => caricaOrdini())
+    function printOrder(id){
+      // stampa semplice della pagina (puoi raffinare in seguito con un layout dedicato)
+      window.print();
+    }
+
+    // Carica iniziale
+    load();
+
+    // Realtime: si aggiorna appena arriva un ordine/riga
+    const ch1 = supabase.channel('rt:orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, load)
+      .subscribe();
+
+    const ch2 = supabase.channel('rt:order_items')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, load)
       .subscribe();
   </script>
 </body>
