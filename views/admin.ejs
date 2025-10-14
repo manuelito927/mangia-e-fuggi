@@ -1,13 +1,54 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="/styles.css"><title>Admin</title></head>
-<body><div class="container">
-  <div class="header"><div class="brand">Dashboard</div><a class="btn" href="/logout">Esci</a></div>
-  <div class="row one"><div class="meta"><div class="title">Ristoranti</div>
-    <ul><% restaurants.forEach(r=> { %><li><a href="/admin/<%= r.slug %>"><%= r.name %></a></li><% }) %></ul>
-  </div></div>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestione Ordini - Mangia & Fuggi</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body{font-family:Poppins,Arial;background:#f9f7f4;margin:0;padding:20px;}
+    h1{text-align:center;color:#7a2e1f;}
+    .order{background:white;border-radius:12px;padding:15px;margin:10px 0;box-shadow:0 0 5px rgba(0,0,0,0.1);}
+    button{background:#7a2e1f;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;}
+    button:hover{background:#a8442e;}
+  </style>
+</head>
+<body>
+  <h1>📋 Ordini ricevuti</h1>
+  <div id="orders"></div>
 
-  <div class="row one"><div class="meta"><div class="title">Ultimi ordini</div>
-    <table width="100%"><tr><th>Codice</th><th>Totale</th><th>Stato</th><th>Metodo</th><th>Data</th></tr>
-      <% orders.forEach(o=> { %><tr><td><%= o.code %></td><td>€ <%= (o.total_cents/100).toFixed(2) %></td><td><%= o.status %></td><td><%= o.pay_method %></td><td><%= o.created_at %></td></tr><% }) %>
-    </table>
-  </div></div>
-</div></body></html>
+  <script>
+    const supabase = window.supabase.createClient(
+      "<INSERISCI_TUO_SUPABASE_URL>",
+      "<INSERISCI_TUA_ANON_KEY>"
+    );
+
+    async function caricaOrdini() {
+      const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+      if (error) { console.error(error); return; }
+      mostra(data);
+    }
+
+    function mostra(ordini) {
+      const div = document.getElementById("orders");
+      div.innerHTML = "";
+      ordini.forEach(o => {
+        const el = document.createElement("div");
+        el.className = "order";
+        el.innerHTML = `
+          <strong>ID:</strong> ${o.id}<br>
+          <strong>Tavolo:</strong> ${o.table_code || '-'}<br>
+          <strong>Totale:</strong> €${o.total}<br>
+          <strong>Data:</strong> ${new Date(o.created_at).toLocaleString()}<br>
+          <button onclick="window.print()">🖨️ Stampa</button>
+        `;
+        div.appendChild(el);
+      });
+    }
+
+    caricaOrdini();
+    supabase.channel('public:orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => caricaOrdini())
+      .subscribe();
+  </script>
+</body>
+</html>
