@@ -45,6 +45,11 @@
                 <% if (p.descr) { %><div class="d"><em><%= p.descr %></em></div><% } %>
               </div>
               <div class="price">€ <%= p.prezzo.toFixed(2) %></div>
+              <div class="qty">
+                <button class="q minus" data-name="<%= p.nome %>" data-price="<%= p.prezzo %>">−</button>
+                <span class="qv" data-qv="<%= p.nome %>">0</span>
+                <button class="q plus" data-name="<%= p.nome %>" data-price="<%= p.prezzo %>">+</button>
+              </div>
             </div>
           <% }) %>
         </div>
@@ -58,20 +63,77 @@
     <%- section('Dessert', dessert) %>
   </main>
 
+  <!-- Barra carrello -->
+  <div id="cartbar" class="cartbar" hidden>
+    <div><b id="cart-count">0</b> articoli — <b id="cart-total">€ 0,00</b></div>
+    <div class="cart-actions">
+      <button id="btn-checkout" class="btn">Conferma ordine</button>
+    </div>
+  </div>
+
   <div id="toast" class="toast" hidden></div>
 
   <script>
-    function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.hidden=false; setTimeout(()=>t.hidden=true,1800); }
+    const tableCode = "<%= tableCode %>";
+    const cart = new Map(); // name -> { price, qty }
 
+    function euro(n){ return "€ " + Number(n).toFixed(2).replace(".", ","); }
+
+    function renderCart(){
+      let count = 0, total = 0;
+      cart.forEach(v => { count += v.qty; total += v.qty * v.price; });
+      document.getElementById('cart-count').textContent = count;
+      document.getElementById('cart-total').textContent = euro(total);
+      document.getElementById('cartbar').hidden = count === 0;
+    }
+
+    function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.hidden=false; setTimeout(()=>t.hidden=true,1600); }
+
+    // + / - quantità
+    document.querySelectorAll('.q.plus').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const name = btn.dataset.name, price = Number(btn.dataset.price);
+        const curr = cart.get(name) || { price, qty:0 };
+        curr.qty++; cart.set(name, curr);
+        document.querySelector(`[data-qv="${CSS.escape(name)}"]`).textContent = curr.qty;
+        renderCart();
+      });
+    });
+    document.querySelectorAll('.q.minus').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const name = btn.dataset.name, price = Number(btn.dataset.price);
+        const curr = cart.get(name) || { price, qty:0 };
+        if (curr.qty > 0) curr.qty--;
+        if (curr.qty === 0) cart.delete(name); else cart.set(name, curr);
+        document.querySelector(`[data-qv="${CSS.escape(name)}"]`).textContent = curr.qty || 0;
+        renderCart();
+      });
+    });
+
+    // Pulsanti superiori
     document.getElementById('btn-call')?.addEventListener('click', async ()=>{
-      await fetch('/api/call-waiter',{method:'POST'}); toast('La cameriera è stata avvisata ✅');
+      await fetch('/api/call-waiter',{method:'POST'});
+      toast('La cameriera è stata avvisata ✅');
     });
     document.getElementById('btn-pay')?.addEventListener('click', async ()=>{
       const r = await fetch('/api/pay-online',{method:'POST'}).then(r=>r.json());
-      toast('Pagamento online in arrivo…'); if (r.url && r.url !== '#') location.href = r.url;
+      if (r.url && r.url !== '#') location.href = r.url; else toast('Pagamento online in arrivo…');
     });
     document.getElementById('btn-cash')?.addEventListener('click', async ()=>{
       await fetch('/api/pay-at-counter',{method:'POST'}); toast('Paga alla cassa selezionato ✅');
+    });
+
+    // Checkout
+    document.getElementById('btn-checkout').addEventListener('click', async ()=>{
+      const items = Array.from(cart.entries()).map(([name, v]) => ({ name, price: v.price, qty: v.qty }));
+      const total = items.reduce((s, it)=> s + it.price*it.qty, 0);
+      const resp = await fetch('/api/checkout',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ tableCode, items, total })
+      }).then(r=>r.json());
+      if (resp.ok){ toast('Ordine inviato ✅'); cart.clear(); document.querySelectorAll('.qv').forEach(e=>e.textContent='0'); renderCart(); }
+      else { toast('Errore invio ordine'); }
     });
   </script>
 </body>
