@@ -24,10 +24,22 @@ body{margin:0;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe U
 .wrap{max-width:1000px;margin:24px auto;padding:0 20px}
 .section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:18px;box-shadow:0 10px 30px #00000008}
 .section-title{margin:6px 0 12px 0;font-family:"Playfair Display",Georgia,"Times New Roman",serif;font-weight:700}
-.rows{display:grid;grid-template-columns:1fr auto;gap:10px 18px}
-.row{padding:10px 0;border-bottom:1px dashed var(--line)}
+.rows{display:grid;grid-template-columns:1fr auto auto;gap:10px 18px} /* + colonna quantità */
+.row{padding:12px 0;border-bottom:1px dashed var(--line);align-items:center}
 .row:last-child{border-bottom:0}
 .name .n{font-weight:600}
 .name .d{color:var(--ink-soft);font-size:.95rem;margin-top:2px}
 .price{font-weight:700}
+.qty{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.q{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:18px;line-height:0}
+.qv{min-width:22px;text-align:center;display:inline-block}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#111;color:#fff;padding:10px 16px;border-radius:10px;box-shadow:0 10px 30px #0000002a;font-weight:600}
+
+/* Barra carrello in basso */
+.cartbar{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:12px;background:#fff;border:1px solid var(--line);
+  border-radius:14px;box-shadow:0 10px 30px #00000020;
+  display:flex;align-items:center;gap:18px;padding:10px 14px;z-index:5
+}
+.cart-actions{display:flex;gap:10px}
