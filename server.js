@@ -85,68 +85,59 @@ app.get('/', (req, res) => {
 });
 
 // pagina menu: se esiste views/menu.ejs la usa, altrimenti mostra un fallback
+// ==== ROTTE BASE ====
+app.get('/', (req, res) => res.redirect('/menu'));
+
 app.get('/menu', (req, res) => {
-  // esempio: leggo ?table=12
   const tableCode = req.query.table || '';
 
-  // provo a renderizzare la view "menu"
-  res.render('menu', { tableCode }, (err, html) => {
-    if (!err) return res.send(html);
+  const antipasti = [
+    { nome: "Bruschette", descr: "Pomodoro, basilico, olio EVO", prezzo: 4.00 },
+    { nome: "Olive & Taralli", descr: "Selezione tipica pugliese", prezzo: 3.50 },
+    { nome: "Caprese", descr: "Mozzarella, pomodoro, origano", prezzo: 7.00 },
+    { nome: "Parmigiana", descr: "Melanzane, pomodoro, grana", prezzo: 7.50 },
+  ];
 
-    // Fallback HTML se non esiste la view o dà errore
-    res.send(`
-      <!doctype html>
-      <html lang="it">
-        <head>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>Mangia & Fuggi – Menu</title>
-          <style>
-            body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 24px; }
-            .wrap { max-width: 860px; margin: 0 auto; }
-            h1 { margin: 0 0 8px; }
-            .sub { color: #666; margin-bottom: 24px; }
-            .grid { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; }
-            .cat { font-weight: 600; margin-top: 24px; }
-            .line { padding: 8px 0; border-bottom: 1px dashed #ddd; }
-            .btns { display: flex; gap: 12px; margin-top: 24px; }
-            button, a.btn { padding: 10px 14px; border-radius: 10px; border: 0; cursor: pointer; background:#111; color:#fff; text-decoration:none; }
-          </style>
-        </head>
-        <body>
-          <div class="wrap">
-            <h1>Mangia & Fuggi</h1>
-            <div class="sub">${tableCode ? `Tavolo: <b>${tableCode}</b>` : 'Benvenuto!'}</div>
+  const pizzeClassiche = [
+    { nome: "Margherita", descr: "Fior di latte, pomodoro, basilico", prezzo: 5.00 },
+    { nome: "Marinara", descr: "Pomodoro, aglio, origano", prezzo: 4.50 },
+    { nome: "Diavola", descr: "Salame piccante", prezzo: 7.00 },
+    { nome: "Prosciutto e funghi", descr: "Cotto e champignon", prezzo: 7.50 },
+    { nome: "Quattro stagioni", descr: "Carciofi, olive, cotto, funghi", prezzo: 8.00 },
+  ];
 
-            <div class="cat">Antipasti</div>
-            <div class="grid">
-              <div class="line">Bruschette</div><div class="line">€ 4,00</div>
-              <div class="line">Olive & Taralli</div><div class="line">€ 3,50</div>
-            </div>
+  const pizzeGourmet = [
+    { nome: "Bufalina DOP", descr: "Bufala, pomodorini, basilico", prezzo: 9.00 },
+    { nome: "Crudo & Burrata", descr: "Prosciutto crudo, burrata", prezzo: 10.50 },
+    { nome: "Mortadella & Pistacchio", descr: "Granella di pistacchio, stracciatella", prezzo: 11.50 },
+    { nome: "Tartufo", descr: "Crema al tartufo, funghi, scaglie", prezzo: 12.00 },
+  ];
 
-            <div class="cat">Pizze</div>
-            <div class="grid">
-              <div class="line">Margherita</div><div class="line">€ 5,00</div>
-              <div class="line">Diavola</div><div class="line">€ 7,00</div>
-            </div>
+  const bevande = [
+    { nome: "Acqua naturale 50cl", descr: "", prezzo: 1.50 },
+    { nome: "Acqua frizzante 50cl", descr: "", prezzo: 1.50 },
+    { nome: "Cola", descr: "Lattina", prezzo: 3.00 },
+    { nome: "Birra chiara 33cl", descr: "Bottiglia", prezzo: 4.00 },
+    { nome: "Birra artigianale 33cl", descr: "Selezione del giorno", prezzo: 5.50 },
+  ];
 
-            <div class="cat">Bibite</div>
-            <div class="grid">
-              <div class="line">Acqua</div><div class="line">€ 1,50</div>
-              <div class="line">Birra</div><div class="line">€ 4,00</div>
-            </div>
+  const dessert = [
+    { nome: "Tiramisù", descr: "Ricetta della casa", prezzo: 4.50 },
+    { nome: "Panna cotta", descr: "Coulis ai frutti rossi", prezzo: 4.00 },
+    { nome: "Cheesecake", descr: "Al pistacchio", prezzo: 4.50 },
+  ];
 
-            <div class="btns">
-              <a class="btn" href="#">Chiama cameriera</a>
-              <a class="btn" href="#">Paga online</a>
-              <a class="btn" href="#">Paga alla cassa</a>
-            </div>
-          </div>
-        </body>
-      </html>
-    `);
+  res.render('menu', {
+    tableCode,
+    antipasti, pizzeClassiche, pizzeGourmet, bevande, dessert
   });
 });
+
+// API finte per i pulsanti
+app.post('/api/call-waiter', (req, res) => res.json({ ok: true }));
+app.post('/api/pay-at-counter', (req, res) => res.json({ ok: true }));
+app.post('/api/pay-online', (req, res) => res.json({ ok: true, url: '#' }));
+
 // ==== ROTTE BASE ====
 
 app.get('/', (req, res) => res.redirect('/menu'));
