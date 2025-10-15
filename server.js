@@ -1,4 +1,4 @@
- // ===== MANGIA & FUGGI - SERVER COMPLETO con password /admin =====
+// ===== MANGIA & FUGGI - SERVER con password /admin (safe) =====
 import express from "express";
 import path from "path";
 import bodyParser from "body-parser";
@@ -14,10 +14,10 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ==== SUPABASE ====
+// --- Supabase ---
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// ==== APP ====
+// --- App base ---
 const app = express();
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -32,31 +32,27 @@ app.use(session({
   saveUninitialized: false,
 }));
 
-// ==== PROTEZIONE /admin (Basic Auth) ====
-// Mettila PRIMA delle route /admin
+// --- Protezione /admin (Basic Auth semplificata) ---
 app.use("/admin", (req, res, next) => {
-  const required = process.env.ADMIN_PASSWORD?.trim();
-  if (!required) return next(); // se non impostata, niente protezione (utile in dev)
+  const required = (process.env.ADMIN_PASSWORD || "").trim();
+  if (!required) return next(); // se non impostata, niente password (dev)
 
-  const auth = req.headers.authorization;
-  if (!auth) {
-    res.set("WWW-Authenticate", 'Basic realm="Area Riservata"');
-    return res.status(401).send("Accesso riservato");
-  }
-  const [scheme, token] = auth.split(" ");
-  if (scheme !== "Basic" || !token) {
-    res.set("WWW-Authenticate", 'Basic realm="Area Riservata"');
-    return res.status(401).send("Accesso riservato");
-  }
-  const [user, pass] = Buffer.from(token, "base64").toString("utf8").split(":");
+  const auth = req.headers["authorization"] || "";
+  const token = auth.split(" ")[1] || "";
+  let pass = "";
+  try {
+    const decoded = Buffer.from(token, "base64").toString("utf8");
+    pass = decoded.split(":")[1] || "";
+  } catch (_) {}
+
   if (pass !== required) {
     res.set("WWW-Authenticate", 'Basic realm="Area Riservata"');
-    return res.status(401).send("Password errata");
+    return res.status(401).send("Accesso riservato");
   }
   next();
 });
 
-// ==== ROTTE ====
+// --- Rotte ---
 app.get("/", (_req, res) => res.redirect("/menu"));
 app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/admin", (_req, res) =>
@@ -66,7 +62,7 @@ app.get("/admin", (_req, res) =>
   })
 );
 
-// ==== API CHECKOUT ====
+// --- API checkout ---
 app.post("/api/checkout", async (req, res) => {
   const { tableCode, items, total } = req.body || {};
   if (!Array.isArray(items) || items.length === 0) {
@@ -76,8 +72,7 @@ app.post("/api/checkout", async (req, res) => {
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .insert([{ table_code: tableCode || null, total: Number(total) || 0 }])
-      .select()
-      .single();
+      .select().single();
     if (orderErr) throw orderErr;
 
     const rows = items.map(it => ({
@@ -96,6 +91,6 @@ app.post("/api/checkout", async (req, res) => {
   }
 });
 
-// ==== START ====
+// --- Start ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server avviato sulla porta ${PORT}`));
