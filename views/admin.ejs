@@ -1,318 +1,253 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Mangia & Fuggi • Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#f6efe9;--paper:#fff;--ink:#2b2b2b;--muted:#6e6e6e;--brand:#7b4b3a;--stroke:#ead8cf;--shadow:0 10px 30px rgba(0,0,0,.06);--ok:#1a8f5b}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:Poppins,system-ui}
-.top{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#fff,rgba(255,255,255,.85) 70%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid #eee}
-.topin{display:flex;gap:12px;align-items:center;max-width:1240px;margin:0 auto;padding:12px 16px}
-.brand{font-weight:700;color:var(--brand)} .sp{flex:1}
-.search{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.search input{border:1px solid var(--stroke);border-radius:12px;padding:9px 12px;min-width:220px;background:#fff}
-.btn{border:0;border-radius:10px;padding:9px 12px;font-weight:600;cursor:pointer}
-.btn.ghost{background:#eee;color:#333}
-.layout{display:grid;grid-template-columns:240px 1fr;gap:16px;max-width:1240px;margin:16px auto;padding:0 16px}
-@media (max-width:1024px){.layout{grid-template-columns:1fr}}
-/* sidebar */
-.side{background:var(--paper);border:1px solid var(--stroke);border-radius:14px;box-shadow:var(--shadow);height:fit-content;position:sticky;top:76px}
-.side h3{margin:0;padding:14px 16px;color:var(--brand);font-size:16px;border-bottom:1px solid #f0e2da}
-.nav{display:flex;flex-direction:column;padding:8px}
-.nav button{background:#fff;border:1px solid #f0e2da;margin:6px 8px;padding:10px 12px;border-radius:10px;text-align:left;cursor:pointer}
-.nav button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
-/* card */
-.card{background:var(--paper);border:1px solid var(--stroke);border-radius:16px;box-shadow:var(--shadow)}
-.card h2{margin:0;padding:14px 16px;color:var(--brand);font-size:18px;border-bottom:1px solid #f0e2da}
-.section{padding:12px 16px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-@media (max-width:800px){.grid-3{grid-template-columns:1fr}}
-.kpi{background:#fff;border:1px solid #f0e2da;border-radius:12px;padding:10px 12px}
-.kpi small{display:block;color:var(--muted)} .kpi b{display:block;font-size:20px;margin-top:4px}
-.row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:4px 0}
-.order{border:1px solid #f0e2da;border-radius:14px;padding:12px;margin:10px 8px;background:#fff}
-.id{font:12px ui-monospace;color:#777} .muted{color:var(--muted);font-size:13px}
-.badge{margin-left:auto;background:#f3e7e2;color:var(--brand);border-radius:999px;padding:6px 12px;font-weight:700}
-.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
-.tbl table{width:100%;border-collapse:collapse;font-size:13px}
-.tbl th,.tbl td{border-bottom:1px solid #f0e2da;padding:8px 6px;text-align:left}
-.tbl th{color:#7b4b3a} .right{text-align:right}
-/* filters */
-.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.filters input[type="date"]{border:1px solid var(--stroke);border-radius:10px;padding:8px 10px;background:#fff}
-.chip{border:1px solid var(--stroke);border-radius:999px;padding:8px 10px;background:#fff;cursor:pointer}
-.chip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
-/* tabs (single page) */
-.view{display:none} .view.active{display:block}
-.dot{width:10px;height:10px;border-radius:999px;background:#bbb;margin-left:6px}
-.dot.live{background:#21c997;box-shadow:0 0 0 6px rgba(33,201,151,.18)}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mangia & Fuggi — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#f6efe7; --panel:#ffffff; --ink:#3b2a23; --muted:#8c7b73; --brand:#7a4a3b; --brand-2:#f2d7c8; --ok:#1f8f4e; --warn:#b42318;
+      --ring:#e5c9ba;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Arial,sans-serif}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    header{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+    h1{font-weight:800;letter-spacing:.3px;margin:0}
+    .pill{background:var(--brand-2);color:var(--brand);border-radius:16px;padding:6px 12px;font-weight:700;display:inline-block}
+    .layout{display:grid;grid-template-columns:240px 1fr;gap:16px}
+    .side{background:var(--panel);border:1px solid var(--ring);border-radius:18px;padding:14px}
+    .nav .item{display:block;padding:12px 14px;border-radius:12px;margin-bottom:8px;border:1px solid #eee;text-decoration:none;color:inherit}
+    .nav .item.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+    .content{min-height:60vh}
+    .card{background:var(--panel);border:1px solid var(--ring);border-radius:18px;padding:16px;margin-bottom:16px}
+    .row{display:flex;justify-content:space-between;gap:10px}
+    .muted{color:var(--muted)}
+    .btn{border:1px solid var(--ring);background:#fff;padding:8px 12px;border-radius:10px;cursor:pointer}
+    .btn:hover{filter:brightness(.98)}
+    .btn.success{background:#e8f6ee;border-color:#cbe9d7;color:var(--ok)}
+    .btn.danger{background:#fdeaea;border-color:#f5d4d4;color:var(--warn)}
+    .btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}
+    .tabs{display:flex;gap:8px;margin-bottom:10px}
+    .tab{padding:8px 12px;border-radius:10px;border:1px solid var(--ring);background:#fff;cursor:pointer}
+    .tab.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+    .order-card{background:#fff;border:1px solid var(--ring);border-radius:16px;padding:14px;margin-bottom:12px}
+    .order-card .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
+    th{font-size:.9rem;color:#6b5c55}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media (max-width:900px){.layout{grid-template-columns:1fr}}
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <header>
+      <h1>Mangia & Fuggi — <span class="pill">Dashboard</span></h1>
+    </header>
 
-<!-- TOP -->
-<div class="top">
-  <div class="topin">
-    <div class="brand">Mangia &amp; Fuggi — Dashboard</div>
-    <span id="liveDot" class="dot" title="Realtime"></span>
-    <div class="sp"></div>
-    <div class="search">
-      <input id="search" type="search" placeholder="Cerca tavolo o piatto…"/>
-      <button id="refresh" class="btn ghost">Aggiorna</button>
+    <div class="layout">
+      <!-- SIDEBAR -->
+      <aside class="side">
+        <div class="nav">
+          <a href="#" class="item active" data-section="orders">📋 Ordini</a>
+          <a href="#" class="item" data-section="stats">📊 Statistiche</a>
+        </div>
+        <div class="card">
+          <label style="display:flex;gap:8px;align-items:center">
+            <input type="checkbox" id="chk-sound" />
+            <span>Suono nuovi ordini</span>
+          </label>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="content">
+        <!-- ===== SEZIONE ORDINI ===== -->
+        <section id="sec-orders" class="card">
+          <div class="tabs">
+            <button class="tab active" data-tab-status="pending">Pendenti</button>
+            <button class="tab" data-tab-status="completed">Completati</button>
+            <button class="tab" data-tab-status="canceled">Eliminati</button>
+            <div style="flex:1"></div>
+            <button class="btn brand" id="btn-refresh">Aggiorna</button>
+          </div>
+          <div id="orders-wrap"></div>
+        </section>
+
+        <!-- ===== SEZIONE STATISTICHE ===== -->
+        <section id="sec-stats" class="card" style="display:none">
+          <div class="grid2">
+            <div class="card">
+              <h3 style="margin-top:0">Giornaliero</h3>
+              <div class="row" style="gap:8px;align-items:center;margin:8px 0">
+                <label class="muted">Data</label>
+                <input type="date" id="dayDate" />
+                <button class="btn brand" id="btnDay">Aggiorna</button>
+              </div>
+              <div id="dayPane"></div>
+            </div>
+            <div class="card">
+              <h3 style="margin-top:0">Intervallo</h3>
+              <div class="row" style="gap:8px;align-items:center;margin:8px 0">
+                <label class="muted">Da</label>
+                <input type="date" id="fromDate" />
+                <label class="muted">A</label>
+                <input type="date" id="toDate" />
+                <button class="btn brand" id="btnRange">Aggiorna</button>
+              </div>
+              <div id="rangePane"></div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   </div>
-</div>
 
-<div class="layout">
-  <!-- SIDEBAR -->
-  <aside class="side">
-    <h3>Sezioni</h3>
-    <div class="nav">
-      <button id="tabOrders" class="active">📋 Ordini</button>
-      <button id="tabStats">📊 Statistiche</button>
-    </div>
-  </aside>
+  <script>
+    const EL = (s,root=document)=>root.querySelector(s);
+    const ELS = (s,root=document)=>Array.from(root.querySelectorAll(s));
 
-  <!-- MAIN CONTENT -->
-  <main>
-    <!-- VIEW: ORDERS -->
-    <section id="view-orders" class="view active card">
-      <h2>Ordini</h2>
-      <div class="section filters" style="border-bottom:1px solid #f0e2da">
-        <label><input type="checkbox" id="sound"> Suono nuovi ordini</label>
-      </div>
-      <div class="section" id="ordersRoot"></div>
-    </section>
+    // ===== NAV laterale (stessa pagina) =====
+    ELS('[data-section]').forEach(a=>{
+      a.addEventListener('click',e=>{
+        e.preventDefault();
+        ELS('[data-section]').forEach(x=>x.classList.remove('active'));
+        a.classList.add('active');
+        const sec=a.dataset.section;
+        EL('#sec-orders').style.display = sec==='orders'?'block':'none';
+        EL('#sec-stats').style.display  = sec==='stats' ?'block':'none';
+      });
+    });
 
-    <!-- VIEW: STATS -->
-    <section id="view-stats" class="view card">
-      <h2>Statistiche</h2>
-      <div class="section filters">
-        <label for="day"><b>Giorno:</b></label>
-        <input id="day" type="date">
-        <div class="chip" data-preset="today">Oggi</div>
-        <div class="chip" data-preset="yesterday">Ieri</div>
-        <div class="chip" data-preset="last7">Ultimi 7 giorni</div>
-      </div>
+    // ===== Impostazioni (salvate su DB) =====
+    async function loadSettings(){
+      try{
+        const r=await fetch('/api/settings'); const j=await r.json();
+        if(j.ok) EL('#chk-sound').checked=!!j.sound_enabled;
+      }catch{}
+    }
+    async function saveSettings(){
+      const enabled=EL('#chk-sound').checked;
+      await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sound_enabled:enabled})});
+    }
+    EL('#chk-sound').addEventListener('change', saveSettings);
 
-      <div class="section grid-3">
-        <div class="kpi"><small>Ordini</small><b id="k-count">0</b></div>
-        <div class="kpi"><small>Fatturato</small><b id="k-revenue">€ 0,00</b></div>
-        <div class="kpi"><small>Scontrino medio</small><b id="k-average">€ 0,00</b></div>
-      </div>
-
-      <div class="section">
-        <canvas id="chartHour" height="180"></canvas>
-      </div>
-
-      <div class="section tbl">
-        <h3 style="margin:0 0 6px 0;color:#7b4b3a">Top 10 prodotti</h3>
-        <div id="topTable"></div>
-      </div>
-    </section>
-  </main>
-</div>
-
-<script>
-const supabase = window.supabase.createClient("<%= SUPABASE_URL %>", "<%= SUPABASE_KEY %>");
-const euro = n => "€ " + Number(n||0).toFixed(2).replace(".", ",");
-const fmt  = d => new Date(d).toLocaleString();
-const todayISO = () => new Date().toISOString().slice(0,10);
-
-let currentOrders=[];   // per tab Ordini
-let statsOrders=[], statsItems=[]; // per tab Statistiche
-let chartHour;
-
-// ----- TAB SWITCH -----
-const tabOrders = document.getElementById("tabOrders");
-const tabStats  = document.getElementById("tabStats");
-const vOrders   = document.getElementById("view-orders");
-const vStats    = document.getElementById("view-stats");
-function show(tab){
-  [tabOrders,tabStats].forEach(b=>b.classList.remove("active"));
-  [vOrders,vStats].forEach(v=>v.classList.remove("active"));
-  if(tab==="orders"){ tabOrders.classList.add("active"); vOrders.classList.add("active"); }
-  else { tabStats.classList.add("active"); vStats.classList.add("active"); }
-}
-tabOrders.onclick=()=>show("orders");
-tabStats.onclick =()=>show("stats");
-
-// ----- ORDERS VIEW -----
-const ordersRoot = document.getElementById("ordersRoot");
-document.getElementById("search").addEventListener("input", ()=>renderOrders());
-document.getElementById("refresh").addEventListener("click", ()=>loadOrders());
-
-async function loadOrders(){
-  const { data, error } = await supabase
-    .from("orders")
-    .select("id, table_code, total, created_at, order_items(name, qty, price)")
-    .order("created_at",{ ascending:false });
-  if(!error){ currentOrders = data || []; renderOrders(); }
-}
-function renderOrders(){
-  const q = (document.getElementById("search").value||"").toLowerCase();
-  const list = currentOrders.filter(o=>{
-    if(!q) return true;
-    const text=(o.table_code||"-")+" "+(o.order_items||[]).map(i=>i.name).join(" ");
-    return text.toLowerCase().includes(q);
-  });
-  ordersRoot.innerHTML="";
-  if(!list.length){ ordersRoot.innerHTML='<div class="muted">Nessun ordine.</div>'; return; }
-  list.forEach(o=>{
-    const el=document.createElement("div"); el.className="order";
-    el.innerHTML=`
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <div>
-          <div class="id">ID: ${o.id}</div>
-          <div class="muted">Tavolo: <b>${o.table_code||"-"}</b></div>
-          <div class="muted">Data: ${fmt(o.created_at)}</div>
-        </div>
-        <div class="badge">Totale: ${euro(o.total)}</div>
-      </div>
-      <div style="margin-top:8px;border-top:1px dashed #ead8cf;padding-top:8px">
-        ${(o.order_items||[]).map(it=>`
+    // ===== ORDINI =====
+    let CURRENT_STATUS='pending';
+    async function loadOrders(){
+      const r=await fetch(`/api/orders?status=${CURRENT_STATUS}`);
+      const j=await r.json();
+      const wrap=EL('#orders-wrap'); wrap.innerHTML='';
+      if(!j.ok || !j.orders.length){ wrap.innerHTML='<div class="muted">Nessun ordine</div>'; return; }
+      for(const o of j.orders){
+        const items=(o.items||[]).map(it=>`
           <div class="row">
-            <div><b>${it.qty}×</b> ${it.name} <small>(${euro(it.price)})</small></div>
-            <div class="right"><b>${euro(it.qty*it.price)}</b></div>
+            <div>${it.qty}× ${it.name} <span class="muted">(€ ${Number(it.price).toFixed(2)})</span></div>
+            <div>€ ${(Number(it.qty)*Number(it.price)).toFixed(2)}</div>
           </div>
-        `).join("")}
-      </div>
-      <div class="actions"><button class="btn" onclick="window.print()">🖨️ Stampa</button></div>
-    `;
-    ordersRoot.appendChild(el);
-  });
-}
+        `).join('');
+        const when=new Date(o.created_at).toLocaleString();
+        const card=document.createElement('div');
+        card.className='order-card';
+        card.innerHTML=`
+          <div class="head">
+            <div>
+              <div class="muted">ID: ${o.id}</div>
+              <div class="muted">Tavolo: ${o.table_code||'-'}</div>
+              <div class="muted">Data: ${when}</div>
+            </div>
+            <div class="pill">Totale: € ${Number(o.total).toFixed(2)}</div>
+          </div>
+          <div class="items">${items}</div>
+          <div class="actions" style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>
+            ${CURRENT_STATUS==='pending' ? `
+              <button class="btn success" data-act="complete" data-id="${o.id}">✅ Completa</button>
+              <button class="btn danger"  data-act="cancel"   data-id="${o.id}">🗑️ Elimina</button>
+            ` : `
+              <button class="btn" data-act="restore" data-id="${o.id}">↩️ Ripristina</button>
+            `}
+          </div>
+        `;
+        wrap.appendChild(card);
+      }
+    }
+    // azioni
+    EL('#orders-wrap').addEventListener('click',async ev=>{
+      const b=ev.target.closest('button[data-act]'); if(!b) return;
+      const {act,id}=b.dataset;
+      if(act==='print'){ window.print(); await fetch(`/api/orders/${id}/printed`,{method:'POST'}); return; }
+      if(act==='complete'){ await fetch(`/api/orders/${id}/complete`,{method:'POST'}); }
+      if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await fetch(`/api/orders/${id}/cancel`,{method:'POST'}); }
+      if(act==='restore'){ await fetch(`/api/orders/${id}/restore`,{method:'POST'}); }
+      await loadOrders();
+    });
+    // tabs
+    ELS('[data-tab-status]').forEach(t=>{
+      t.addEventListener('click',()=>{
+        ELS('[data-tab-status]').forEach(x=>x.classList.remove('active'));
+        t.classList.add('active'); CURRENT_STATUS=t.dataset.tabStatus; loadOrders();
+      });
+    });
+    EL('#btn-refresh').addEventListener('click', loadOrders);
 
-// realtime solo per ORDINI (tab operativa)
-const liveDot = document.getElementById("liveDot");
-function setLive(v){ liveDot.classList.toggle("live", !!v); }
-setLive(false);
-supabase.channel("rt:orders")
-  .on("postgres_changes",{ event:"*", schema:"public", table:"orders" }, ()=>{
-    if(document.getElementById("sound").checked) beep();
-    loadOrders();
-  })
-  .subscribe(s => setLive(true));
-supabase.channel("rt:order_items")
-  .on("postgres_changes",{ event:"*", schema:"public", table:"order_items" }, ()=>loadOrders())
-  .subscribe();
+    // ===== STATISTICHE =====
+    function euro(v){return '€ '+Number(v||0).toFixed(2)}
+    function table(head,rows){
+      return `<table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+              <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    }
+    async function loadDay(){
+      const d=EL('#dayDate').value || new Date().toISOString().slice(0,10);
+      const r=await fetch(`/api/stats/day?date=${d}`); const j=await r.json();
+      if(!j.ok) return EL('#dayPane').innerHTML='Errore';
+      const per=j.perBucket.rows.map(b=>[ new Date(b.bucket).toLocaleTimeString().slice(0,5), b.orders, euro(b.revenue) ]);
+      const top=j.top.map(x=>[x.name, x.qty, euro(x.revenue), x.pct+'%']);
+      EL('#dayPane').innerHTML = `
+        <div class="card">
+          <div class="row"><div>Ordini</div><div><b>${j.count}</b></div></div>
+          <div class="row"><div>Incasso</div><div><b>${euro(j.total)}</b></div></div>
+        </div>
+        ${table(['Ora','Ordini','Incasso'], per)}
+        <h4>Top prodotti</h4>
+        ${table(['Prodotto','Qtà','Fatturato','Quota %'], top)}
+      `;
+    }
+    async function loadRange(){
+      const f=EL('#fromDate').value, t=EL('#toDate').value;
+      if(!f || !t) return alert('Scegli "Da" e "A"');
+      const r=await fetch(`/api/stats/range?from=${f}&to=${t}`); const j=await r.json();
+      if(!j.ok) return EL('#rangePane').innerHTML='Errore';
+      const per=j.perBucket.rows.map(b=>[ new Date(b.bucket).toLocaleDateString(), b.orders, euro(b.revenue) ]);
+      const top=j.top.map(x=>[x.name, x.qty, euro(x.revenue), x.pct+'%']);
+      EL('#rangePane').innerHTML = `
+        <div class="card">
+          <div class="row"><div>Ordini</div><div><b>${j.count}</b></div></div>
+          <div class="row"><div>Incasso</div><div><b>${euro(j.total)}</b></div></div>
+          <div class="row"><div>Scontrino medio</div><div><b>${euro(j.avg)}</b></div></div>
+        </div>
+        ${table(['Giorno','Ordini','Incasso'], per)}
+        <h4>Top prodotti</h4>
+        ${table(['Prodotto','Qtà','Fatturato','Quota %'], top)}
+      `;
+    }
+    EL('#btnDay').addEventListener('click', loadDay);
+    EL('#btnRange').addEventListener('click', loadRange);
 
-// ----- STATS VIEW -----
-const dayInput = document.getElementById("day");
-dayInput.value = todayISO();
-document.querySelectorAll(".chip").forEach(ch=>{
-  ch.addEventListener("click", ()=>{
-    document.querySelectorAll(".chip").forEach(x=>x.classList.remove("active"));
-    ch.classList.add("active");
-    const p=ch.dataset.preset;
-    if(p==="today"){ dayInput.value=todayISO(); loadStats(); }
-    else if(p==="yesterday"){ const d=new Date(); d.setDate(d.getDate()-1); dayInput.value=d.toISOString().slice(0,10); loadStats(); }
-    else if(p==="last7"){ loadStats({last7:true}); }
-  });
-});
-dayInput.addEventListener("change", ()=>{ document.querySelectorAll(".chip").forEach(x=>x.classList.remove("active")); loadStats(); });
+    // ===== START =====
+    (async ()=>{
+      EL('#dayDate').value = new Date().toISOString().slice(0,10);
+      const d=new Date(); d.setDate(d.getDate()-6);
+      EL('#fromDate').value = d.toISOString().slice(0,10);
+      EL('#toDate').value   = new Date().toISOString().slice(0,10);
 
-async function loadStats(opts={}){
-  // range client-side
-  let start,end;
-  if(opts.last7){
-    end=new Date(); end.setHours(23,59,59,999);
-    start=new Date(end); start.setDate(start.getDate()-6); start.setHours(0,0,0,0);
-  }else{
-    start=new Date(dayInput.value+"T00:00:00"); end=new Date(dayInput.value+"T23:59:59.999");
-  }
-
-  // query ordini nel range
-  const { data: orders, error } = await supabase
-    .from("orders")
-    .select("id, table_code, total, created_at, order_items(name, qty, price)")
-    .gte("created_at", start.toISOString())
-    .lte("created_at", end.toISOString())
-    .order("created_at",{ ascending:true });
-  if(error){ console.error(error); return; }
-
-  statsOrders = orders||[];
-  statsItems  = [];
-  for(const o of statsOrders){ for(const it of (o.order_items||[])){ statsItems.push({...it, created_at:o.created_at}); } }
-
-  renderStatsKPI();
-  renderStatsHour();
-  renderStatsTop();
-}
-
-function renderStatsKPI(){
-  const count = statsOrders.length;
-  const revenue = statsOrders.reduce((s,o)=>s+Number(o.total||0),0);
-  const avg = count ? (revenue/count) : 0;
-  document.getElementById("k-count").textContent = count;
-  document.getElementById("k-revenue").textContent = euro(revenue);
-  document.getElementById("k-average").textContent = euro(avg);
-}
-
-function renderStatsHour(){
-  const m=new Map();
-  for(const o of statsOrders){
-    const t=new Date(o.created_at); t.setMinutes(0,0,0);
-    const key=t.toISOString();
-    const cur=m.get(key)||{hour:key,orders:0,revenue:0};
-    cur.orders++; cur.revenue+=Number(o.total||0);
-    m.set(key,cur);
-  }
-  const arr=Array.from(m.values()).sort((a,b)=>a.hour.localeCompare(b.hour));
-  const labels=arr.map(x=>new Date(x.hour).toLocaleTimeString([], {hour:"2-digit"}));
-  const data=arr.map(x=>x.revenue);
-
-  if(chartHour) chartHour.destroy();
-  chartHour = new Chart(document.getElementById("chartHour"), {
-    type:"bar",
-    data:{ labels, datasets:[{ label:"Incasso (€/ora)", data }] },
-    options:{ plugins:{legend:{display:false}}, scales:{ y:{ ticks:{ callback:v=>"€ "+v }}}}
-  });
-}
-
-function renderStatsTop(){
-  const m=new Map(); let totQty=0, totRev=0;
-  for(const it of statsItems){
-    const cur=m.get(it.name)||{name:it.name,qty:0,revenue:0};
-    cur.qty+=Number(it.qty||0);
-    cur.revenue+=Number(it.qty||0)*Number(it.price||0);
-    m.set(it.name,cur);
-    totQty+=Number(it.qty||0);
-    totRev+=Number(it.qty||0)*Number(it.price||0);
-  }
-  const top=Array.from(m.values()).sort((a,b)=>b.qty-a.qty).slice(0,10);
-  const rows=top.map(p=>{
-    const pQty=totQty?((p.qty/totQty)*100):0;
-    const pRev=totRev?((p.revenue/totRev)*100):0;
-    return `<tr>
-      <td>${p.name}</td>
-      <td class="right">${p.qty}</td>
-      <td class="right">${euro(p.revenue)}</td>
-      <td class="right">${pQty.toFixed(1)}%</td>
-      <td class="right">${pRev.toFixed(1)}%</td>
-    </tr>`;
-  }).join("") || `<tr><td colspan="5" class="right">Nessun dato</td></tr>`;
-
-  document.getElementById("topTable").innerHTML =
-    `<table>
-      <thead><tr><th>Prodotto</th><th class="right">Qtà</th><th class="right">Fatturato</th><th class="right">% Qtà</th><th class="right">% Fatt.</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-}
-
-// beep
-function beep(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(), o=c.createOscillator(), g=c.createGain(); o.frequency.value=900;o.type="triangle";o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(.001,c.currentTime);g.gain.exponentialRampToValueAtTime(.2,c.currentTime+.01);o.start();o.stop(c.currentTime+.14);}catch(e){} }
-
-// boot
-(async function(){
-  show("orders");   // di default apre ORDINI
-  await loadOrders();
-  await loadStats(); // così la tab Statistiche è pronta quando la apri
-})();
-</script>
+      await loadSettings();
+      await loadOrders();
+      await loadDay();
+    })();
+  </script>
 </body>
 </html>
