@@ -26,7 +26,7 @@
     .search input{flex:1;border:1px solid #e6d6cd;border-radius:10px;padding:10px 12px;font:inherit}
     .btn{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer}
     .btn.out{background:#eee;color:#333}
-    .main{max-width:1200px; margin:18px auto; padding:0 18px; display:grid; grid-template-columns: 1fr 340px; gap:18px}
+    .main{max-width:1200px; margin:18px auto; padding:0 18px; display:grid; grid-template-columns: 1fr 360px; gap:18px}
     @media (max-width:1024px){ .main{grid-template-columns:1fr} }
     .panel{background:var(--paper); border:1px solid var(--stroke); border-radius:16px; box-shadow:var(--shadow)}
     .panel h2{margin:0; padding:16px 18px; font-size:18px; color:var(--brand)}
@@ -51,6 +51,11 @@
     .filters{padding:14px 18px;display:flex;gap:10px;flex-wrap:wrap}
     .toggle{display:flex;gap:8px;align-items:center}
     .toggle input{width:20px;height:20px}
+    .tbl{padding:10px 14px}
+    .tbl table{width:100%;border-collapse:collapse;font-size:13px}
+    .tbl th,.tbl td{border-bottom:1px solid #f0e2da; padding:8px 6px; text-align:left}
+    .tbl th{color:#7b4b3a}
+    .right{text-align:right}
   </style>
 </head>
 <body>
@@ -86,6 +91,16 @@
           <label for="sound">Suono su nuovi ordini</label>
         </div>
       </div>
+
+      <div class="tbl">
+        <h2 style="padding:0 0 8px 0">Vendite per ora (oggi)</h2>
+        <div id="stats-hours"></div>
+      </div>
+
+      <div class="tbl">
+        <h2 style="padding:0 0 8px 0">Top 10 prodotti (oggi)</h2>
+        <div id="stats-top"></div>
+      </div>
     </aside>
   </div>
 
@@ -97,24 +112,23 @@
     const euro = n => "€ " + Number(n||0).toFixed(2).replace(".", ",");
     const fmt = d => new Date(d).toLocaleString();
 
-    // “Completati” salvati localmente (non tocca il DB)
+    // “Completati” locali
     const DONE_KEY = "mf_done_orders";
     const done = new Set(JSON.parse(localStorage.getItem(DONE_KEY) || "[]"));
     const setDone = (id, v) => {
       v ? done.add(id) : done.delete(id);
       localStorage.setItem(DONE_KEY, JSON.stringify([...done]));
-      render(current); // aggiorna vista
+      render(current);
     };
 
     // Stato in memoria
     let current = [];
 
-    // === RENDER ===
+    // === RENDER ORDINI ===
     function render(list){
       const q = (document.getElementById("q").value || "").toLowerCase();
       const hideDone = document.getElementById("hideDone").checked;
 
-      // filtro semplice
       const filtered = list.filter(o => {
         if (hideDone && done.has(o.id)) return false;
         if (!q) return true;
@@ -122,14 +136,13 @@
         return text.toLowerCase().includes(q);
       });
 
-      // statistiche
+      // statistiche headline
       const today = new Date().toISOString().slice(0,10);
       const todayOrders = filtered.filter(o => o.created_at.slice(0,10) === today);
       const sum = todayOrders.reduce((s,o)=>s+Number(o.total||0),0);
       document.getElementById("stat-count").textContent = todayOrders.length;
       document.getElementById("stat-sum").textContent = euro(sum);
 
-      // lista
       const root = document.getElementById("orders");
       root.innerHTML = "";
       if (filtered.length === 0){
@@ -178,7 +191,7 @@
         .order("created_at", { ascending: false });
 
       if (!error) {
-        // suono se arrivano ordini nuovi rispetto a current
+        // suono se arrivano ordini nuovi
         if (!initial && document.getElementById('sound').checked) {
           const oldIds = new Set(current.map(o=>o.id));
           const newOnes = (data||[]).some(o => !oldIds.has(o.id));
@@ -186,25 +199,46 @@
         }
         current = data || [];
         render(current);
-      } else {
-        console.error(error);
+        loadStats(); // aggiorna pannello statistiche
       }
     }
 
-    // Ping realtime
+    // Pannello statistiche
+    async function loadStats(){
+      const r = await fetch("/api/stats/today");
+      const js = await r.json();
+
+      // per ora
+      const h = js.perHour.map(x=>{
+        const hh = new Date(x.hour);
+        const label = hh.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+        return `<tr><td>${label}</td><td class="right">${x.orders}</td><td class="right">${euro(x.revenue)}</td></tr>`;
+      }).join("") || `<tr><td colspan="3" class="right">Nessun dato</td></tr>`;
+      document.getElementById("stats-hours").innerHTML =
+        `<table><thead><tr><th>Ora</th><th class="right">Ordini</th><th class="right">Incasso</th></tr></thead><tbody>${h}</tbody></table>`;
+
+      // top prodotti
+      const t = js.topItems.map(x =>
+        `<tr><td>${x.name}</td><td class="right">${x.qty}</td><td class="right">${euro(x.revenue)}</td></tr>`
+      ).join("") || `<tr><td colspan="3" class="right">Nessun dato</td></tr>`;
+      document.getElementById("stats-top").innerHTML =
+        `<table><thead><tr><th>Prodotto</th><th class="right">Qtà</th><th class="right">Fatturato</th></tr></thead><tbody>${t}</tbody></table>`;
+    }
+
+    // Realtime indicator
     const dot = document.getElementById("liveDot");
     function setLive(v){ dot.classList.toggle("live", !!v); }
     setLive(false);
 
-    const chOrders = supabase.channel("rt:orders")
+    supabase.channel("rt:orders")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => load())
       .subscribe(s => setLive(true));
 
-    const chItems = supabase.channel("rt:order_items")
+    supabase.channel("rt:order_items")
       .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, () => load())
       .subscribe();
 
-    // Suono leggero (WebAudio beep)
+    // beep
     function beep(){
       try{
         const ctx = new (window.AudioContext||window.webkitAudioContext)();
@@ -218,12 +252,12 @@
       }catch(e){}
     }
 
-    // UI handlers
-    document.getElementById("refresh").addEventListener("click", ()=>load());
+    // UI
+    document.getElementById("refresh").addEventListener("click", ()=>{ load(); });
     document.getElementById("q").addEventListener("input", ()=>render(current));
     document.getElementById("hideDone").addEventListener("change", ()=>render(current));
 
-    // Primo caricamento
+    // Start
     load(true);
   </script>
 </body>
