@@ -3,262 +3,376 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gestione Ordini • Mangia & Fuggi</title>
+  <title>Mangia & Fuggi • Dashboard Ordini</title>
+
+  <!-- Supabase + Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
     :root{
       --bg:#f6efe9; --paper:#ffffff; --ink:#2b2b2b; --muted:#6e6e6e;
-      --brand:#7b4b3a; --brand-2:#a8644f; --stroke:#ead8cf; --shadow:0 10px 30px rgba(0,0,0,.06);
-      --ok:#1a8f5b; --warn:#a8644f;
+      --brand:#7b4b3a; --brand-2:#a8644f; --stroke:#ead8cf; --shadow:0 12px 30px rgba(0,0,0,.06);
+      --ok:#1f9d6b; --warn:#d97706; --chip:#f3e7e2;
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto;color:var(--ink)}
-    .topbar{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#fff,rgba(255,255,255,.8) 70%,transparent);
-      backdrop-filter: blur(6px); border-bottom:1px solid #eee}
-    .topbar-inner{max-width:1200px; margin:0 auto; display:flex; align-items:center; gap:14px; padding:14px 18px}
-    .brand{font-weight:700; font-size:22px; color:var(--brand)}
-    .dot{width:10px;height:10px;border-radius:999px;background:#aaa}
-    .dot.live{background:#20c997; box-shadow:0 0 0 6px rgba(32,201,151,.15)}
-    .spacer{flex:1}
-    .search{min-width:240px; flex:0 1 340px; display:flex; gap:8px}
-    .search input{flex:1;border:1px solid #e6d6cd;border-radius:10px;padding:10px 12px;font:inherit}
-    .btn{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer}
-    .btn.out{background:#eee;color:#333}
-    .main{max-width:1200px; margin:18px auto; padding:0 18px; display:grid; grid-template-columns: 1fr 360px; gap:18px}
-    @media (max-width:1024px){ .main{grid-template-columns:1fr} }
-    .panel{background:var(--paper); border:1px solid var(--stroke); border-radius:16px; box-shadow:var(--shadow)}
-    .panel h2{margin:0; padding:16px 18px; font-size:18px; color:var(--brand)}
-    .list{padding:4px 8px 12px}
-    .order{background:#fff;border:1px solid #f0e2da;border-radius:14px;padding:14px;margin:10px 8px;box-shadow:0 5px 18px rgba(0,0,0,.05)}
-    .head{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .id{font-family:ui-monospace,Consolas;font-size:12px;color:#777}
+    html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto}
+    a{color:inherit}
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#fff,rgba(255,255,255,.85) 70%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid #eee}
+    .topin{max-width:1240px;margin:0 auto;display:flex;gap:12px;align-items:center;padding:14px 18px}
+    .brand{font-weight:700;color:var(--brand);font-size:20px;white-space:nowrap}
+    .sp{flex:1}
+    .search{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .search input[type="search"]{min-width:220px;border:1px solid var(--stroke);border-radius:12px;padding:10px 12px;background:#fff}
+    .btn{border:0;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer}
+    .btn.primary{background:var(--brand);color:#fff}
+    .btn.ghost{background:#eee;color:#333}
+    .pill{background:var(--chip);color:var(--brand);font-weight:700;border-radius:999px;padding:6px 10px}
+    .dot{width:10px;height:10px;border-radius:999px;background:#bbb}
+    .dot.live{background:#21c997;box-shadow:0 0 0 6px rgba(33,201,151,.18)}
+
+    /* Layout */
+    .wrap{max-width:1240px;margin:18px auto;padding:0 18px;display:grid;grid-template-columns:1fr 380px;gap:18px}
+    @media (max-width:1060px){ .wrap{grid-template-columns:1fr} }
+
+    /* Cards */
+    .card{background:var(--paper);border:1px solid var(--stroke);border-radius:18px;box-shadow:var(--shadow)}
+    .card h2{margin:0;padding:16px 18px;color:var(--brand);font-size:18px}
+    .section{padding:12px 16px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    @media (max-width:700px){ .grid-3{grid-template-columns:1fr} }
+
+    .kpi{background:#fff;border:1px solid #f0e2da;border-radius:14px;padding:12px 14px}
+    .kpi small{display:block;color:var(--muted)}
+    .kpi b{display:block;font-size:22px;margin-top:4px}
+
+    /* Orders list */
+    .order{background:#fff;border:1px solid #f0e2da;border-radius:16px;padding:12px 14px;margin:12px 8px}
+    .o-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .id{font:12px ui-monospace,Consolas;color:#777}
     .muted{color:var(--muted);font-size:13px}
-    .badge{margin-left:auto;background:#f3e7e2;color:var(--brand);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700}
-    .rows{margin-top:10px;border-top:1px dashed var(--stroke);padding-top:10px}
-    .row{display:grid; grid-template-columns:1fr auto; gap:10px; padding:4px 0}
-    .row small{color:var(--muted)}
-    .actions{display:flex; gap:8px; margin-top:10px; justify-content:flex-end}
-    .btn.print{background:var(--brand)}
-    .btn.done{background:var(--ok)}
-    .btn.undo{background:#999}
-    .empty{padding:24px; text-align:center; color:#888}
-    /* side */
-    .side{position:sticky; top:84px; height:fit-content}
-    .stat{padding:14px 18px;border-bottom:1px solid #f1e5dd;display:flex;justify-content:space-between;align-items:center}
-    .num{font-weight:700}
-    .filters{padding:14px 18px;display:flex;gap:10px;flex-wrap:wrap}
-    .toggle{display:flex;gap:8px;align-items:center}
-    .toggle input{width:20px;height:20px}
-    .tbl{padding:10px 14px}
-    .tbl table{width:100%;border-collapse:collapse;font-size:13px}
-    .tbl th,.tbl td{border-bottom:1px solid #f0e2da; padding:8px 6px; text-align:left}
-    .tbl th{color:#7b4b3a}
+    .badge{margin-left:auto;background:var(--chip);color:var(--brand);border-radius:999px;padding:6px 12px;font-weight:700}
+    .rows{margin-top:8px;border-top:1px dashed var(--stroke);padding-top:8px}
+    .row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:4px 0}
     .right{text-align:right}
+    .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+
+    /* Tables */
+    .tbl table{width:100%;border-collapse:collapse;font-size:13px}
+    .tbl th,.tbl td{border-bottom:1px solid #f0e2da;padding:8px 6px;text-align:left}
+    .tbl th{color:#7b4b3a}
+
+    /* Filters bar (date + presets) */
+    .filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .filters input[type="date"]{border:1px solid var(--stroke);border-radius:12px;padding:8px 10px;background:#fff}
+    .chip{border:1px solid var(--stroke);border-radius:999px;padding:8px 10px;background:#fff;cursor:pointer}
+    .chip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
   </style>
 </head>
 <body>
+
+  <!-- TOPBAR -->
   <div class="topbar">
-    <div class="topbar-inner">
-      <div class="brand">Mangia &amp; Fuggi — Gestione ordini</div>
-      <div id="liveDot" class="dot" title="Stato realtime"></div>
-      <div class="spacer"></div>
+    <div class="topin">
+      <div class="brand">Mangia &amp; Fuggi — Dashboard ordini</div>
+      <span id="liveDot" class="dot" title="Realtime"></span>
+      <div class="sp"></div>
+
       <div class="search">
-        <input id="q" type="search" placeholder="Cerca per tavolo o piatto…" />
-        <button class="btn out" id="refresh">Aggiorna</button>
+        <input id="search" type="search" placeholder="Cerca tavolo o piatto…" />
+        <button id="btnRefresh" class="btn ghost">Aggiorna</button>
       </div>
     </div>
   </div>
 
-  <div class="main">
-    <section class="panel">
+  <!-- CONTENT -->
+  <div class="wrap">
+
+    <!-- COLONNA SINISTRA: ORDINI -->
+    <section class="card">
       <h2>Ordini</h2>
-      <div id="orders" class="list"></div>
+
+      <div class="section filters" style="border-bottom:1px solid #f0e2da;">
+        <label for="day"><b>Giorno:</b></label>
+        <input id="day" type="date">
+        <div class="chip" data-preset="today">Oggi</div>
+        <div class="chip" data-preset="yesterday">Ieri</div>
+        <div class="chip" data-preset="last7">Ultimi 7 giorni</div>
+        <div class="sp"></div>
+        <label><input type="checkbox" id="sound"> Suono nuovi ordini</label>
+      </div>
+
+      <div class="section grid-3" id="kpis">
+        <div class="kpi"><small>Ordini</small><b id="k-count">0</b></div>
+        <div class="kpi"><small>Fatturato</small><b id="k-revenue">€ 0,00</b></div>
+        <div class="kpi"><small>Scontrino medio</small><b id="k-average">€ 0,00</b></div>
+      </div>
+
+      <div id="ordersRoot" class="section"></div>
     </section>
 
-    <aside class="panel side">
-      <h2>Panoramica</h2>
-      <div class="stat"><span>Ordini totali oggi</span><span class="num" id="stat-count">0</span></div>
-      <div class="stat"><span>Incasso stimato</span><span class="num" id="stat-sum">€ 0,00</span></div>
-      <div class="filters">
-        <div class="toggle">
-          <input type="checkbox" id="hideDone" checked />
-          <label for="hideDone">Nascondi “Completati”</label>
-        </div>
-        <div class="toggle">
-          <input type="checkbox" id="sound" />
-          <label for="sound">Suono su nuovi ordini</label>
-        </div>
+    <!-- COLONNA DESTRA: STATISTICHE -->
+    <aside class="card">
+      <h2>Statistiche</h2>
+
+      <div class="section">
+        <canvas id="chartHour" height="180"></canvas>
       </div>
 
-      <div class="tbl">
-        <h2 style="padding:0 0 8px 0">Vendite per ora (oggi)</h2>
-        <div id="stats-hours"></div>
-      </div>
-
-      <div class="tbl">
-        <h2 style="padding:0 0 8px 0">Top 10 prodotti (oggi)</h2>
-        <div id="stats-top"></div>
+      <div class="section tbl">
+        <h3 style="margin:0 0 6px 0; color:#7b4b3a">Top 10 prodotti</h3>
+        <div id="topTable"></div>
       </div>
     </aside>
+
   </div>
 
   <script>
-    // === SUPABASE ===
+    // ========= SETUP =========
     const supabase = window.supabase.createClient("<%= SUPABASE_URL %>", "<%= SUPABASE_KEY %>");
-
-    // === UTIL ===
     const euro = n => "€ " + Number(n||0).toFixed(2).replace(".", ",");
-    const fmt = d => new Date(d).toLocaleString();
+    const fmt  = d => new Date(d).toLocaleString();
+    const todayISO = () => new Date().toISOString().slice(0,10);
 
-    // “Completati” locali
-    const DONE_KEY = "mf_done_orders";
-    const done = new Set(JSON.parse(localStorage.getItem(DONE_KEY) || "[]"));
-    const setDone = (id, v) => {
-      v ? done.add(id) : done.delete(id);
-      localStorage.setItem(DONE_KEY, JSON.stringify([...done]));
-      render(current);
-    };
+    let CURRENT = { orders: [], items: [], start: null, end: null, preset: "today" };
+    let chartHour;
 
-    // Stato in memoria
-    let current = [];
+    // ========= UI WIRING =========
+    const $ = sel => document.querySelector(sel);
+    const ordersRoot = $("#ordersRoot");
 
-    // === RENDER ORDINI ===
-    function render(list){
-      const q = (document.getElementById("q").value || "").toLowerCase();
-      const hideDone = document.getElementById("hideDone").checked;
+    $("#btnRefresh").addEventListener("click", () => loadRange());
+    $("#search").addEventListener("input", () => renderOrders());
 
-      const filtered = list.filter(o => {
-        if (hideDone && done.has(o.id)) return false;
-        if (!q) return true;
-        const text = (o.table_code || "-") + " " + (o.order_items||[]).map(i=>i.name).join(" ");
-        return text.toLowerCase().includes(q);
+    // Preset chips
+    document.querySelectorAll(".chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+        chip.classList.add("active");
+        CURRENT.preset = chip.dataset.preset;
+        if (CURRENT.preset === "today") {
+          $("#day").value = todayISO();
+          loadRange();
+        } else if (CURRENT.preset === "yesterday") {
+          const d = new Date(); d.setDate(d.getDate()-1);
+          $("#day").value = d.toISOString().slice(0,10);
+          loadRange();
+        } else if (CURRENT.preset === "last7") {
+          // last7: ignora day e prende range 7 giorni (fino ad oggi)
+          $("#day").value = todayISO();
+          loadRange({ last7: true });
+        }
       });
+    });
 
-      // statistiche headline
-      const today = new Date().toISOString().slice(0,10);
-      const todayOrders = filtered.filter(o => o.created_at.slice(0,10) === today);
-      const sum = todayOrders.reduce((s,o)=>s+Number(o.total||0),0);
-      document.getElementById("stat-count").textContent = todayOrders.length;
-      document.getElementById("stat-sum").textContent = euro(sum);
+    // Day picker
+    $("#day").addEventListener("change", () => {
+      CURRENT.preset = "custom";
+      document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+      loadRange();
+    });
 
-      const root = document.getElementById("orders");
-      root.innerHTML = "";
-      if (filtered.length === 0){
-        root.innerHTML = '<div class="empty">Nessun ordine da mostrare.</div>';
+    // ========= LOAD DATA =========
+    async function loadRange(opts={}){
+      const selectedDay = $("#day").value || todayISO();
+      let start, end;
+
+      if (opts.last7) {
+        end = new Date(); end.setHours(23,59,59,999);
+        start = new Date(end); start.setDate(start.getDate()-6); start.setHours(0,0,0,0);
+      } else {
+        start = new Date(selectedDay+"T00:00:00");
+        end   = new Date(selectedDay+"T23:59:59.999");
+      }
+
+      CURRENT.start = start; CURRENT.end = end;
+
+      // 1) carico ordini nel range
+      let q = supabase
+        .from("orders")
+        .select("id, table_code, total, created_at, order_items(name, qty, price)")
+        .gte("created_at", start.toISOString())
+        .lte("created_at", end.toISOString())
+        .order("created_at",{ ascending:false });
+
+      const { data: orders, error } = await q;
+      if (error) { console.error(error); return; }
+
+      // prepara items aggregati
+      const items = [];
+      for (const o of (orders||[])) {
+        for (const it of (o.order_items||[])) items.push({ ...it, order_id: o.id, created_at: o.created_at });
+      }
+      CURRENT.orders = orders || [];
+      CURRENT.items  = items;
+
+      renderKPI();
+      renderOrders();
+      renderCharts();
+
+      // realtime solo se range = oggi (preset today + day = oggi e non last7)
+      attachRealtime(CURRENT.preset === "today" && $("#day").value === todayISO() && !opts.last7);
+    }
+
+    // ========= RENDER =========
+    function renderKPI(){
+      const orders = CURRENT.orders;
+      const count = orders.length;
+      const revenue = orders.reduce((s,o)=>s+Number(o.total||0),0);
+      const avg = count ? (revenue/count) : 0;
+
+      $("#k-count").textContent   = count;
+      $("#k-revenue").textContent = euro(revenue);
+      $("#k-average").textContent = euro(avg);
+    }
+
+    function renderOrders(){
+      const q = ($("#search").value || "").toLowerCase();
+
+      let list = CURRENT.orders;
+      if (q) {
+        list = list.filter(o => {
+          const text = (o.table_code||"-")+" "+(o.order_items||[]).map(i=>i.name).join(" ");
+          return text.toLowerCase().includes(q);
+        });
+      }
+
+      ordersRoot.innerHTML = "";
+      if (!list.length){
+        ordersRoot.innerHTML = '<div class="muted">Nessun ordine per questo filtro.</div>';
         return;
       }
 
-      filtered.forEach(o => {
+      list.forEach(o => {
         const el = document.createElement("div");
         el.className = "order";
-
-        const items = (o.order_items||[]).map(it => `
-          <div class="row">
-            <div><strong>${it.qty}×</strong> ${it.name} <small>(${euro(it.price)})</small></div>
-            <div><strong>${euro(it.qty*it.price)}</strong></div>
-          </div>
-        `).join("");
-
         el.innerHTML = `
-          <div class="head">
+          <div class="o-head">
             <div>
               <div class="id">ID: ${o.id}</div>
-              <div class="muted">Tavolo: <strong>${o.table_code || "-"}</strong></div>
+              <div class="muted">Tavolo: <b>${o.table_code || "-"}</b></div>
               <div class="muted">Data: ${fmt(o.created_at)}</div>
             </div>
             <div class="badge">Totale: ${euro(o.total)}</div>
           </div>
-          <div class="rows">${items}</div>
+          <div class="rows">
+            ${(o.order_items||[]).map(it => `
+              <div class="row">
+                <div><b>${it.qty}×</b> ${it.name} <small>(${euro(it.price)})</small></div>
+                <div class="right"><b>${euro(it.qty*it.price)}</b></div>
+              </div>
+            `).join("")}
+          </div>
           <div class="actions">
-            <button class="btn print" onclick="window.print()">🖨️ Stampa</button>
-            ${done.has(o.id)
-              ? `<button class="btn undo" onclick="setDone('${o.id}', false)">Ripristina</button>`
-              : `<button class="btn done" onclick="setDone('${o.id}', true)">Completato ✓</button>`
-            }
+            <button class="btn primary" onclick="window.print()">🖨️ Stampa</button>
           </div>
         `;
-        root.appendChild(el);
+        ordersRoot.appendChild(el);
       });
     }
 
-    // === LOAD + REALTIME ===
-    async function load(initial=false){
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, table_code, total, created_at, order_items(name, qty, price)")
-        .order("created_at", { ascending: false });
-
-      if (!error) {
-        // suono se arrivano ordini nuovi
-        if (!initial && document.getElementById('sound').checked) {
-          const oldIds = new Set(current.map(o=>o.id));
-          const newOnes = (data||[]).some(o => !oldIds.has(o.id));
-          if (newOnes) beep();
-        }
-        current = data || [];
-        render(current);
-        loadStats(); // aggiorna pannello statistiche
+    function renderCharts(){
+      // ---- vendite per ora ----
+      const perHourMap = new Map();
+      for (const o of CURRENT.orders){
+        const t = new Date(o.created_at);
+        t.setMinutes(0,0,0);
+        const key = t.toISOString();
+        const cur = perHourMap.get(key) || { hour: key, orders:0, revenue:0 };
+        cur.orders += 1;
+        cur.revenue += Number(o.total||0);
+        perHourMap.set(key, cur);
       }
+      const perHour = Array.from(perHourMap.values()).sort((a,b)=>a.hour.localeCompare(b.hour));
+      const labelsH = perHour.map(x => new Date(x.hour).toLocaleTimeString([], {hour:"2-digit"}));
+      const dataH = perHour.map(x => x.revenue);
+
+      if (chartHour) chartHour.destroy();
+      const ctx = document.getElementById("chartHour");
+      chartHour = new Chart(ctx, {
+        type: "bar",
+        data: { labels: labelsH, datasets: [{ label: "Incasso (€/ora)", data: dataH }] },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { ticks: { callback: v => "€ " + v } } }
+        }
+      });
+
+      // ---- top 10 prodotti (tabella con % e fatturato) ----
+      const prodMap = new Map();
+      let totQty = 0, totRev = 0;
+      for (const it of CURRENT.items){
+        const cur = prodMap.get(it.name) || { name: it.name, qty:0, revenue:0 };
+        cur.qty += Number(it.qty||0);
+        cur.revenue += Number(it.qty||0)*Number(it.price||0);
+        prodMap.set(it.name, cur);
+        totQty += Number(it.qty||0);
+        totRev += Number(it.qty||0)*Number(it.price||0);
+      }
+      const top = Array.from(prodMap.values()).sort((a,b)=>b.qty-a.qty).slice(0,10);
+      const rows = top.map(p => {
+        const pQty = totQty ? ((p.qty/totQty)*100) : 0;
+        const pRev = totRev ? ((p.revenue/totRev)*100) : 0;
+        return `<tr>
+          <td>${p.name}</td>
+          <td class="right">${p.qty}</td>
+          <td class="right">${euro(p.revenue)}</td>
+          <td class="right">${pQty.toFixed(1)}%</td>
+          <td class="right">${pRev.toFixed(1)}%</td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="5" class="right">Nessun dato</td></tr>`;
+
+      $("#topTable").innerHTML = `
+        <table>
+          <thead>
+            <tr><th>Prodotto</th><th class="right">Qtà</th><th class="right">Fatturato</th><th class="right">% Qtà</th><th class="right">% Fatt.</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
     }
 
-    // Pannello statistiche
-    async function loadStats(){
-      const r = await fetch("/api/stats/today");
-      const js = await r.json();
-
-      // per ora
-      const h = js.perHour.map(x=>{
-        const hh = new Date(x.hour);
-        const label = hh.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
-        return `<tr><td>${label}</td><td class="right">${x.orders}</td><td class="right">${euro(x.revenue)}</td></tr>`;
-      }).join("") || `<tr><td colspan="3" class="right">Nessun dato</td></tr>`;
-      document.getElementById("stats-hours").innerHTML =
-        `<table><thead><tr><th>Ora</th><th class="right">Ordini</th><th class="right">Incasso</th></tr></thead><tbody>${h}</tbody></table>`;
-
-      // top prodotti
-      const t = js.topItems.map(x =>
-        `<tr><td>${x.name}</td><td class="right">${x.qty}</td><td class="right">${euro(x.revenue)}</td></tr>`
-      ).join("") || `<tr><td colspan="3" class="right">Nessun dato</td></tr>`;
-      document.getElementById("stats-top").innerHTML =
-        `<table><thead><tr><th>Prodotto</th><th class="right">Qtà</th><th class="right">Fatturato</th></tr></thead><tbody>${t}</tbody></table>`;
+    // ========= REALTIME =========
+    const liveDot = $("#liveDot");
+    function setLive(v){ liveDot.classList.toggle("live", !!v); }
+    function attachRealtime(enable){
+      if (!enable){ setLive(false); return; }
+      setLive(true);
+      supabase.channel("rt:orders")
+        .on("postgres_changes",{ event:"*", schema:"public", table:"orders" }, () => {
+          if ($("#sound").checked) beep();
+          loadRange(); // ricarico il range attuale
+        })
+        .subscribe();
+      supabase.channel("rt:order_items")
+        .on("postgres_changes",{ event:"*", schema:"public", table:"order_items" }, () => loadRange())
+        .subscribe();
     }
 
-    // Realtime indicator
-    const dot = document.getElementById("liveDot");
-    function setLive(v){ dot.classList.toggle("live", !!v); }
-    setLive(false);
-
-    supabase.channel("rt:orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => load())
-      .subscribe(s => setLive(true));
-
-    supabase.channel("rt:order_items")
-      .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, () => load())
-      .subscribe();
-
-    // beep
+    // ========= BEEP =========
     function beep(){
       try{
         const ctx = new (window.AudioContext||window.webkitAudioContext)();
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.frequency.value = 880; o.type="triangle";
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = 900; o.type="triangle";
         o.connect(g); g.connect(ctx.destination);
         g.gain.setValueAtTime(.001, ctx.currentTime);
         g.gain.exponentialRampToValueAtTime(.2, ctx.currentTime+.01);
-        o.start(); o.stop(ctx.currentTime+.15);
+        o.start(); o.stop(ctx.currentTime+.14);
       }catch(e){}
     }
 
-    // UI
-    document.getElementById("refresh").addEventListener("click", ()=>{ load(); });
-    document.getElementById("q").addEventListener("input", ()=>render(current));
-    document.getElementById("hideDone").addEventListener("change", ()=>render(current));
-
-    // Start
-    load(true);
+    // ========= BOOT =========
+    (function boot(){
+      // default: OGGI
+      $("#day").value = todayISO();
+      document.querySelector('.chip[data-preset="today"]').classList.add("active");
+      loadRange();
+    })();
   </script>
 </body>
 </html>
