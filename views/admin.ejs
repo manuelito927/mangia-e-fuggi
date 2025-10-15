@@ -1,253 +1,291 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mangia & Fuggi — Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
-  <style>
-    :root{
-      --bg:#f6efe7; --panel:#ffffff; --ink:#3b2a23; --muted:#8c7b73; --brand:#7a4a3b; --brand-2:#f2d7c8; --ok:#1f8f4e; --warn:#b42318;
-      --ring:#e5c9ba;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Arial,sans-serif}
-    .wrap{max-width:1100px;margin:0 auto;padding:18px}
-    header{display:flex;gap:12px;align-items:center;margin-bottom:14px}
-    h1{font-weight:800;letter-spacing:.3px;margin:0}
-    .pill{background:var(--brand-2);color:var(--brand);border-radius:16px;padding:6px 12px;font-weight:700;display:inline-block}
-    .layout{display:grid;grid-template-columns:240px 1fr;gap:16px}
-    .side{background:var(--panel);border:1px solid var(--ring);border-radius:18px;padding:14px}
-    .nav .item{display:block;padding:12px 14px;border-radius:12px;margin-bottom:8px;border:1px solid #eee;text-decoration:none;color:inherit}
-    .nav .item.active{background:var(--brand);color:#fff;border-color:var(--brand)}
-    .content{min-height:60vh}
-    .card{background:var(--panel);border:1px solid var(--ring);border-radius:18px;padding:16px;margin-bottom:16px}
-    .row{display:flex;justify-content:space-between;gap:10px}
-    .muted{color:var(--muted)}
-    .btn{border:1px solid var(--ring);background:#fff;padding:8px 12px;border-radius:10px;cursor:pointer}
-    .btn:hover{filter:brightness(.98)}
-    .btn.success{background:#e8f6ee;border-color:#cbe9d7;color:var(--ok)}
-    .btn.danger{background:#fdeaea;border-color:#f5d4d4;color:var(--warn)}
-    .btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}
-    .tabs{display:flex;gap:8px;margin-bottom:10px}
-    .tab{padding:8px 12px;border-radius:10px;border:1px solid var(--ring);background:#fff;cursor:pointer}
-    .tab.active{background:var(--brand);color:#fff;border-color:var(--brand)}
-    .order-card{background:#fff;border:1px solid var(--ring);border-radius:16px;padding:14px;margin-bottom:12px}
-    .order-card .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
-    th{font-size:.9rem;color:#6b5c55}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    @media (max-width:900px){.layout{grid-template-columns:1fr}}
-  </style>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Mangia & Fuggi — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f6efe7;--panel:#fff;--ink:#2c2623;--muted:#7b6d66;--brand:#7a4a3b;--ring:#ead8cf;--ok:#1f8f4e;--warn:#b42318}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui}
+.wrap{max-width:1200px;margin:0 auto;padding:16px}
+h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
+.layout{display:grid;grid-template-columns:230px 1fr;gap:16px}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+.side{background:var(--panel);border:1px solid var(--ring);border-radius:16px;padding:14px;height:fit-content;position:sticky;top:12px}
+.nav .item{display:block;padding:10px 12px;border:1px solid #eee;border-radius:10px;margin-bottom:8px;color:inherit;text-decoration:none}
+.nav .item.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.card{background:var(--panel);border:1px solid var(--ring);border-radius:16px;padding:14px;margin-bottom:16px}
+.row{display:flex;gap:10px;justify-content:space-between;align-items:center}
+.muted{color:var(--muted)} .pill{background:#f3e7e2;color:var(--brand);border-radius:999px;padding:6px 10px;font-weight:700}
+.btn{border:1px solid var(--ring);background:#fff;padding:8px 12px;border-radius:10px;cursor:pointer}
+.btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.ok{background:#e8f6ee;border-color:#cde8d5;color:var(--ok)}
+.btn.danger{background:#fdeaea;border-color:#f3caca;color:var(--warn)}
+.input{border:1px solid var(--ring);border-radius:10px;padding:8px 10px;background:#fff}
+.order{border:1px solid var(--ring);border-radius:14px;padding:12px;margin-bottom:12px;background:#fff}
+.order .head{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:8px}
+.order .rows{margin-top:6px;border-top:1px dashed var(--ring);padding-top:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+.tbl table{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th,.tbl td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+.badge{display:inline-flex;align-items:center;gap:6px}
+.bell{font-size:18px; cursor:pointer}
+.bell.new{color:#d97706}
+.clearx{margin-left:6px; cursor:pointer; color:#555}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>Mangia & Fuggi — <span class="pill">Dashboard</span></h1>
-    </header>
+<div class="wrap">
+  <h1>Mangia & Fuggi — Dashboard</h1>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="side">
+      <div class="nav">
+        <a href="#" class="item active" data-section="orders">📋 Ordini</a>
+        <a href="#" class="item" data-section="stats">📊 Statistiche</a>
+      </div>
+      <div class="card">
+        <label style="display:flex;gap:8px;align-items:center">
+          <input type="checkbox" id="chk-sound"/> Suono nuovi ordini
+        </label>
+      </div>
+    </aside>
 
-    <div class="layout">
-      <!-- SIDEBAR -->
-      <aside class="side">
-        <div class="nav">
-          <a href="#" class="item active" data-section="orders">📋 Ordini</a>
-          <a href="#" class="item" data-section="stats">📊 Statistiche</a>
-        </div>
-        <div class="card">
-          <label style="display:flex;gap:8px;align-items:center">
-            <input type="checkbox" id="chk-sound" />
-            <span>Suono nuovi ordini</span>
-          </label>
-        </div>
-      </aside>
-
-      <!-- MAIN -->
-      <main class="content">
-        <!-- ===== SEZIONE ORDINI ===== -->
-        <section id="sec-orders" class="card">
-          <div class="tabs">
-            <button class="tab active" data-tab-status="pending">Pendenti</button>
-            <button class="tab" data-tab-status="completed">Completati</button>
-            <button class="tab" data-tab-status="canceled">Eliminati</button>
-            <div style="flex:1"></div>
-            <button class="btn brand" id="btn-refresh">Aggiorna</button>
+    <!-- Main -->
+    <main>
+      <!-- ORDERS -->
+      <section id="sec-orders" class="card">
+        <div class="row" style="flex-wrap:wrap">
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="muted">Stato:</span>
+            <button class="btn tab active" data-status="pending">Pendenti</button>
+            <button class="btn tab" data-status="completed">Completati</button>
+            <button class="btn tab" data-status="canceled">Eliminati</button>
           </div>
-          <div id="orders-wrap"></div>
-        </section>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="q" class="input" placeholder="Cerca tavolo o piatto…" />
+            <span id="clearQ" class="clearx">Elimina</span>
+            <button id="btn-refresh" class="btn brand">Aggiorna</button>
+          </div>
+        </div>
+        <div id="orders"></div>
+      </section>
 
-        <!-- ===== SEZIONE STATISTICHE ===== -->
-        <section id="sec-stats" class="card" style="display:none">
-          <div class="grid2">
-            <div class="card">
-              <h3 style="margin-top:0">Giornaliero</h3>
-              <div class="row" style="gap:8px;align-items:center;margin:8px 0">
-                <label class="muted">Data</label>
-                <input type="date" id="dayDate" />
-                <button class="btn brand" id="btnDay">Aggiorna</button>
-              </div>
-              <div id="dayPane"></div>
+      <!-- STATS -->
+      <section id="sec-stats" class="card" style="display:none">
+        <div class="grid2">
+          <div class="card">
+            <h3 style="margin:0 0 8px 0">Giorno</h3>
+            <div class="row" style="gap:8px">
+              <input id="day" type="date" class="input" />
+              <button id="btn-day" class="btn brand">Aggiorna</button>
             </div>
-            <div class="card">
-              <h3 style="margin-top:0">Intervallo</h3>
-              <div class="row" style="gap:8px;align-items:center;margin:8px 0">
-                <label class="muted">Da</label>
-                <input type="date" id="fromDate" />
-                <label class="muted">A</label>
-                <input type="date" id="toDate" />
-                <button class="btn brand" id="btnRange">Aggiorna</button>
-              </div>
-              <div id="rangePane"></div>
+            <div id="kpis" class="row" style="margin-top:10px">
+              <div class="pill">Ordini: <b id="k-count">0</b></div>
+              <div class="pill">Incasso: <b id="k-rev">€ 0,00</b></div>
+              <div class="pill">Scontrino medio: <b id="k-avg">€ 0,00</b></div>
+            </div>
+            <div class="card" style="margin-top:12px">
+              <canvas id="chartHour" height="160"></canvas>
             </div>
           </div>
-        </section>
-      </main>
-    </div>
+          <div class="card">
+            <h3 style="margin:0 0 8px 0">Intervallo</h3>
+            <div class="row" style="gap:8px">
+              <input id="from" type="date" class="input" />
+              <input id="to"   type="date" class="input" />
+              <button id="btn-range" class="btn brand">Aggiorna</button>
+            </div>
+            <div class="card" style="margin-top:12px">
+              <canvas id="chartTop" height="160"></canvas>
+            </div>
+            <div class="tbl" id="topTable" style="margin-top:12px"></div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
+</div>
 
-  <script>
-    const EL = (s,root=document)=>root.querySelector(s);
-    const ELS = (s,root=document)=>Array.from(root.querySelectorAll(s));
+<script>
+const supabase = window.supabase.createClient("<%= SUPABASE_URL %>", "<%= SUPABASE_KEY %>");
+const $ = (s,root=document)=>root.querySelector(s);
+const $$= (s,root=document)=>Array.from(root.querySelectorAll(s));
+const euro = v => "€ " + Number(v||0).toFixed(2).replace(".", ",");
 
-    // ===== NAV laterale (stessa pagina) =====
-    ELS('[data-section]').forEach(a=>{
-      a.addEventListener('click',e=>{
-        e.preventDefault();
-        ELS('[data-section]').forEach(x=>x.classList.remove('active'));
-        a.classList.add('active');
-        const sec=a.dataset.section;
-        EL('#sec-orders').style.display = sec==='orders'?'block':'none';
-        EL('#sec-stats').style.display  = sec==='stats' ?'block':'none';
-      });
-    });
+// ===== NAV =====
+$$('[data-section]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    $$('[data-section]').forEach(x=>x.classList.remove('active'));
+    a.classList.add('active');
+    const sec=a.dataset.section;
+    $('#sec-orders').style.display = sec==='orders'?'block':'none';
+    $('#sec-stats').style.display  = sec==='stats' ?'block':'none';
+  });
+});
 
-    // ===== Impostazioni (salvate su DB) =====
-    async function loadSettings(){
-      try{
-        const r=await fetch('/api/settings'); const j=await r.json();
-        if(j.ok) EL('#chk-sound').checked=!!j.sound_enabled;
-      }catch{}
-    }
-    async function saveSettings(){
-      const enabled=EL('#chk-sound').checked;
-      await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sound_enabled:enabled})});
-    }
-    EL('#chk-sound').addEventListener('change', saveSettings);
+// ===== SETTINGS (suono) =====
+async function loadSettings(){
+  try{ const r=await fetch('/api/settings'); const j=await r.json(); if(j.ok) $('#chk-sound').checked=!!j.sound_enabled; }catch{}
+}
+$('#chk-sound').addEventListener('change', async ()=>{
+  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sound_enabled:$('#chk-sound').checked})});
+});
 
-    // ===== ORDINI =====
-    let CURRENT_STATUS='pending';
-    async function loadOrders(){
-      const r=await fetch(`/api/orders?status=${CURRENT_STATUS}`);
-      const j=await r.json();
-      const wrap=EL('#orders-wrap'); wrap.innerHTML='';
-      if(!j.ok || !j.orders.length){ wrap.innerHTML='<div class="muted">Nessun ordine</div>'; return; }
-      for(const o of j.orders){
-        const items=(o.items||[]).map(it=>`
-          <div class="row">
-            <div>${it.qty}× ${it.name} <span class="muted">(€ ${Number(it.price).toFixed(2)})</span></div>
-            <div>€ ${(Number(it.qty)*Number(it.price)).toFixed(2)}</div>
-          </div>
-        `).join('');
-        const when=new Date(o.created_at).toLocaleString();
-        const card=document.createElement('div');
-        card.className='order-card';
-        card.innerHTML=`
-          <div class="head">
-            <div>
-              <div class="muted">ID: ${o.id}</div>
-              <div class="muted">Tavolo: ${o.table_code||'-'}</div>
-              <div class="muted">Data: ${when}</div>
-            </div>
-            <div class="pill">Totale: € ${Number(o.total).toFixed(2)}</div>
-          </div>
-          <div class="items">${items}</div>
-          <div class="actions" style="display:flex;gap:8px;margin-top:10px">
-            <button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>
-            ${CURRENT_STATUS==='pending' ? `
-              <button class="btn success" data-act="complete" data-id="${o.id}">✅ Completa</button>
-              <button class="btn danger"  data-act="cancel"   data-id="${o.id}">🗑️ Elimina</button>
-            ` : `
-              <button class="btn" data-act="restore" data-id="${o.id}">↩️ Ripristina</button>
-            `}
-          </div>
-        `;
-        wrap.appendChild(card);
-      }
-    }
-    // azioni
-    EL('#orders-wrap').addEventListener('click',async ev=>{
-      const b=ev.target.closest('button[data-act]'); if(!b) return;
-      const {act,id}=b.dataset;
-      if(act==='print'){ window.print(); await fetch(`/api/orders/${id}/printed`,{method:'POST'}); return; }
-      if(act==='complete'){ await fetch(`/api/orders/${id}/complete`,{method:'POST'}); }
-      if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await fetch(`/api/orders/${id}/cancel`,{method:'POST'}); }
-      if(act==='restore'){ await fetch(`/api/orders/${id}/restore`,{method:'POST'}); }
-      await loadOrders();
-    });
-    // tabs
-    ELS('[data-tab-status]').forEach(t=>{
-      t.addEventListener('click',()=>{
-        ELS('[data-tab-status]').forEach(x=>x.classList.remove('active'));
-        t.classList.add('active'); CURRENT_STATUS=t.dataset.tabStatus; loadOrders();
-      });
-    });
-    EL('#btn-refresh').addEventListener('click', loadOrders);
+// ===== ORDERS =====
+let STATUS='pending', ORDERS=[], SUBS=false;
 
-    // ===== STATISTICHE =====
-    function euro(v){return '€ '+Number(v||0).toFixed(2)}
-    function table(head,rows){
-      return `<table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
-              <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-    }
-    async function loadDay(){
-      const d=EL('#dayDate').value || new Date().toISOString().slice(0,10);
-      const r=await fetch(`/api/stats/day?date=${d}`); const j=await r.json();
-      if(!j.ok) return EL('#dayPane').innerHTML='Errore';
-      const per=j.perBucket.rows.map(b=>[ new Date(b.bucket).toLocaleTimeString().slice(0,5), b.orders, euro(b.revenue) ]);
-      const top=j.top.map(x=>[x.name, x.qty, euro(x.revenue), x.pct+'%']);
-      EL('#dayPane').innerHTML = `
-        <div class="card">
-          <div class="row"><div>Ordini</div><div><b>${j.count}</b></div></div>
-          <div class="row"><div>Incasso</div><div><b>${euro(j.total)}</b></div></div>
+async function fetchOrders(){
+  const q=$('#q').value.toLowerCase();
+  const r=await fetch(`/api/orders?status=${STATUS}`); const j=await r.json(); if(!j.ok) return;
+  ORDERS=j.orders||[];
+  renderOrders(q);
+}
+function renderOrders(q){
+  const root=$('#orders'); root.innerHTML="";
+  const list = q ? ORDERS.filter(o=>{
+    const text=(o.table_code||"-")+" "+(o.items||[]).map(i=>i.name).join(" ");
+    return text.toLowerCase().includes(q);
+  }) : ORDERS;
+
+  if(!list.length){ root.innerHTML='<div class="muted">Nessun ordine</div>'; return; }
+
+  for(const o of list){
+    const when=new Date(o.created_at).toLocaleString();
+    const rows=(o.items||[]).map(it=>`
+      <div class="row" style="padding:4px 0">
+        <div>${it.qty}× ${it.name} <span class="muted">(€ ${Number(it.price).toFixed(2)})</span></div>
+        <div><b>€ ${(Number(it.qty)*Number(it.price)).toFixed(2)}</b></div>
+      </div>
+    `).join("");
+    const bell = (!o.ack && o.status==='pending') ? `<span class="bell new" title="Nuovo" data-act="ack" data-id="${o.id}">🔔</span>` : `<span class="bell" data-act="ack" data-id="${o.id}" title="Segna come letto">🔕</span>`;
+
+    const el=document.createElement('div'); el.className='order';
+    el.innerHTML=`
+      <div class="head">
+        <div>
+          <div class="muted">ID: ${o.id}</div>
+          <div class="muted">Tavolo: <b>${o.table_code||'-'}</b></div>
+          <div class="muted">Data: ${when}</div>
         </div>
-        ${table(['Ora','Ordini','Incasso'], per)}
-        <h4>Top prodotti</h4>
-        ${table(['Prodotto','Qtà','Fatturato','Quota %'], top)}
-      `;
-    }
-    async function loadRange(){
-      const f=EL('#fromDate').value, t=EL('#toDate').value;
-      if(!f || !t) return alert('Scegli "Da" e "A"');
-      const r=await fetch(`/api/stats/range?from=${f}&to=${t}`); const j=await r.json();
-      if(!j.ok) return EL('#rangePane').innerHTML='Errore';
-      const per=j.perBucket.rows.map(b=>[ new Date(b.bucket).toLocaleDateString(), b.orders, euro(b.revenue) ]);
-      const top=j.top.map(x=>[x.name, x.qty, euro(x.revenue), x.pct+'%']);
-      EL('#rangePane').innerHTML = `
-        <div class="card">
-          <div class="row"><div>Ordini</div><div><b>${j.count}</b></div></div>
-          <div class="row"><div>Incasso</div><div><b>${euro(j.total)}</b></div></div>
-          <div class="row"><div>Scontrino medio</div><div><b>${euro(j.avg)}</b></div></div>
+        <div class="badge">
+          ${bell}
+          <span class="pill">Totale: ${euro(o.total)}</span>
         </div>
-        ${table(['Giorno','Ordini','Incasso'], per)}
-        <h4>Top prodotti</h4>
-        ${table(['Prodotto','Qtà','Fatturato','Quota %'], top)}
-      `;
-    }
-    EL('#btnDay').addEventListener('click', loadDay);
-    EL('#btnRange').addEventListener('click', loadRange);
+      </div>
+      <div class="rows">${rows}</div>
+      <div class="row" style="margin-top:8px">
+        <div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>
+          ${STATUS==='pending' ? `
+            <button class="btn ok"     data-act="complete" data-id="${o.id}">✅ Completa</button>
+            <button class="btn danger" data-act="cancel"   data-id="${o.id}">🗑️ Elimina</button>
+          ` : `
+            <button class="btn" data-act="restore" data-id="${o.id}">↩️ Ripristina</button>
+          `}
+        </div>
+      </div>
+    `;
+    root.appendChild(el);
+  }
+}
+$('#orders').addEventListener('click', async (ev)=>{
+  const b=ev.target.closest('button[data-act],span[data-act]'); if(!b) return;
+  const id=b.dataset.id, act=b.dataset.act;
+  if(act==='print'){ window.print(); await fetch(`/api/orders/${id}/printed`,{method:'POST'}); return; }
+  if(act==='complete'){ await fetch(`/api/orders/${id}/complete`,{method:'POST'}); }
+  if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await fetch(`/api/orders/${id}/cancel`,{method:'POST'}); }
+  if(act==='restore'){ await fetch(`/api/orders/${id}/restore`,{method:'POST'}); }
+  if(act==='ack'){ await fetch(`/api/orders/${id}/ack`,{method:'POST'}); }
+  await fetchOrders();
+  // aggiorna stats se la sezione è aperta
+  if($('#sec-stats').style.display!=='none'){ await loadDay(); await loadRange(); }
+});
+$('.tab[data-status="pending"]').classList.add('active');
+$$('.tab').forEach(t=>{
+  t.addEventListener('click',async ()=>{
+    $$('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    STATUS=t.dataset.status;
+    await fetchOrders();
+  });
+});
+$('#btn-refresh').addEventListener('click', fetchOrders);
+$('#q').addEventListener('input', ()=>renderOrders($('#q').value.toLowerCase()));
+$('#clearQ').addEventListener('click', ()=>{ $('#q').value=''; renderOrders(''); });
 
-    // ===== START =====
-    (async ()=>{
-      EL('#dayDate').value = new Date().toISOString().slice(0,10);
-      const d=new Date(); d.setDate(d.getDate()-6);
-      EL('#fromDate').value = d.toISOString().slice(0,10);
-      EL('#toDate').value   = new Date().toISOString().slice(0,10);
+// Realtime: ricarica sia ordini che stats
+function attachRealtime(){
+  if(typeof supabase.channel !== 'function' || SUBS) return; SUBS=true;
+  supabase.channel("rt:orders")
+    .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, async () => {
+      if($('#chk-sound').checked) beep();
+      await fetchOrders();
+      if($('#sec-stats').style.display!=='none'){ await loadDay(); await loadRange(); }
+    })
+    .subscribe();
+  supabase.channel("rt:order_items")
+    .on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, async () => {
+      await fetchOrders();
+      if($('#sec-stats').style.display!=='none'){ await loadDay(); await loadRange(); }
+    })
+    .subscribe();
+}
+function beep(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(), g=c.createGain(); o.frequency.value=900;o.type="triangle"; o.connect(g);g.connect(c.destination); g.gain.setValueAtTime(.001,c.currentTime);g.gain.exponentialRampToValueAtTime(.2,c.currentTime+.01); o.start(); o.stop(c.currentTime+.14);}catch(e){} }
 
-      await loadSettings();
-      await loadOrders();
-      await loadDay();
-    })();
-  </script>
+// ===== STATS =====
+let chartHour=null, chartTop=null;
+function setKPI(cnt,rev){ $('#k-count').textContent=cnt; $('#k-rev').textContent=euro(rev); $('#k-avg').textContent=euro(cnt?rev/cnt:0); }
+
+async function loadDay(){
+  const d=$('#day').value || new Date().toISOString().slice(0,10);
+  const r=await fetch(`/api/stats/day?date=${d}`); const j=await r.json(); if(!j.ok) return;
+  setKPI(j.count, j.total);
+  const labels=j.perBucket.rows.map(b=> new Date(b.bucket).toLocaleTimeString([], {hour:'2-digit'}));
+  const data  =j.perBucket.rows.map(b=> b.revenue);
+  if(chartHour) chartHour.destroy();
+  chartHour=new Chart($('#chartHour'), { type:'bar', data:{ labels, datasets:[{ label:'Incasso €/ora', data }] }, options:{ plugins:{legend:{display:false}}, scales:{ y:{ ticks:{ callback:v=>'€ '+v }}}}});
+}
+async function loadRange(){
+  const f=$('#from').value, t=$('#to').value; if(!f||!t) return;
+  const r=await fetch(`/api/stats/range?from=${f}&to=${t}`); const j=await r.json(); if(!j.ok) return;
+  const top=j.top.list.slice(0,5);
+  const labels=top.map(x=>x.name), data=top.map(x=>x.qty);
+  if(chartTop) chartTop.destroy();
+  chartTop=new Chart($('#chartTop'), { type:'doughnut', data:{ labels, datasets:[{ data }] }, options:{ plugins:{legend:{position:'bottom'}} }});
+  // tabella top completa
+  $('#topTable').innerHTML = `
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Prodotto</th><th>Qtà</th><th>Fatturato</th><th>% Qtà</th><th>% Fatt.</th></tr></thead>
+        <tbody>
+          ${j.top.list.map(x=>`<tr><td>${x.name}</td><td>${x.qty}</td><td>${euro(x.revenue)}</td><td>${x.pctQty.toFixed(1)}%</td><td>${x.pctRev.toFixed(1)}%</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ===== BOOT =====
+(async ()=>{
+  // default date controls
+  const today=new Date(); $('#day').value=today.toISOString().slice(0,10);
+  const from=new Date(); from.setDate(today.getDate()-6);
+  $('#from').value=from.toISOString().slice(0,10);
+  $('#to').value=today.toISOString().slice(0,10);
+
+  await loadSettings();
+  await fetchOrders();
+  await loadDay();
+  await loadRange();
+  attachRealtime();
+})();
+$('#btn-day').addEventListener('click', loadDay);
+$('#btn-range').addEventListener('click', loadRange);
+</script>
 </body>
 </html>
