@@ -22,13 +22,13 @@ function getEnvAny(...keys){
 }
 const euro = v => Number(v||0).toFixed(2);
 
-// ---- Supabase
+// ---------- Supabase
 const SUPABASE_URL = getEnvAny("SUPABASE_URL","Supabase_url","supabase_url");
 const SUPABASE_KEY = getEnvAny("SUPABASE_KEY","Supabase_key","supabase_key","SUPABASE_SERVICE_ROLE_KEY");
 if(!SUPABASE_URL || !SUPABASE_KEY) console.warn("⚠️  Mancano SUPABASE_URL/SUPABASE_KEY");
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ---- App
+// ---------- App
 const app = express();
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -43,7 +43,7 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// ---- Basic Auth su /admin (usa ADMIN_PASSWORD su Render)
+// ---------- Basic Auth su /admin (usa ADMIN_PASSWORD su Render)
 app.use("/admin", (req, res, next) => {
   const required = (process.env.ADMIN_PASSWORD || "").trim();
   if (!required) return next();
@@ -58,7 +58,7 @@ app.use("/admin", (req, res, next) => {
   next();
 });
 
-// ---- Pagine
+// ---------- Pagine
 app.get("/", (_req, res) => res.redirect("/menu"));
 app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/admin", (_req, res) =>
@@ -71,8 +71,6 @@ app.get("/admin", (_req, res) =>
 // =====================================================================================
 // API ORDINI
 // =====================================================================================
-
-// Creazione ordine (usata dal menu/checkout)
 app.post("/api/checkout", async (req, res) => {
   const { tableCode, items, total } = req.body || {};
   if (!Array.isArray(items) || !items.length)
@@ -95,7 +93,6 @@ app.post("/api/checkout", async (req, res) => {
   } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
 });
 
-// Lista ordini per stato, con items
 app.get("/api/orders", async (req, res) => {
   try {
     const status = (req.query.status || "pending").toString();
@@ -129,7 +126,7 @@ app.get("/api/orders", async (req, res) => {
   }
 });
 
-// Azioni stato (completa / elimina / ripristina / ack / printed)
+// Azioni stato
 app.post("/api/orders/:id/complete", async (req, res) => {
   const { error } = await supabase.from("orders")
     .update({ status:"completed", completed_at:new Date().toISOString() })
@@ -286,37 +283,70 @@ app.get("/api/stats/range", async (req, res) => {
 });
 
 // =====================================================================================
-// PAGAMENTI SUMUP
-// Env accettate (qualsiasi di queste va bene):
-// - SUMUP_SECRET_KEY  | SUMUP_ACCESS_TOKEN | SUMUP_CLIENT_SECRET | Sumup_access_token
-// - SUMUP_PAY_TO_EMAIL | SUMUP_MERCHANT_EMAIL | Sumup_pay_to_email
+// PAGAMENTI SUMUP (con gestione automatica dell'OAuth token)
+// Env accettate:
+//   SUMUP_ACCESS_TOKEN  (facoltativo: se lo metti, lo usa direttamente)
+//   oppure coppia SUMUP_CLIENT_ID + SUMUP_CLIENT_SECRET (consigliato)
+//   e SUMUP_PAY_TO_EMAIL (obbligatorio: email del tuo account SumUp che incassa)
 // =====================================================================================
-const SUMUP_SECRET =
-  getEnvAny("SUMUP_SECRET_KEY","SUMUP_ACCESS_TOKEN","SUMUP_CLIENT_SECRET","Sumup_access_token");
-const SUMUP_PAYTO =
-  getEnvAny("SUMUP_PAY_TO_EMAIL","SUMUP_MERCHANT_EMAIL","Sumup_pay_to_email");
+const SUMUP_CLIENT_ID     = getEnvAny("SUMUP_CLIENT_ID","Sumup_client_id");
+const SUMUP_CLIENT_SECRET = getEnvAny("SUMUP_CLIENT_SECRET","Sumup_client_secret");
+const SUMUP_ACCESS_TOKEN  = getEnvAny("SUMUP_ACCESS_TOKEN","Sumup_access_token"); // se presente lo usa
+const SUMUP_PAYTO         = getEnvAny("SUMUP_PAY_TO_EMAIL","SUMUP_MERCHANT_EMAIL","Sumup_pay_to_email");
 
-// Esponi lo stato al frontend (per abilitare il tasto)
-app.get("/api/pay-config", (_req,res) => {
-  res.json({ ok:true, enabled: !!(SUMUP_SECRET && SUMUP_PAYTO) });
+// prende/refresh token se serve
+async function getSumUpBearer(){
+  // se hai già messo un access token statico, lo usiamo così com'è
+  if (SUMUP_ACCESS_TOKEN) return SUMUP_ACCESS_TOKEN;
+
+  if (!(SUMUP_CLIENT_ID && SUMUP_CLIENT_SECRET)) {
+    throw new Error("missing_client_credentials");
+  }
+
+  // OAuth Client Credentials
+  const form = new URLSearchParams();
+  form.set("grant_type", "client_credentials");
+  form.set("client_id", SUMUP_CLIENT_ID);
+  form.set("client_secret", SUMUP_CLIENT_SECRET);
+  // opzionale: scope. In genere non serve specificarlo per /checkouts
+  // form.set("scope", "payments");
+
+  const resp = await fetch("https://api.sumup.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form
+  });
+
+  if (!resp.ok) {
+    const t = await resp.text();
+    console.error("SumUp token error:", resp.status, t);
+    throw new Error("token_request_failed");
+  }
+  const js = await resp.json();
+  if (!js.access_token) throw new Error("token_missing");
+  return js.access_token;
+}
+
+// Stato al frontend (abilita/disabilita bottone)
+app.get("/api/pay-config", async (_req,res) => {
+  const enabled = !!(SUMUP_PAYTO && (SUMUP_ACCESS_TOKEN || (SUMUP_CLIENT_ID && SUMUP_CLIENT_SECRET)));
+  res.json({ ok:true, enabled });
 });
 
+// Crea checkout
 app.post("/api/pay-sumup", async (req, res) => {
   try {
     const { amount, currency = "EUR", description = "Pagamento Mangia & Fuggi" } = req.body || {};
-    if (!(SUMUP_SECRET && SUMUP_PAYTO)) {
-      return res.status(400).json({ ok:false, error:"sumup_not_configured" });
-    }
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ ok:false, error:"invalid_amount" });
-    }
+    if (!SUMUP_PAYTO) return res.status(400).json({ ok:false, error:"sumup_missing_payto" });
+    if (!amount || amount <= 0) return res.status(400).json({ ok:false, error:"invalid_amount" });
 
+    const bearer = await getSumUpBearer(); // ottiene token (statico o via OAuth)
     const ref = "ordine_" + Math.random().toString(36).slice(2,8);
 
     const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${SUMUP_SECRET}`,
+        "Authorization": `Bearer ${bearer}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -330,16 +360,21 @@ app.post("/api/pay-sumup", async (req, res) => {
 
     if (!resp.ok) {
       const text = await resp.text();
-      console.error("SumUp error:", resp.status, text);
+      console.error("SumUp checkout error:", resp.status, text);
       return res.status(500).json({ ok:false, error:"sumup_api_error" });
     }
 
     const data = await resp.json();
     const url = data.checkout_url || data.redirect_url || data.url;
-    return res.json({ ok:true, url });
+    if (!url) return res.status(500).json({ ok:false, error:"sumup_url_missing" });
+    res.json({ ok:true, url });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ ok:false });
+    console.error("Pay error:", e);
+    let code = "server_error";
+    if (e.message === "missing_client_credentials") code = "sumup_missing_credentials";
+    if (e.message === "token_request_failed")     code = "sumup_token_failed";
+    if (e.message === "token_missing")            code = "sumup_token_missing";
+    res.status(500).json({ ok:false, error:code });
   }
 });
 
