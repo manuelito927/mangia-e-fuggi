@@ -92,18 +92,19 @@
       <button id="btn-pay" class="btn alt" style="width:100%;margin-top:10px" onclick="payOnline()" disabled>
         💳 Paga Online
       </button>
-      <div class="note">
-        Il pagamento si apre su SumUp con l’importo reale del carrello.
-      </div>
+      <div id="pay-note" class="note">Il pagamento si apre su SumUp con l’importo reale del carrello.</div>
     </aside>
   </div>
 
   <script>
     const cart = new Map();
+    let PAY_READY = false; // abilitato quando la config SumUp è ok
 
+    // ---- Utilità
     function cssId(s){ return s.replace(/[^a-z0-9]+/gi,'_'); }
     function euro(n){ return "€ "+Number(n).toFixed(2).replace(".",","); }
 
+    // ---- Carrello
     function inc(name, price){
       const it = cart.get(name)||{price,qty:0};
       it.qty++; cart.set(name,it);
@@ -117,7 +118,6 @@
       document.getElementById('q-'+cssId(name)).textContent=it.qty||0;
       renderCart();
     }
-
     function renderCart(){
       const ul=document.getElementById('cart'); ul.innerHTML="";
       let tot=0;
@@ -128,9 +128,10 @@
         ul.appendChild(li);
       }
       document.getElementById('total').textContent=euro(tot);
-      document.getElementById('btn-pay').disabled = tot <= 0;
+      document.getElementById('btn-pay').disabled = !(PAY_READY && tot>0);
     }
 
+    // ---- Invio ordine
     async function checkout(){
       const items=Array.from(cart.entries()).map(([n,it])=>({name:n,price:it.price,qty:it.qty}));
       if(items.length===0){ alert("Aggiungi almeno un prodotto"); return; }
@@ -144,33 +145,51 @@
       const js=await r.json();
       if(js.ok){
         alert("Ordine inviato!");
-        // Lasciamo il carrello per permettere il pagamento subito dopo
+        // lasciamo il carrello per consentire il pagamento subito dopo
       } else {
         alert("Errore invio ordine: "+(js.error||"impossibile inviare"));
       }
     }
 
+    // ---- Pagamento SumUp
     async function payOnline(){
       const items=Array.from(cart.entries()).map(([n,it])=>({name:n,price:it.price,qty:it.qty}));
       if(items.length===0){ alert("Carrello vuoto"); return; }
       const total=items.reduce((s,i)=>s+i.price*i.qty,0);
-      const desc = "Mangia & Fuggi - Ordine tavolo";
-      const r = await fetch("/api/pay-sumup", {
+
+      const r = await fetch("/api/pay/sumup", { // usa l'endpoint nuovo
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          amount: Number(total.toFixed(2)),
-          currency: "EUR",
-          description: desc
-        })
+        body: JSON.stringify({ amount: Number(total.toFixed(2)) })
       });
       const js = await r.json();
       if(js.ok && js.url){
-        window.open(js.url, "_blank");
+        window.location.href = js.url; // apri nel tab corrente
       } else {
         alert("Pagamento non disponibile. Verifica configurazione SumUp.");
       }
     }
+
+    // ---- Boot: verifica config SumUp per abilitare il bottone
+    (async function(){
+      try{
+        const r = await fetch('/api/pay/sumup/config');
+        const j = await r.json();
+        if(j.ok){
+          PAY_READY = true;
+          document.getElementById('pay-note').textContent = "Il pagamento online è attivo.";
+        }else{
+          PAY_READY = false;
+          document.getElementById('pay-note').textContent =
+            "Pagamento online disabilitato: mancano " + (j.missing||[]).join(', ');
+        }
+      }catch{
+        PAY_READY = false;
+        document.getElementById('pay-note').textContent =
+          "Pagamento online non disponibile (errore configurazione).";
+      }
+      renderCart();
+    })();
   </script>
 </body>
 </html>
