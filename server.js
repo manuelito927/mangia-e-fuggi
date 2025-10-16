@@ -1,4 +1,4 @@
-// ===== MANGIA & FUGGI — SERVER (ordini + statistiche + impostazioni) =====
+// ===== MANGIA & FUGGI — SERVER (ordini + statistiche + impostazioni + SumUp) =====
 import express from "express";
 import path from "path";
 import bodyParser from "body-parser";
@@ -274,6 +274,58 @@ app.get("/api/stats/range", async (req, res) => {
 
     res.json({ ok:true, range:{ from:f, to:t }, count:orders.length, total, avg, perBucket:buckets, top });
   } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
+});
+
+// =====================================================================================
+// API PAGAMENTO SUMUP (dinamico)
+// Richiede su Render → Environment:
+// - SUMUP_SECRET_KEY  (es. sup_sk_...)
+// - SUMUP_PAY_TO_EMAIL (email account SumUp che incassa)
+// =====================================================================================
+app.post("/api/pay-sumup", async (req, res) => {
+  try {
+    const { amount, currency = "EUR", description = "Pagamento Mangia & Fuggi" } = req.body || {};
+    const secret = process.env.SUMUP_SECRET_KEY;
+    const payTo  = process.env.SUMUP_PAY_TO_EMAIL;
+
+    if (!secret || !payTo) {
+      return res.status(400).json({ ok:false, error:"sumup_not_configured" });
+    }
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ ok:false, error:"invalid_amount" });
+    }
+
+    const ref = "ordine_" + Math.random().toString(36).slice(2,8);
+
+    // Node 18+ ha fetch globale (su Render va bene)
+    const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${secret}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        amount: Number(amount.toFixed(2)),
+        currency,
+        checkout_reference: ref,
+        pay_to_email: payTo,
+        description
+      })
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      console.error("SumUp error:", resp.status, text);
+      return res.status(500).json({ ok:false, error:"sumup_api_error" });
+    }
+
+    const data = await resp.json();
+    const url = data.checkout_url || data.redirect_url || data.url;
+    return res.json({ ok:true, url });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ ok:false });
+  }
 });
 
 // ---- Avvio
