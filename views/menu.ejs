@@ -19,7 +19,6 @@
     .btn{border:0;border-radius:22px;padding:6px 12px;background:#7b4b3a;color:#fff;cursor:pointer}
     .btn.small{padding:4px 10px;border-radius:16px}
     .btn.alt{background:#2f855a}
-    .btn.ghost{background:#eee;color:#333}
     .btn:disabled{opacity:.5;cursor:not-allowed}
     .cart h3{margin:0 0 10px}
     .cart ul{list-style:none;padding:0;margin:0;max-height:50vh;overflow:auto}
@@ -145,8 +144,7 @@
       const js=await r.json();
       if(js.ok){
         alert("Ordine inviato!");
-        // NON svuoto il carrello: così l’utente può pagare subito dopo
-        // cart.clear(); renderCart(); document.querySelectorAll("[id^='q-']").forEach(e=>e.textContent="0");
+        // Lasciamo il carrello per permettere il pagamento subito dopo
       } else {
         alert("Errore invio ordine: "+(js.error||"impossibile inviare"));
       }
@@ -156,9 +154,7 @@
       const items=Array.from(cart.entries()).map(([n,it])=>({name:n,price:it.price,qty:it.qty}));
       if(items.length===0){ alert("Carrello vuoto"); return; }
       const total=items.reduce((s,i)=>s+i.price*i.qty,0);
-      // descrizione breve (max 128 tipicamente)
       const desc = "Mangia & Fuggi - Ordine tavolo";
-      // genera link di pagamento dinamico sul server
       const r = await fetch("/api/pay-sumup", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
