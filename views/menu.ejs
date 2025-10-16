@@ -35,7 +35,6 @@
 
   <div class="container">
     <main>
-      <!-- ANTIPASTI -->
       <section class="card">
         <h2>Antipasti</h2>
         <%- include('partials/item', {name:'Bruschette', desc:'Pomodoro, basilico, olio EVO', price:4.00}) %>
@@ -45,7 +44,6 @@
         <%- include('partials/item', {name:'Fritto misto', desc:'Arancini, crocchè, panelle', price:8.00}) %>
       </section>
 
-      <!-- PIZZE CLASSICHE -->
       <section class="card">
         <h2>Pizze classiche</h2>
         <%- include('partials/item', {name:'Margherita', desc:'Pomodoro, mozzarella, basilico', price:5.00}) %>
@@ -55,7 +53,6 @@
         <%- include('partials/item', {name:'Quattro formaggi', desc:'Mozzarella, gorgonzola, grana, provola', price:8.00}) %>
       </section>
 
-      <!-- PIZZE GOURMET -->
       <section class="card">
         <h2>Pizze gourmet</h2>
         <%- include('partials/item', {name:'Bufalina', desc:'Pomodoro, bufala DOP, basilico', price:9.00}) %>
@@ -64,7 +61,6 @@
         <%- include('partials/item', {name:'Nduja & Burrata', desc:'’Nduja calabrese, burrata', price:10.00}) %>
       </section>
 
-      <!-- BEVANDE -->
       <section class="card">
         <h2>Bevande</h2>
         <%- include('partials/item', {name:'Acqua', desc:'Naturale o frizzante', price:1.50}) %>
@@ -73,7 +69,6 @@
         <%- include('partials/item', {name:'Vino della casa', desc:'Bicchiere', price:3.50}) %>
       </section>
 
-      <!-- DESSERT -->
       <section class="card">
         <h2>Dessert</h2>
         <%- include('partials/item', {name:'Tiramisù', desc:'Classico', price:4.50}) %>
@@ -87,24 +82,19 @@
       <ul id="cart"></ul>
       <div class="tot"><span>Totale</span><span id="total">€ 0,00</span></div>
 
-      <!-- Azioni -->
       <button class="btn" style="width:100%;margin-top:10px" onclick="checkout()">Conferma ordine</button>
-      <button id="btn-pay" class="btn alt" style="width:100%;margin-top:10px" onclick="payOnline()" disabled>
-        💳 Paga Online
-      </button>
+      <button id="btn-pay" class="btn alt" style="width:100%;margin-top:10px" onclick="payOnline()" disabled>💳 Paga Online</button>
       <div id="pay-note" class="note">Il pagamento si apre su SumUp con l’importo reale del carrello.</div>
     </aside>
   </div>
 
   <script>
     const cart = new Map();
-    let PAY_READY = false; // abilitato quando la config SumUp è ok
+    let PAY_READY = false;
 
-    // ---- Utilità
     function cssId(s){ return s.replace(/[^a-z0-9]+/gi,'_'); }
     function euro(n){ return "€ "+Number(n).toFixed(2).replace(".",","); }
 
-    // ---- Carrello
     function inc(name, price){
       const it = cart.get(name)||{price,qty:0};
       it.qty++; cart.set(name,it);
@@ -131,7 +121,6 @@
       document.getElementById('btn-pay').disabled = !(PAY_READY && tot>0);
     }
 
-    // ---- Invio ordine
     async function checkout(){
       const items=Array.from(cart.entries()).map(([n,it])=>({name:n,price:it.price,qty:it.qty}));
       if(items.length===0){ alert("Aggiungi almeno un prodotto"); return; }
@@ -143,37 +132,27 @@
         body:JSON.stringify({tableCode,items,total})
       });
       const js=await r.json();
-      if(js.ok){
-        alert("Ordine inviato!");
-        // lasciamo il carrello per consentire il pagamento subito dopo
-      } else {
-        alert("Errore invio ordine: "+(js.error||"impossibile inviare"));
-      }
+      if(js.ok){ alert("Ordine inviato!"); } else { alert("Errore invio ordine"); }
     }
 
-    // ---- Pagamento SumUp
     async function payOnline(){
       const items=Array.from(cart.entries()).map(([n,it])=>({name:n,price:it.price,qty:it.qty}));
       if(items.length===0){ alert("Carrello vuoto"); return; }
       const total=items.reduce((s,i)=>s+i.price*i.qty,0);
 
-      const r = await fetch("/api/pay/sumup", { // usa l'endpoint nuovo
+      const r = await fetch("/api/pay-sumup", { // <-- allineato al server
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ amount: Number(total.toFixed(2)) })
       });
       const js = await r.json();
-      if(js.ok && js.url){
-        window.location.href = js.url; // apri nel tab corrente
-      } else {
-        alert("Pagamento non disponibile. Verifica configurazione SumUp.");
-      }
+      if(js.ok && js.url){ window.location.href = js.url; }
+      else { alert("Pagamento non disponibile. Verifica configurazione SumUp."); }
     }
 
-    // ---- Boot: verifica config SumUp per abilitare il bottone
     (async function(){
       try{
-        const r = await fetch('/api/pay/sumup/config');
+        const r = await fetch('/api/pay-sumup/config'); // <-- allineato al server
         const j = await r.json();
         if(j.ok){
           PAY_READY = true;
