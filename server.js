@@ -147,6 +147,7 @@ app.post("/api/orders/:id/printed", (_req, res) => res.json({ ok:true }));
 // =====================================================================================
 // API SETTINGS (persistenti in tabella "settings")
 // =====================================================================================
+
 app.get("/api/settings", async (_req, res) => {
   try {
     const keys = ["sound_enabled","autorefresh"];
@@ -179,6 +180,7 @@ app.post("/api/settings", async (req, res) => {
 // =====================================================================================
 // API STATISTICHE
 // =====================================================================================
+
 async function loadRange(startISO, endISO){
   const { data: orders, error: oErr } = await supabase
     .from("orders")
@@ -274,75 +276,66 @@ app.get("/api/stats/range", async (req, res) => {
 });
 
 // =====================================================================================
-// SUMUP — token + checkout (client_credentials)
-// Env richieste: SUMUP_CLIENT_ID, SUMUP_CLIENT_SECRET, SUMUP_PAY_TO_EMAIL, BASE_URL
+// API PAGAMENTO SUMUP (dinamico)
+// Env su Render:
+// - SUMUP_SECRET_KEY  oppure SUMUP_ACCESS_TOKEN  (Bearer valido)
+// - SUMUP_PAY_TO_EMAIL (email account SumUp che incassa)
 // =====================================================================================
-const needEnv = (keys) => keys.filter(k => !process.env[k] || String(process.env[k]).trim()==="");
 
-app.get('/api/pay/sumup/config', (_req, res) => {
-  const missing = needEnv(['SUMUP_CLIENT_ID','SUMUP_CLIENT_SECRET','SUMUP_PAY_TO_EMAIL','BASE_URL']);
+// Endpoint CONFIG per il menu (verifica env)
+app.get("/api/pay-sumup/config", (_req,res)=>{
+  const missing = [];
+  const secret = process.env.SUMUP_SECRET_KEY || process.env.SUMUP_ACCESS_TOKEN;
+  if(!secret) missing.push("SUMUP_SECRET_KEY/ACCESS_TOKEN");
+  if(!process.env.SUMUP_PAY_TO_EMAIL) missing.push("SUMUP_PAY_TO_EMAIL");
   res.json({ ok: missing.length===0, missing });
 });
 
-async function sumupAccessToken(){
-  const miss = needEnv(['SUMUP_CLIENT_ID','SUMUP_CLIENT_SECRET']);
-  if (miss.length) throw new Error('Missing env: '+miss.join(', '));
+// Crea checkout e restituisce l’URL
+app.post("/api/pay-sumup", async (req, res) => {
+  try {
+    const { amount, currency = "EUR", description = "Pagamento Mangia & Fuggi" } = req.body || {};
+    const secret = process.env.SUMUP_SECRET_KEY || process.env.SUMUP_ACCESS_TOKEN;
+    const payTo  = process.env.SUMUP_PAY_TO_EMAIL;
 
-  const params = new URLSearchParams({
-    grant_type: 'client_credentials',
-    client_id: process.env.SUMUP_CLIENT_ID,
-    client_secret: process.env.SUMUP_CLIENT_SECRET,
-    scope: 'payments'
-  });
+    if (!secret || !payTo) {
+      return res.status(400).json({ ok:false, error:"sumup_not_configured" });
+    }
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ ok:false, error:"invalid_amount" });
+    }
 
-  const r = await fetch('https://api.sumup.com/token', {
-    method: 'POST',
-    headers: {'Content-Type':'application/x-www-form-urlencoded'},
-    body: params
-  });
-  const j = await r.json();
-  if (!r.ok || !j.access_token) throw new Error('Token error: '+JSON.stringify(j));
-  return j.access_token;
-}
+    const ref = "ordine_" + Math.random().toString(36).slice(2,8);
 
-async function sumupCreateCheckout(amount, description='Pagamento Mangia & Fuggi'){
-  const miss = needEnv(['SUMUP_PAY_TO_EMAIL','BASE_URL']);
-  if (miss.length) throw new Error('Missing env: '+miss.join(', '));
-  const token = await sumupAccessToken();
+    const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${secret}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        amount: Number(Number(amount).toFixed(2)),
+        currency,
+        checkout_reference: ref,
+        pay_to_email: payTo,
+        description
+      })
+    });
 
-  const payload = {
-    checkout_reference: 'MF_'+Date.now(),
-    amount: Number(amount),
-    currency: 'EUR',
-    pay_to_email: process.env.SUMUP_PAY_TO_EMAIL,
-    description,
-    return_url: process.env.BASE_URL + '/menu',
-    redirect_url: process.env.BASE_URL + '/menu'
-  };
+    if (!resp.ok) {
+      const text = await resp.text();
+      console.error("SumUp error:", resp.status, text);
+      return res.status(500).json({ ok:false, error:"sumup_api_error" });
+    }
 
-  const r = await fetch('https://api.sumup.com/v0.1/checkouts', {
-    method: 'POST',
-    headers: { 'Authorization':'Bearer '+token, 'Content-Type':'application/json' },
-    body: JSON.stringify(payload)
-  });
-  const j = await r.json();
-  if (!r.ok || !j.checkout_url) throw new Error('Checkout error: '+JSON.stringify(j));
-  return j.checkout_url;
-}
-
-// endpoint principale
-app.post('/api/pay/sumup', async (req, res) => {
-  try{
-    const { amount } = req.body || {};
-    const a = Number(amount);
-    if (!a || a<=0) return res.status(400).json({ ok:false, error:'bad_amount' });
-    const url = await sumupCreateCheckout(a);
-    res.json({ ok:true, url });
-  }catch(e){ console.error('SUMUP ERROR:', e); res.status(500).json({ ok:false, error:String(e.message||e) }); }
+    const data = await resp.json();
+    const url = data.checkout_url || data.redirect_url || data.url;
+    return res.json({ ok:true, url });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ ok:false });
+  }
 });
-
-// alias per retro-compatibilità con eventuale front-end precedente
-app.post('/api/pay-sumup', async (req,res) => app._router.handle(req, res, () => {}, 'post', '/api/pay/sumup') );
 
 // ---- Avvio
 const PORT = process.env.PORT || 3000;
