@@ -49,6 +49,66 @@ app.get("/admin", (_r, res) => res.render("admin", {
 
 // Health
 app.get("/api/health", (_r, res) => res.json({ ok:true }));
+// --- helper: log eventi
+async function logEvent(orderId, type, note = null) {
+  try {
+    await supabase.from('order_events').insert([{ order_id: orderId, type, note }]);
+  } catch (e) { console.error('logEvent', e); }
+}
+
+/** MARK: Ordine letto (campanella tolta) */
+app.post('/api/orders/:id/ack', async (req, res) => {
+  const id = req.params.id;
+  const { error } = await supabase
+    .from('orders')
+    .update({ ack: true })
+    .eq('id', id);
+  if (error) return res.status(500).json({ ok:false });
+  logEvent(id, 'ack');
+  res.json({ ok:true });
+});
+
+/** MARK: Ordine completato */
+app.post('/api/orders/:id/complete', async (req, res) => {
+  const id = req.params.id;
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'done', completed_at: now })
+    .eq('id', id);
+  if (error) return res.status(500).json({ ok:false });
+  logEvent(id, 'completed');
+  res.json({ ok:true });
+});
+
+/** MARK: Ordine cancellato */
+app.post('/api/orders/:id/cancel', async (req, res) => {
+  const id = req.params.id;
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'canceled', canceled_at: now })
+    .eq('id', id);
+  if (error) return res.status(500).json({ ok:false });
+  logEvent(id, 'canceled');
+  res.json({ ok:true });
+});
+
+/** MARK: SETTINGS (salva/legge preferenze dashboard) */
+app.get('/api/settings', async (_req, res) => {
+  const { data, error } = await supabase.from('settings').select().eq('key','dashboard').maybeSingle();
+  if (error) return res.status(500).json({ ok:false });
+  res.json({ ok:true, value: data?.value || {} });
+});
+
+app.post('/api/settings', async (req, res) => {
+  const value = req.body || {};
+  const { error } = await supabase
+    .from('settings')
+    .upsert({ key:'dashboard', value }, { onConflict: 'key' });
+  if (error) return res.status(500).json({ ok:false });
+  res.json({ ok:true });
+});
 
 // ===== CREAZIONE ORDINE (dal menu) =====
 app.post("/api/checkout", async (req, res) => {
