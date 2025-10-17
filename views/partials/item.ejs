@@ -8,20 +8,20 @@
   </div>
 
   <!-- TESTO -->
-  <div>
-    <div class="name"><%= name %></div>
+  <div class="i-left">
+    <div class="i-name"><%= name %></div>
     <% if (desc) { %>
-      <div class="desc"><%= desc %></div>
+      <div class="i-desc"><%= desc %></div>
     <% } %>
   </div>
 
   <!-- PREZZO -->
-  <div class="price">€ <%= price.toFixed(2).replace('.', ',') %></div>
-
-  <!-- BOTTONI -->
-  <div class="qty">
-    <button class="btn small" onclick="dec('<%= name %>')">−</button>
-    <span id="q-<%= name.replace(/[^a-z0-9]+/gi,'_') %>">0</span>
-    <button class="btn small" onclick="inc('<%= name %>', <%= price %>)">+</button>
+  <div class="i-right">
+    <div class="i-price">€ <%= price.toFixed(2).replace('.', ',') %></div>
+    <div class="i-qty">
+      <button class="q" onclick="dec('<%= name %>')">−</button>
+      <span class="qv" id="q-<%= name.replace(/[^a-z0-9]+/gi,'_') %>">0</span>
+      <button class="q" onclick="inc('<%= name %>', <%= price %>)">+</button>
+    </div>
   </div>
 </div>
