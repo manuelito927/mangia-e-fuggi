@@ -6,10 +6,14 @@
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+
+/* sfondo */
 .bg{position:fixed;inset:0;background:
   radial-gradient(1200px 700px at 20% -10%,var(--bg2),transparent),
   radial-gradient(1200px 700px at 80% 110%,var(--bg2),transparent),var(--bg1);
   z-index:-1}
+
+/* header */
 .header{backdrop-filter:saturate(120%) blur(6px);background:linear-gradient(#ffffffcc,#ffffffaa);border-bottom:1px solid var(--line)}
 .header-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 20px}
 .brand{display:flex;gap:12px;align-items:center}
@@ -22,28 +26,59 @@ body{margin:0;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe U
 .btn-ghost{background:#0000000d;color:var(--ink)}
 .btn-ghost:hover{background:#0000001a}
 
-/* Layout 2 colonne */
+/* layout 2 colonne */
 .wrap.layout{
   max-width:1100px; margin:24px auto; padding:0 20px;
   display:grid; grid-template-columns: 1fr 320px; gap:22px;
 }
 
-/* Sezioni e lista verticale */
+/* sezioni + lista */
 .section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:18px;box-shadow:0 10px 30px #00000008}
 .section-title{margin:6px 0 16px 0;font-family:"Playfair Display",Georgia,"Times New Roman",serif;font-weight:700}
 .vlist{list-style:none;margin:0;padding:0}
+
+/* riga prodotto */
 .item{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px dashed var(--line)}
 .item:last-child{border-bottom:0}
+
+/* sinistra (testi) */
 .i-left{min-width:0}
 .i-name{font-weight:600}
 .i-desc{color:var(--ink-soft);font-size:.95rem;margin-top:2px}
+.i-desc em{font-style:italic}
+
+/* destra (prezzo + qty) */
 .i-right{display:flex;align-items:center;gap:16px}
 .i-price{font-weight:700;min-width:84px;text-align:right}
-.i-qty{display:flex;gap:10px;align-items:center}
-.q{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:18px;line-height:0}
-.qv{min-width:22px;text-align:center;display:inline-block}
 
-/* Carrello laterale */
+/* quantità: pulsanti “pill” uno accanto all’altro */
+.i-qty{display:flex;gap:10px;align-items:center}
+.q{
+  width:38px;height:38px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background:#fff;
+  cursor:pointer;
+  font-size:20px; line-height:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px #0000000d, inset 0 -2px 0 #00000006;
+  transition:transform .08s ease, background .15s ease, box-shadow .15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.q:hover{background:#faf7f4}
+.q:active{transform:scale(.96)}
+.q:focus-visible{outline:2px solid #0000; box-shadow:0 0 0 3px #9b5c2e30, inset 0 -2px 0 #00000006}
+.qv{min-width:28px;text-align:center;display:inline-block;font-weight:700}
+
+/* immagini piatti */
+.thumb{
+  width: 90px; height: 72px;
+  border-radius: 10px; overflow: hidden;
+  background:#f2e8e1; flex-shrink:0;
+}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* carrello laterale */
 .cart-side{
   position:sticky; top:12px; align-self:start;
   background:#fff; border:1px solid var(--line); border-radius:16px;
@@ -59,26 +94,11 @@ body{margin:0;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe U
 .cart-total{display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-weight:700}
 .btn-wide{width:100%}
 
-/* Mobile: cart sotto */
+/* mobile */
 @media (max-width: 900px){
   .wrap.layout{grid-template-columns:1fr}
   .cart-side{position:static}
 }
+
+/* toast */
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#111;color:#fff;padding:10px 16px;border-radius:10px;box-shadow:0 10px 30px #0000002a;font-weight:600}
-
-/* ---- Immagini piatti ---- */
-.thumb {
-  width: 90px;
-  height: 72px;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #f2e8e1;
-  flex-shrink: 0;
-}
-
-.thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
