@@ -13,19 +13,20 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 
-// ---------- helpers
+// ---------- utils
 function getEnvAny(...keys){
   for (const k of keys) {
-    if (process.env[k] && String(process.env[k]).trim() !== "") return String(process.env[k]).trim();
+    const v = process.env[k];
+    if (v && String(v).trim() !== "") return String(v).trim();
   }
   return "";
 }
-const euro = v => Number(v||0).toFixed(2);
+const euro = v => Number(v || 0).toFixed(2);
 
 // ---------- Supabase
 const SUPABASE_URL = getEnvAny("SUPABASE_URL","Supabase_url","supabase_url");
 const SUPABASE_KEY = getEnvAny("SUPABASE_KEY","Supabase_key","supabase_key","SUPABASE_SERVICE_ROLE_KEY");
-if(!SUPABASE_URL || !SUPABASE_KEY) console.warn("⚠️  Mancano SUPABASE_URL/SUPABASE_KEY");
+if(!SUPABASE_URL || !SUPABASE_KEY) console.warn("⚠️ Mancano SUPABASE_URL/SUPABASE_KEY");
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ---------- App
@@ -43,7 +44,7 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// ---------- Basic Auth su /admin (usa ADMIN_PASSWORD su Render)
+// ---------- Basic Auth su /admin (usa ADMIN_PASSWORD)
 app.use("/admin", (req, res, next) => {
   const required = (process.env.ADMIN_PASSWORD || "").trim();
   if (!required) return next();
@@ -62,10 +63,7 @@ app.use("/admin", (req, res, next) => {
 app.get("/", (_req, res) => res.redirect("/menu"));
 app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/admin", (_req, res) =>
-  res.render("admin", {
-    SUPABASE_URL: SUPABASE_URL,
-    SUPABASE_KEY: SUPABASE_KEY
-  })
+  res.render("admin", { SUPABASE_URL, SUPABASE_KEY })
 );
 
 // =====================================================================================
@@ -126,7 +124,6 @@ app.get("/api/orders", async (req, res) => {
   }
 });
 
-// Azioni stato
 app.post("/api/orders/:id/complete", async (req, res) => {
   const { error } = await supabase.from("orders")
     .update({ status:"completed", completed_at:new Date().toISOString() })
@@ -186,130 +183,30 @@ app.post("/api/settings", async (req, res) => {
 });
 
 // =====================================================================================
-// API STATISTICHE
-// =====================================================================================
-async function loadRange(startISO, endISO){
-  const { data: orders, error: oErr } = await supabase
-    .from("orders")
-    .select("id,total,created_at,table_code")
-    .gte("created_at", startISO).lt("created_at", endISO)
-    .order("created_at", { ascending: true });
-  if (oErr) throw oErr;
-
-  const ids = orders.map(o => o.id);
-  let items = [];
-  if (ids.length){
-    const { data: its, error: iErr } = await supabase
-      .from("order_items").select("order_id,name,qty,price").in("order_id", ids);
-    if (iErr) throw iErr;
-    items = its || [];
-  }
-  return { orders, items };
-}
-function aggPerHourOrDay(orders, startISO, endISO){
-  const start = new Date(startISO), end = new Date(endISO);
-  const multiDay = (end - start) > 24*60*60*1000;
-
-  const m = new Map();
-  for (const o of orders){
-    const d = new Date(o.created_at);
-    if (multiDay){ d.setHours(0,0,0,0); } else { d.setMinutes(0,0,0); }
-    const key = d.toISOString();
-    const cur = m.get(key) || { bucket:key, orders:0, revenue:0 };
-    cur.orders += 1;
-    cur.revenue += Number(o.total||0);
-    m.set(key, cur);
-  }
-  return { rows:[...m.values()].sort((a,b)=>a.bucket.localeCompare(b.bucket)), multiDay };
-}
-function aggTop(items){
-  const m = new Map(); let totQty=0, totRev=0;
-  for (const it of items){
-    const cur = m.get(it.name) || { name:it.name, qty:0, revenue:0 };
-    cur.qty     += Number(it.qty||0);
-    const rev = Number(it.qty||0)*Number(it.price||0);
-    cur.revenue += rev;
-    totQty += Number(it.qty||0);
-    totRev += rev;
-    m.set(it.name, cur);
-  }
-  const arr = [...m.values()].sort((a,b)=>b.qty-a.qty);
-  return {
-    list: arr.map(x => ({
-      ...x,
-      pctQty: totQty ? (x.qty*100/totQty) : 0,
-      pctRev: totRev ? (x.revenue*100/totRev) : 0
-    }))
-  };
-}
-
-// Giorno
-app.get("/api/stats/day", async (req, res) => {
-  try {
-    const q = (req.query.date || "").toString();
-    const d = q && /^\d{4}-\d{2}-\d{2}$/.test(q) ? new Date(q+"T00:00:00") : new Date();
-    const start = new Date(d); start.setHours(0,0,0,0);
-    const end = new Date(start); end.setDate(end.getDate()+1);
-
-    const { orders, items } = await loadRange(start.toISOString(), end.toISOString());
-    const buckets = aggPerHourOrDay(orders, start.toISOString(), end.toISOString());
-    const top = aggTop(items);
-    const total = orders.reduce((s,o)=>s+Number(o.total||0),0);
-
-    res.json({ ok:true, range:{ start:start.toISOString(), end:end.toISOString() }, count:orders.length, total, perBucket:buckets, top });
-  } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
-});
-
-// Intervallo
-app.get("/api/stats/range", async (req, res) => {
-  try {
-    const f = (req.query.from || "").toString();
-    const t = (req.query.to   || "").toString();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || !/^\d{4}-\d{2}-\d{2}$/.test(t))
-      return res.status(400).json({ ok:false, error:"bad_dates" });
-
-    const start = new Date(f+"T00:00:00");
-    const end   = new Date(t+"T00:00:00"); end.setDate(end.getDate()+1);
-
-    const { orders, items } = await loadRange(start.toISOString(), end.toISOString());
-    const buckets = aggPerHourOrDay(orders, start.toISOString(), end.toISOString());
-    const top = aggTop(items);
-
-    const total = orders.reduce((s,o)=>s+Number(o.total||0),0);
-    const avg   = orders.length ? total/orders.length : 0;
-
-    res.json({ ok:true, range:{ from:f, to:t }, count:orders.length, total, avg, perBucket:buckets, top });
-  } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
-});
-
-// =====================================================================================
-// PAGAMENTI SUMUP (con gestione automatica dell'OAuth token)
-// Env accettate:
-//   SUMUP_ACCESS_TOKEN  (facoltativo: se lo metti, lo usa direttamente)
-//   oppure coppia SUMUP_CLIENT_ID + SUMUP_CLIENT_SECRET (consigliato)
-//   e SUMUP_PAY_TO_EMAIL (obbligatorio: email del tuo account SumUp che incassa)
+// PAGAMENTI SUMUP (secret key, access token o client credentials)
+// Env supportate:
+//   SUMUP_SECRET_KEY  (il “sup_sk_…”, usabile direttamente come Bearer)
+//   oppure SUMUP_ACCESS_TOKEN
+//   oppure coppia SUMUP_CLIENT_ID + SUMUP_CLIENT_SECRET (OAuth)
+//   SEMPRE: SUMUP_PAY_TO_EMAIL (email del tuo account SumUp)
 // =====================================================================================
 const SUMUP_CLIENT_ID     = getEnvAny("SUMUP_CLIENT_ID","Sumup_client_id");
 const SUMUP_CLIENT_SECRET = getEnvAny("SUMUP_CLIENT_SECRET","Sumup_client_secret");
-const SUMUP_ACCESS_TOKEN  = getEnvAny("SUMUP_ACCESS_TOKEN","Sumup_access_token"); // se presente lo usa
+const SUMUP_ACCESS_TOKEN  = getEnvAny("SUMUP_ACCESS_TOKEN","Sumup_access_token");
+const SUMUP_SECRET_KEY    = getEnvAny("SUMUP_SECRET_KEY","Sumup_secret_key");
 const SUMUP_PAYTO         = getEnvAny("SUMUP_PAY_TO_EMAIL","SUMUP_MERCHANT_EMAIL","Sumup_pay_to_email");
 
-// prende/refresh token se serve
 async function getSumUpBearer(){
-  // se hai già messo un access token statico, lo usiamo così com'è
   if (SUMUP_ACCESS_TOKEN) return SUMUP_ACCESS_TOKEN;
+  if (SUMUP_SECRET_KEY)   return SUMUP_SECRET_KEY;
 
   if (!(SUMUP_CLIENT_ID && SUMUP_CLIENT_SECRET)) {
     throw new Error("missing_client_credentials");
   }
-
-  // OAuth Client Credentials
   const form = new URLSearchParams();
   form.set("grant_type", "client_credentials");
   form.set("client_id", SUMUP_CLIENT_ID);
   form.set("client_secret", SUMUP_CLIENT_SECRET);
-  // opzionale: scope. In genere non serve specificarlo per /checkouts
-  // form.set("scope", "payments");
 
   const resp = await fetch("https://api.sumup.com/token", {
     method: "POST",
@@ -327,9 +224,12 @@ async function getSumUpBearer(){
   return js.access_token;
 }
 
-// Stato al frontend (abilita/disabilita bottone)
+// Stato per il frontend (abilita bottone)
 app.get("/api/pay-config", async (_req,res) => {
-  const enabled = !!(SUMUP_PAYTO && (SUMUP_ACCESS_TOKEN || (SUMUP_CLIENT_ID && SUMUP_CLIENT_SECRET)));
+  const enabled = !!(
+    SUMUP_PAYTO &&
+    (SUMUP_ACCESS_TOKEN || SUMUP_SECRET_KEY || (SUMUP_CLIENT_ID && SUMUP_CLIENT_SECRET))
+  );
   res.json({ ok:true, enabled });
 });
 
@@ -340,7 +240,7 @@ app.post("/api/pay-sumup", async (req, res) => {
     if (!SUMUP_PAYTO) return res.status(400).json({ ok:false, error:"sumup_missing_payto" });
     if (!amount || amount <= 0) return res.status(400).json({ ok:false, error:"invalid_amount" });
 
-    const bearer = await getSumUpBearer(); // ottiene token (statico o via OAuth)
+    const bearer = await getSumUpBearer();
     const ref = "ordine_" + Math.random().toString(36).slice(2,8);
 
     const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
