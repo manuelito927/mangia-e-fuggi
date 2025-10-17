@@ -1,27 +1,24 @@
 <div class="item" data-name="<%= name %>" data-price="<%= price.toFixed(2) %>">
   <!-- FOTO -->
   <div class="thumb">
-    <img 
-      src="<%= img || '/img/fallback.jpg' %>" 
-      alt="<%= name %>" 
-      onerror="this.src='/img/fallback.jpg'">
+    <img src="<%= img || '/img/fallback.jpg' %>" alt="<%= name %>" onerror="this.src='/img/fallback.jpg'">
   </div>
 
   <!-- TESTO -->
   <div class="i-left">
-    <div class="i-name"><strong><%= name %></strong></div>
+    <div class="i-name"><%= name %></div>
     <% if (desc) { %>
       <div class="i-desc"><em><%= desc %></em></div>
     <% } %>
   </div>
 
-  <!-- PREZZO + PULSANTI -->
+  <!-- PREZZO + QTY (a destra) -->
   <div class="i-right">
     <div class="i-price">€ <%= price.toFixed(2).replace('.', ',') %></div>
     <div class="i-qty">
-      <button class="q q-big" onclick="dec('<%= name %>')">−</button>
+      <button class="q" onclick="dec('<%= name %>')">−</button>
       <span class="qv" id="q-<%= name.replace(/[^a-z0-9]+/gi,'_') %>">0</span>
-      <button class="q q-big" onclick="inc('<%= name %>', <%= price %>)">+</button>
+      <button class="q" onclick="inc('<%= name %>', <%= price %>)">+</button>
     </div>
   </div>
 </div>
