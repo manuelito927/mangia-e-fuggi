@@ -1,9 +1,24 @@
 <div class="item" data-name="<%= name %>" data-price="<%= price.toFixed(2) %>">
+  <!-- FOTO -->
+  <div class="thumb">
+    <img 
+      src="<%= img || '/img/fallback.jpg' %>" 
+      alt="<%= name %>" 
+      onerror="this.src='/img/fallback.jpg'">
+  </div>
+
+  <!-- TESTO -->
   <div>
     <div class="name"><%= name %></div>
-    <div class="desc"><%= desc %></div>
+    <% if (desc) { %>
+      <div class="desc"><%= desc %></div>
+    <% } %>
   </div>
+
+  <!-- PREZZO -->
   <div class="price">€ <%= price.toFixed(2).replace('.', ',') %></div>
+
+  <!-- BOTTONI -->
   <div class="qty">
     <button class="btn small" onclick="dec('<%= name %>')">−</button>
     <span id="q-<%= name.replace(/[^a-z0-9]+/gi,'_') %>">0</span>
