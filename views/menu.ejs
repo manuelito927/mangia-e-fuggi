@@ -4,9 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mangia & Fuggi – Menu</title>
-  <link rel="stylesheet" href="/styles.css">
+
+  <!-- stile principale -->
+  <link rel="stylesheet" href="/styles.css" />
+
+  <!-- piccoli stili locali per il layout della pagina -->
   <style>
-    /* piccoli stili locali */
     .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 340px;gap:18px}
     .card{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
     h2{font-size:20px;margin:8px 0 12px;color:#7b4b3a}
@@ -27,7 +30,7 @@
   <div class="container">
     <main>
       <!-- ANTIPASTI -->
-      <section class="card">
+      <section id="antipasti" class="card">
         <h2>Antipasti</h2>
         <%- include('partials/item', {name:'Bruschette',        desc:'Pomodoro, basilico, olio EVO', price:4.00, img:'/img/BRUSCHETTE.JPG.jpg'}) %>
         <%- include('partials/item', {name:'Olive & Taralli',    desc:'Selezione tipica pugliese',    price:3.50, img:'/img/TARALLINI E OLIVE.JPG'}) %>
@@ -37,7 +40,7 @@
       </section>
 
       <!-- PIZZE CLASSICHE -->
-      <section class="card">
+      <section id="classiche" class="card">
         <h2>Pizze classiche</h2>
         <%- include('partials/item', {name:'Margherita',         desc:'Pomodoro, mozzarella, basilico', price:5.00, img:'/img/MARGHERITA.JPG'}) %>
         <%- include('partials/item', {name:'Marinara',           desc:'Pomodoro, aglio, origano',       price:4.50, img:'/img/MARINARA.JPG'}) %>
@@ -47,7 +50,7 @@
       </section>
 
       <!-- PIZZE GOURMET -->
-      <section class="card">
+      <section id="gourmet" class="card">
         <h2>Pizze gourmet</h2>
         <%- include('partials/item', {name:'Bufalina',           desc:'Pomodoro, bufala DOP, basilico', price:9.00,  img:'/img/BURRATA.JPG'}) %>
         <%- include('partials/item', {name:'Tartufo',            desc:'Crema di tartufo, provola, speck',price:11.00, img:'/img/TARTUFO.JPG'}) %>
@@ -56,7 +59,7 @@
       </section>
 
       <!-- BEVANDE -->
-      <section class="card">
+      <section id="bevande" class="card">
         <h2>Bevande</h2>
         <%- include('partials/item', {name:'Acqua',              desc:'Naturale o frizzante', price:1.50, img:'/img/ACQUA.JPG'}) %>
         <%- include('partials/item', {name:'Coca-Cola',          desc:'Lattina 33cl',          price:2.50, img:'/img/COCACOLA.JPG'}) %>
@@ -64,8 +67,8 @@
         <%- include('partials/item', {name:'Vino della casa',    desc:'Bicchiere',             price:3.50, img:'/img/VINO.JPG'}) %>
       </section>
 
-      <!-- DESSERT (RIPRISTINATO) -->
-      <section class="card">
+      <!-- DESSERT -->
+      <section id="dessert" class="card">
         <h2>Dessert</h2>
         <%- include('partials/item', {name:'Tiramisù',           desc:'Classico',            price:4.50, img:'/img/TIRAMISU.JPG'}) %>
         <%- include('partials/item', {name:'Panna cotta',        desc:'Frutti di bosco',     price:4.00, img:'/img/PANNACOTTA.JPG'}) %>
