@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mangia & Fuggi – Menu</title>
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto; background:#f6efe9; margin:0; padding:20px;}
-    header{max-width:1100px;margin:0 auto 20px;display:flex;justify-content:space-between;align-items:center}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto;background:#f6efe9;margin:0;padding:20px;}
+    header{max-width:1100px;margin:0 auto 20px;display:flex;gap:12px;align-items:center}
+    header img.logo{width:46px;height:46px;object-fit:cover;border-radius:8px;border:2px solid #7b4b3a22}
     .title{font-weight:700;font-size:28px;color:#7b4b3a}
+
     .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 340px;gap:18px}
     .card{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
     h2{font-size:20px;margin:8px 0 12px;color:#7b4b3a}
-    .item{display:grid;grid-template-columns:1fr auto 120px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px dashed #e7d6c9}
+
+    .item{display:grid;grid-template-columns:90px 1fr auto 140px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #e7d6c9}
+    .thumb{width:90px;height:72px;border-radius:10px;overflow:hidden;background:#f2e8e1}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
     .name{font-weight:600}
     .desc{font-style:italic;color:#6b6b6b;font-size:14px}
     .price{font-weight:600;white-space:nowrap}
@@ -31,6 +36,7 @@
 </head>
 <body>
   <header>
+    <img class="logo" src="/img/LOGO.JPG" alt="Logo" onerror="this.src='/img/fallback.jpg'">
     <div class="title">Mangia &amp; Fuggi</div>
   </header>
 
@@ -39,47 +45,47 @@
       <!-- ANTIPASTI -->
       <section class="card">
         <h2>Antipasti</h2>
-        <%- include('partials/item', {name:'Bruschette', desc:'Pomodoro, basilico, olio EVO', price:4.00}) %>
-        <%- include('partials/item', {name:'Olive & Taralli', desc:'Selezione tipica pugliese', price:3.50}) %>
-        <%- include('partials/item', {name:'Caprese', desc:'Mozzarella, pomodoro, origano', price:7.00}) %>
-        <%- include('partials/item', {name:'Parmigiana', desc:'Melanzane, pomodoro, grana', price:7.50}) %>
-        <%- include('partials/item', {name:'Fritto misto', desc:'Arancini, crocchè, panelle', price:8.00}) %>
+        <%- include('partials/item', {name:'Bruschette',        desc:'Pomodoro, basilico, olio EVO', price:4.00, img:'/img/BRUSCHETTE.JPG.jpg'}) %>
+        <%- include('partials/item', {name:'Olive & Taralli',    desc:'Selezione tipica pugliese',    price:3.50, img:'/img/TARALLINI E OLIVE.JPG'}) %>
+        <%- include('partials/item', {name:'Caprese',            desc:'Mozzarella, pomodoro, origano',price:7.00, img:'/img/CAPRESE.JPG'}) %>
+        <%- include('partials/item', {name:'Parmigiana',         desc:'Melanzane, pomodoro, grana',   price:7.50, img:'/img/PARMIGIANA.JPG'}) %>
+        <%- include('partials/item', {name:'Fritto misto',       desc:'Arancini, crocchè, panelle',   price:8.00, img:'/img/FRITTINI.JPG'}) %>
       </section>
 
       <!-- PIZZE CLASSICHE -->
       <section class="card">
         <h2>Pizze classiche</h2>
-        <%- include('partials/item', {name:'Margherita', desc:'Pomodoro, mozzarella, basilico', price:5.00}) %>
-        <%- include('partials/item', {name:'Marinara', desc:'Pomodoro, aglio, origano', price:4.50}) %>
-        <%- include('partials/item', {name:'Diavola', desc:'Salame piccante', price:7.00}) %>
-        <%- include('partials/item', {name:'Prosciutto e funghi', desc:'Cotto e champignon', price:7.50}) %>
-        <%- include('partials/item', {name:'Quattro formaggi', desc:'Mozzarella, gorgonzola, grana, provola', price:8.00}) %>
+        <%- include('partials/item', {name:'Margherita',         desc:'Pomodoro, mozzarella, basilico', price:5.00, img:'/img/MARGHERITA.JPG'}) %>
+        <%- include('partials/item', {name:'Marinara',           desc:'Pomodoro, aglio, origano',       price:4.50, img:'/img/MARINARA.JPG'}) %>
+        <%- include('partials/item', {name:'Diavola',            desc:'Salame piccante',                price:7.00, img:'/img/DIAVOLA.JPG'}) %>
+        <%- include('partials/item', {name:'Prosciutto e funghi',desc:'Cotto e champignon',             price:7.50, img:'/img/COTTOEFUNGHI.JPG'}) %>
+        <%- include('partials/item', {name:'Quattro formaggi',   desc:'Mozzarella, gorgonzola, grana, provola', price:8.00, img:'/img/4FORMAGGI.JPG'}) %>
       </section>
 
       <!-- PIZZE GOURMET -->
       <section class="card">
         <h2>Pizze gourmet</h2>
-        <%- include('partials/item', {name:'Bufalina', desc:'Pomodoro, bufala DOP, basilico', price:9.00}) %>
-        <%- include('partials/item', {name:'Tartufo', desc:'Crema di tartufo, provola, speck', price:11.00}) %>
-        <%- include('partials/item', {name:'Mortazza', desc:'Pistacchio, stracciatella, mortadella', price:10.50}) %>
-        <%- include('partials/item', {name:'Nduja & Burrata', desc:'’Nduja calabrese, burrata', price:10.00}) %>
+        <%- include('partials/item', {name:'Bufalina',           desc:'Pomodoro, bufala DOP, basilico', price:9.00,  img:'/img/BURRATA.JPG'}) %>
+        <%- include('partials/item', {name:'Tartufo',            desc:'Crema di tartufo, provola, speck',price:11.00, img:'/img/TARTUFO.JPG'}) %>
+        <%- include('partials/item', {name:'Mortazza',           desc:'Pistacchio, stracciatella, mortadella', price:10.50, img:'/img/MORTAZZA.JPG'}) %>
+        <%- include('partials/item', {name:'Nduja & Burrata',    desc:'’Nduja calabrese, burrata',       price:10.00, img:'/img/NDUJA E MORTADELLA.JPG'}) %>
       </section>
 
       <!-- BEVANDE -->
       <section class="card">
         <h2>Bevande</h2>
-        <%- include('partials/item', {name:'Acqua', desc:'Naturale o frizzante', price:1.50}) %>
-        <%- include('partials/item', {name:'Coca-Cola', desc:'Lattina 33cl', price:2.50}) %>
-        <%- include('partials/item', {name:'Birra', desc:'Chiara alla spina', price:4.00}) %>
-        <%- include('partials/item', {name:'Vino della casa', desc:'Bicchiere', price:3.50}) %>
+        <%- include('partials/item', {name:'Acqua',              desc:'Naturale o frizzante', price:1.50, img:'/img/ACQUA.JPG,jpg'}) %>
+        <%- include('partials/item', {name:'Coca-Cola',          desc:'Lattina 33cl',          price:2.50, img:'/img/COCACOLA.JPG'}) %>
+        <%- include('partials/item', {name:'Birra',              desc:'Chiara alla spina',     price:4.00, img:'/img/BIRRA.JPG'}) %>
+        <%- include('partials/item', {name:'Vino della casa',    desc:'Bicchiere',             price:3.50, img:'/img/VINO.JPG'}) %>
       </section>
 
       <!-- DESSERT -->
       <section class="card">
         <h2>Dessert</h2>
-        <%- include('partials/item', {name:'Tiramisù', desc:'Classico', price:4.50}) %>
-        <%- include('partials/item', {name:'Panna cotta', desc:'Frutti di bosco', price:4.00}) %>
-        <%- include('partials/item', {name:'Cheesecake', desc:'Ricotta e pistacchio', price:4.50}) %>
+        <%- include('partials/item', {name:'Tiramisù',           desc:'Classico',            price:4.50, img:'/img/TIRAMISU.JPG'}) %>
+        <%- include('partials/item', {name:'Panna cotta',        desc:'Frutti di bosco',     price:4.00, img:'/img/PANNACOTTA.JPG'}) %>
+        <%- include('partials/item', {name:'Cheesecake',         desc:'Ricotta e pistacchio',price:4.50, img:'/img/CHEESECAKE.JPG'}) %>
       </section>
     </main>
 
@@ -98,7 +104,6 @@
     const cart = new Map();
     let PAY_ENABLED = false;
 
-    // ---- config pagamento
     (async () => {
       try{
         const r = await fetch("/api/pay-config");
@@ -108,7 +113,7 @@
           ? "Il pagamento si apre su SumUp con l’importo reale del carrello."
           : '<span class="warn">Pagamento online disabilitato: mancano SUMUP_SECRET_KEY / PAY_TO_EMAIL nelle variabili d’ambiente.</span>';
         updatePayButton();
-      }catch{ /* ignora */ }
+      }catch{}
     })();
 
     function cssId(s){ return s.replace(/[^a-z0-9]+/gi,'_'); }
