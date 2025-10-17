@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mangia & Fuggi</title>
+  <style>
+    *{box-sizing:border-box} html,body{height:100%} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto}
+    .wrap{position:relative;height:100%;overflow:hidden}
+    .bgvideo{position:absolute;inset:0;object-fit:cover;width:100%;height:100%}
+    .shade{position:absolute;inset:0;background:linear-gradient(#00000055,#00000066)}
+    .content{
+      position:relative;z-index:2;height:100%;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;color:#fff;text-align:center;padding:20px
+    }
+    .logo{width:68px;height:68px;border-radius:12px;object-fit:cover;border:2px solid #ffffff44;box-shadow:0 6px 30px #0008}
+    h1{margin:0;font-size:32px;letter-spacing:.5px}
+    p{margin:0;color:#fffb}
+    .grid{display:grid;grid-template-columns:repeat(3, minmax(0, 160px));gap:12px;margin-top:8px}
+    .btn{
+      display:flex;align-items:center;justify-content:center;
+      padding:14px;border-radius:14px;border:0;cursor:pointer;text-decoration:none;
+      font-weight:700;background:#ffffffdd;color:#2b211c;backdrop-filter:blur(3px);
+      box-shadow:0 8px 30px #0005;
+    }
+    .btn:hover{background:#fff}
+    @media (max-width:720px){ .grid{grid-template-columns:1fr 1fr} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <video class="bgvideo" src="/video/pizza.mp4" autoplay muted loop playsinline poster="/video/poster.jpg"></video>
+    <div class="shade"></div>
+    <div class="content">
+      <img class="logo" src="/img/LOGO.JPG" alt="Logo" onerror="this.src='/img/fallback.jpg'">
+      <h1>Mangia &amp; Fuggi</h1>
+      <p>Scegli la categoria</p>
+      <div class="grid">
+        <a class="btn" href="/menu#antipasti">Antipasti</a>
+        <a class="btn" href="/menu#classiche">Pizze classiche</a>
+        <a class="btn" href="/menu#gourmet">Pizze gourmet</a>
+        <a class="btn" href="/menu#bevande">Bevande</a>
+        <a class="btn" href="/menu#dessert">Dessert</a>
+        <a class="btn" href="/menu">Tutto il menu</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
