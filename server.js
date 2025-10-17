@@ -61,7 +61,7 @@ app.use("/admin", (req, res, next) => {
 
 // ---------- Pagine
 // Home con video + bottoni categorie (landing.ejs)
-app.get("/", (_req, res) => res.render("landing"));
+app.get("/", (_req, res) => res.render("home")); // landing con video + categorie
 
 // Menu classico e Admin
 app.get("/menu", (_req, res) => res.render("menu"));
