@@ -9,19 +9,19 @@
 
   <!-- TESTO -->
   <div class="i-left">
-    <div class="i-name"><%= name %></div>
+    <div class="i-name"><strong><%= name %></strong></div>
     <% if (desc) { %>
-      <div class="i-desc"><em>(<%= desc %>)</em></div>
+      <div class="i-desc"><em><%= desc %></em></div>
     <% } %>
   </div>
 
-  <!-- PREZZO -->
+  <!-- PREZZO + PULSANTI -->
   <div class="i-right">
     <div class="i-price">€ <%= price.toFixed(2).replace('.', ',') %></div>
     <div class="i-qty">
-      <button class="q" onclick="dec('<%= name %>')">−</button>
+      <button class="q q-big" onclick="dec('<%= name %>')">−</button>
       <span class="qv" id="q-<%= name.replace(/[^a-z0-9]+/gi,'_') %>">0</span>
-      <button class="q" onclick="inc('<%= name %>', <%= price %>)">+</button>
+      <button class="q q-big" onclick="inc('<%= name %>', <%= price %>)">+</button>
     </div>
   </div>
 </div>
