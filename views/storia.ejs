@@ -3,50 +3,221 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>La nostra storia – Mangia & Fuggi</title>
+  <title>Mangia & Fuggi — La nostra storia</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
-    :root{ --brand:#9b5c2e; --ink:#1f1a17; --ink-soft:#6b5f58; --line:#eaded3; }
-    *{ box-sizing:border-box }
-    body{ margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--ink); background:#faf6f1; }
-    .wrap{ max-width:900px; margin:0 auto; padding:24px 18px; }
-    .head{ display:flex; align-items:center; gap:12px; margin-bottom:12px }
-    .logo{ width:48px; height:48px; border-radius:12px; object-fit:cover; box-shadow:0 2px 8px #0001 }
-    h1{ font-family:"Playfair Display", Georgia, "Times New Roman", serif; margin:0; color:#7b4b3a }
-    .card{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 10px 30px #0000000b }
-    p{ line-height:1.6; margin:0 0 12px 0 }
-    .back{ display:inline-block; margin-top:14px; background:var(--brand); color:#fff; text-decoration:none; padding:10px 14px; border-radius:999px; box-shadow:0 4px 12px #9b5c2e44 }
-    .back:hover{ background:#7c4621 }
+    :root{
+      --ink:#1f1a17; --ink-soft:#5c554f;
+      --brand:#9b5c2e; --brand-dark:#7c4621;
+      --paper:#fffefb; --line:#efe7df;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:#faf6f1;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+
+    .hero{
+      background: linear-gradient(180deg,#2a1a10 0%, #3a2516 60%, #49301d 100%);
+      color:#fff; padding:36px 20px;
+    }
+    .hero-inner{max-width:1000px;margin:0 auto;display:flex;gap:16px;align-items:center}
+    .hero .logo{width:60px;height:60px;object-fit:cover;border-radius:14px;border:2px solid #ffffff44;box-shadow:0 10px 30px #0006;background:#fff}
+    .hero h1{margin:0;font-family:"Playfair Display", Georgia, "Times New Roman", serif;font-weight:800;letter-spacing:.2px}
+    .hero p{margin:6px 0 0 0;color:#ffffffd0}
+
+    .wrap{max-width:1000px;margin:20px auto;padding:0 20px;display:grid;gap:18px}
+    .card{
+      background:var(--paper);
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:0 10px 30px #0000000b;
+      padding:20px 18px;
+    }
+    .card h2{
+      margin:0 0 10px 0;
+      font-family:"Playfair Display", Georgia, "Times New Roman", serif;
+      font-weight:800; letter-spacing:.2px; color:#3b2a1c
+    }
+    .card p{margin:10px 0; line-height:1.7; color:var(--ink)}
+    .muted{color:var(--ink-soft)}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media (max-width: 880px){ .grid-2{grid-template-columns:1fr} }
+
+    .badge{
+      display:inline-block; background:#fff5ec; color:#7c4621; border:1px solid #f1dfcf;
+      font-weight:700; padding:6px 10px; border-radius:999px; font-size:.9rem; margin-right:8px
+    }
+
+    .cta{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between
+    }
+    .btn{
+      background:var(--brand); color:#fff; border:0; border-radius:12px;
+      padding:10px 14px; font-weight:700; cursor:pointer; text-decoration:none;
+      box-shadow:0 8px 20px #9b5c2e55;
+    }
+    .btn:hover{ background:var(--brand-dark) }
+    .btn.ghost{
+      background:#00000008; color:var(--ink); border:1px solid var(--line); box-shadow:none
+    }
+    .list{padding-left:18px;margin:10px 0}
+    .list li{margin:6px 0}
+
+    .quote{
+      background:#fff8f1; border:1px solid #f0e2d6; border-radius:14px; padding:14px 16px; color:#5a4b40;
+      font-style:italic
+    }
+
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+    .chip{background:#f6ece1;border:1px solid #e7d6c7;padding:6px 10px;border-radius:999px;font-weight:600;color:#6b4a2f}
+
+    footer{max-width:1000px;margin:6px auto 30px;padding:0 20px;color:#6a6158}
+    footer a{color:#6a3d1f}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="head">
-      <img class="logo" src="/img/LOGO.JPG" alt="Logo" onerror="this.src='/img/fallback.jpg'">
-      <h1>La nostra storia</h1>
+  <!-- Testata -->
+  <section class="hero">
+    <div class="hero-inner">
+      <img class="logo" src="/img/LOGO.JPG" alt="Mangia & Fuggi" onerror="this.src='/img/fallback.jpg'">
+      <div>
+        <h1>Mangia &amp; Fuggi</h1>
+        <p class="muted">La nostra storia: artigianalità, lievito madre e ingredienti veri.</p>
+      </div>
     </div>
+  </section>
 
-    <div class="card">
+  <main class="wrap">
+    <!-- CHI SIAMO -->
+    <article class="card">
+      <h2>Chi siamo</h2>
       <p>
-        <strong>Mangia &amp; Fuggi</strong> nasce come piccola bottega di quartiere, con un’idea semplice:
-        impasti curati, cotture precise e ingredienti sinceri. Ogni giorno lavoriamo farine selezionate
-        con lievitazione lenta, per pizze leggere e profumate.
+        Mangia &amp; Fuggi nasce come una piccola bottega di quartiere con un’idea semplice:
+        <strong>fare pizze oneste, buone sempre</strong>. Negli anni, tra impasti curati e
+        ingredienti selezionati, siamo diventati il punto di riferimento per chi cerca
+        una pizza che profuma di casa, con il morso croccante e un cuore soffice.
       </p>
       <p>
-        La nostra cucina è artigianale: pelati italiani, olio EVO, mozzarella fresca e verdure di stagione.
-        Evitiamo scorciatoie: impasti maturati a freddo, banco sempre pulito, forno caldo al punto giusto.
+        Non rincorriamo le mode: preferiamo <em>gesti che si ripetono</em>, tempi giusti,
+        forni caldi e materie prime italiane. Ogni pizza racconta il nostro territorio,
+        il lavoro dei piccoli produttori e la cura quotidiana del nostro team.
       </p>
-      <p>
-        Siamo una squadra piccola ma testarda. Amiamo i classici ben fatti e ci divertiamo con qualche
-        proposta gourmet: senza esagerare, sempre bilanciando croccantezza, gusto e digeribilità.
-      </p>
-      <p>
-        Qui si mangia bene, si sorride e si torna volentieri: questa è l’unica “ricetta segreta”
-        che custodiamo ogni giorno.
-      </p>
+      <div class="chips">
+        <span class="chip">Lievito madre</span>
+        <span class="chip">Maturazione lenta</span>
+        <span class="chip">Farine selezionate</span>
+        <span class="chip">Forno tradizionale</span>
+        <span class="chip">Produttori locali</span>
+      </div>
+    </article>
 
-      <a class="back" href="/menu">Vai al menu</a>
-    </div>
-  </div>
+    <!-- IMPASTO -->
+    <article class="card grid-2">
+      <div>
+        <h2>L’impasto, il nostro segreto più semplice</h2>
+        <p>
+          Usiamo un <strong>blend di farine italiane</strong> con una piccola percentuale di
+          integrale per dare profumo e carattere. Il nostro lievito madre vive con noi:
+          lo rinfreschiamo ogni giorno e lo rispettiamo con una <strong>maturazione di 24–48 ore</strong>,
+          così l’impasto risulta leggero, digeribile e naturalmente saporito.
+        </p>
+        <ul class="list">
+          <li><strong>Idratazione bilanciata</strong> per alveolatura regolare e crosta fragrante.</li>
+          <li><strong>Pieghe e riposi</strong> per dare struttura senza stressare il glutine.</li>
+          <li><strong>Stesura delicata</strong> a mano: mai rulli, mai scorciatoie.</li>
+        </ul>
+        <p class="quote">“Una pizza ben fatta inizia molto prima del forno.”</p>
+      </div>
+      <div>
+        <h2>Ingredienti, filiera corta e buon senso</h2>
+        <p>
+          Crediamo nella <strong>stagionalità</strong> e nella trasparenza: pomodori corposi,
+          fior di latte fresco, olio extravergine fruttato, salumi artigianali, verdure
+          locali. Ogni ingrediente è scelto per <em>equilibrio</em>, non per stupire.
+        </p>
+        <ul class="list">
+          <li>Pomodoro italiano, passata e pelati a residuo basso di acidità.</li>
+          <li>Fior di latte del Sud, filatura tradizionale, resa pulita in cottura.</li>
+          <li>Olio EVO a crudo su margherite e bianche.</li>
+          <li>’Nduja, speck, prosciutti e conserve da piccoli produttori.</li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- FORNO -->
+    <article class="card">
+      <h2>Forno e cottura</h2>
+      <p>
+        Cotto in <strong>forno tradizionale</strong> con curva di temperatura costante:
+        base asciutta, cornicione dorato, ingredienti rispettati. Le pizze escono una alla
+        volta perché <em>il tempo del forno è il nostro ritmo</em>.
+      </p>
+    </article>
+
+    <!-- SOSTENIBILITÀ -->
+    <article class="card grid-2">
+      <div>
+        <h2>Sostenibilità quotidiana</h2>
+        <p>
+          Usiamo <strong>imballi riciclabili</strong>, ottimizziamo gli ordini per ridurre gli sprechi
+          e selezioniamo fornitori vicini a noi. Anche in laboratorio limitiamo i consumi:
+          luci a LED, processi ragionati e pulizie con detergenti certificati.
+        </p>
+      </div>
+      <div>
+        <h2>La nostra squadra</h2>
+        <p>
+          Siamo una famiglia allargata: pizzaioli, fornaio, banco e sala. Cresciamo con
+          <strong>formazione interna</strong> su impasti, cotture e servizio; condividiamo ricette e
+          appunti, perché la qualità è un lavoro di squadra.
+        </p>
+      </div>
+    </article>
+
+    <!-- VALORI -->
+    <article class="card">
+      <h2>I nostri valori</h2>
+      <p><span class="badge">Qualità reale</span> <span class="badge">Cura del cliente</span> <span class="badge">Territorio</span> <span class="badge">Onestà</span></p>
+      <p class="muted">
+        Vogliamo che ogni cliente si senta a casa. Se qualcosa non è come ti aspettavi, diccelo:
+        troveremo insieme la soluzione migliore.
+      </p>
+    </article>
+
+    <!-- RICONOSCIMENTI -->
+    <article class="card">
+      <h2>Riconoscimenti e piccole grandi soddisfazioni</h2>
+      <p>
+        Le recensioni dei nostri clienti sono il premio più importante. Qualche guida locale
+        ci ha segnalato per la leggerezza degli impasti e per l’accoglienza. Ma quello che
+        ci rende felici è vedere le <em>teglie vuote</em> e i sorrisi pieni.
+      </p>
+    </article>
+
+    <!-- CTA -->
+    <article class="card cta">
+      <div>
+        <h2>Torna al menu</h2>
+        <p class="muted">Pronto a scegliere la prossima pizza?</p>
+      </div>
+      <div>
+        <a class="btn" href="/menu">Vai al menu</a>
+        <a class="btn ghost" href="/">Home</a>
+      </div>
+    </article>
+
+    <!-- RECENSIONI -->
+    <article class="card">
+      <h2>Lascia una recensione</h2>
+      <p class="muted">La tua opinione ci aiuta a migliorare.</p>
+      <div class="chips">
+        <!-- Sostituisci i link con quelli reali del locale -->
+        <a class="btn" href="https://www.google.com/maps/place/?q=place_id:INSERISCI_PLACE_ID" target="_blank" rel="noopener">Scrivi su Google</a>
+        <a class="btn ghost" href="https://www.tripadvisor.it/" target="_blank" rel="noopener">TripAdvisor</a>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <small>© <%= new Date().getFullYear() %> Mangia &amp; Fuggi • P.IVA 00000000000 • Tutti i diritti riservati</small>
+  </footer>
 </body>
 </html>
