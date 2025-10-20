@@ -33,10 +33,31 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const app = express();
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+
+// Statico principale (/public)
 app.use(express.static(path.join(__dirname, "public")));
+
+// Statico per /video (se decidi di usare /public/video/pizza.mp4)
+app.use("/video", express.static(path.join(__dirname, "public", "video"), {
+  setHeaders: (res) => {
+    res.setHeader("Cache-Control", "public, max-age=604800, immutable"); // cache 7 giorni
+  }
+}));
+
+// Fallback esplicito per /pizza.mp4 direttamente in /public
+app.get("/pizza.mp4", (req, res) => {
+  const fp = path.join(__dirname, "public", "pizza.mp4"); // METTI QUI fisicamente /public/pizza.mp4
+  res.sendFile(fp, (err) => {
+    if (err) {
+      console.error("Video non trovato:", fp, err?.message);
+      res.status(404).send("pizza.mp4 non trovato in /public");
+    }
+  });
+});
+
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.json()));
 app.use(cookieParser());
 app.use(session({
   secret: process.env.SESSION_SECRET || "dev",
@@ -60,8 +81,8 @@ app.use("/admin", (req, res, next) => {
 });
 
 // ---------- Pagine
-// Home con video + bottoni categorie (landing.ejs)
-app.get("/", (_req, res) => res.render("home")); // landing con video + categorie
+// Home con video + categorie
+app.get("/", (_req, res) => res.render("home"));
 
 // Menu classico e Admin
 app.get("/menu", (_req, res) => res.render("menu"));
