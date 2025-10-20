@@ -34,30 +34,29 @@ const app = express();
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Statico principale (/public)
-app.use(express.static(path.join(__dirname, "public")));
+// ---------- Statici
+app.use(express.static(path.join(__dirname, "public"))); // /public principale
 
-// Statico per /video (se usi /public/video/pizza.mp4)
+// Percorso alternativo per /video/pizza.mp4 (opzionale)
 app.use("/video", express.static(path.join(__dirname, "public", "video"), {
-  setHeaders: (res) => {
-    res.setHeader("Cache-Control", "public, max-age=604800, immutable");
-  }
+  setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
 }));
 
-// Fallback esplicito per /pizza.mp4 direttamente in /public
+// Rotta fallback diretta per /pizza.mp4
 app.get("/pizza.mp4", (req, res) => {
-  const fp = path.join(__dirname, "public", "pizza.mp4");
-  res.sendFile(fp, (err) => {
+  const filePath = path.join(__dirname, "public", "pizza.mp4");
+  res.sendFile(filePath, (err) => {
     if (err) {
-      console.error("Video non trovato:", fp, err?.message);
+      console.error("❌ Video non trovato:", filePath);
       res.status(404).send("pizza.mp4 non trovato in /public");
     }
   });
 });
 
+// ---------- Middleware sicurezza e sessioni
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json()); // <-- FIX QUI
+app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(session({
   secret: process.env.SESSION_SECRET || "dev",
@@ -80,13 +79,13 @@ app.use("/admin", (req, res, next) => {
   next();
 });
 
-// ---------- Pagine
+// ---------- Pagine principali
 app.get("/", (_req, res) => res.render("home"));
 app.get("/menu", (_req, res) => res.render("menu"));
-app.get("/admin", (_req, res) =>
-  res.render("admin", { SUPABASE_URL, SUPABASE_KEY })
-);
-app.get("/test-video", (_req,res) => res.render("test-video"));
+app.get("/storia", (_req, res) => res.render("storia"));  // <-- NUOVA PAGINA STORIA
+app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL, SUPABASE_KEY }));
+app.get("/test-video", (_req, res) => res.render("test-video"));
+
 // =====================================================================================
 // API ORDINI
 // =====================================================================================
@@ -224,6 +223,7 @@ async function loadRange(startISO, endISO){
   }
   return { orders, items };
 }
+
 function aggPerHourOrDay(orders, startISO, endISO){
   const start = new Date(startISO), end = new Date(endISO);
   const multiDay = (end - start) > 24*60*60*1000;
@@ -240,6 +240,7 @@ function aggPerHourOrDay(orders, startISO, endISO){
   }
   return { rows:[...m.values()].sort((a,b)=>a.bucket.localeCompare(b.bucket)), multiDay };
 }
+
 function aggTop(items){
   const m = new Map(); let totQty=0, totRev=0;
   for (const it of items){
@@ -310,10 +311,8 @@ const SUMUP_PAYTO         = getEnvAny("SUMUP_PAY_TO_EMAIL","SUMUP_MERCHANT_EMAIL
 async function getSumUpBearer(){
   if (SUMUP_ACCESS_TOKEN) return SUMUP_ACCESS_TOKEN;
   if (SUMUP_SECRET_KEY)   return SUMUP_SECRET_KEY;
+  if (!(SUMUP_CLIENT_ID && SUMUP_CLIENT_SECRET)) throw new Error("missing_client_credentials");
 
-  if (!(SUMUP_CLIENT_ID && SUMUP_CLIENT_SECRET)) {
-    throw new Error("missing_client_credentials");
-  }
   const form = new URLSearchParams();
   form.set("grant_type", "client_credentials");
   form.set("client_id", SUMUP_CLIENT_ID);
