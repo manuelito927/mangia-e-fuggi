@@ -5,10 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mangia & Fuggi – Menu</title>
 
-  <!-- stile principale -->
   <link rel="stylesheet" href="/styles.css" />
-
-  <!-- piccoli stili locali per il layout della pagina -->
   <style>
     .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 340px;gap:18px}
     .card{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
@@ -18,6 +15,8 @@
     header{max-width:1100px;margin:0 auto 20px;display:flex;gap:12px;align-items:center}
     header img.logo{width:46px;height:46px;object-fit:cover;border-radius:8px;border:2px solid #7b4b3a22}
     .title{font-weight:700;font-size:28px;color:#7b4b3a}
+    .btn-row{display:flex;flex-direction:column;gap:10px}
+    .btn[disabled]{opacity:.5;cursor:not-allowed}
     @media (max-width:900px){.container{grid-template-columns:1fr}}
   </style>
 </head>
@@ -81,8 +80,10 @@
       <ul id="cart"></ul>
       <div class="tot"><span>Totale</span><span id="total">€ 0,00</span></div>
 
-      <button class="btn" style="width:100%;margin-top:10px" onclick="checkout()">Conferma ordine</button>
-      <button id="btn-pay" class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="payOnline()" disabled>💳 Paga Online</button>
+      <div class="btn-row" style="margin-top:10px">
+        <button id="btn-pay-online" class="btn" onclick="orderAndPayOnline()" disabled>💳 Ordina &amp; paga online</button>
+        <button id="btn-pay-cashier" class="btn btn-ghost" onclick="orderPayAtCounter()" disabled>💵 Ordina &amp; paga in cassa</button>
+      </div>
       <div id="pay-note" class="note"></div>
     </aside>
   </div>
@@ -91,21 +92,25 @@
     const cart = new Map();
     let PAY_ENABLED = false;
 
+    // Stato pagamento online
     (async () => {
       try{
         const r = await fetch("/api/pay-config");
         const j = await r.json();
         PAY_ENABLED = !!(j && j.enabled);
         document.getElementById("pay-note").innerHTML = PAY_ENABLED
-          ? "Il pagamento si apre su SumUp con l’importo reale del carrello."
-          : '<span class="warn">Pagamento online disabilitato: controlla le variabili di ambiente.</span>';
-        updatePayButton();
+          ? "Il pagamento online aprirà SumUp con l’importo del carrello."
+          : '<span class="warn">Pagamento online disabilitato: verifica credenziali SumUp.</span>';
       }catch{}
+      updateButtons();
     })();
 
+    // Utils
     function cssId(s){ return s.replace(/[^a-z0-9]+/gi,'_'); }
     function euro(n){ return "€ "+Number(n).toFixed(2).replace(".",","); }
+    function cartTotal(){ return Array.from(cart.values()).reduce((s,i)=>s+i.qty*i.price,0); }
 
+    // Q.tà
     function inc(name, price){
       const it = cart.get(name)||{price,qty:0};
       it.qty++; cart.set(name,it);
@@ -130,41 +135,62 @@
         ul.appendChild(li);
       }
       document.getElementById('total').textContent=euro(tot);
-      updatePayButton();
+      updateButtons();
     }
 
-    function updatePayButton(){
-      const tot = Array.from(cart.values()).reduce((s,i)=>s+i.qty*i.price,0);
-      const btn = document.getElementById('btn-pay');
-      btn.disabled = !(PAY_ENABLED && tot > 0);
+    function updateButtons(){
+      const hasItems = cart.size > 0 && cartTotal() > 0;
+      document.getElementById('btn-pay-cashier').disabled = !hasItems;
+      const onlineBtn = document.getElementById('btn-pay-online');
+      onlineBtn.disabled = !(hasItems && PAY_ENABLED);
     }
 
-    async function checkout(){
+    // —— Core: salva ordine e ritorna order_id
+    async function createOrder(){
       const items=Array.from(cart.entries()).map(([n,it])=>({name:n,price:it.price,qty:it.qty}));
-      if(items.length===0){ alert("Aggiungi almeno un prodotto"); return; }
-      const tableCode=null;
+      if(items.length===0){ alert("Aggiungi almeno un prodotto"); return null; }
       const total=items.reduce((s,i)=>s+i.price*i.qty,0);
       const r=await fetch("/api/checkout",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({tableCode,items,total})
+        body:JSON.stringify({ tableCode:null, items, total })
       });
-      const js=await r.json();
-      if(js.ok){ alert("Ordine inviato!"); } else { alert("Errore invio ordine"); }
+      const js = await r.json();
+      if(!js.ok){ alert("Errore invio ordine"); return null; }
+      return { order_id: js.order_id, total };
     }
 
-    async function payOnline(){
-      const items=Array.from(cart.entries()).map(([n,it])=>({name:n,price:it.price,qty:it.qty}));
-      if(items.length===0){ alert("Carrello vuoto"); return; }
-      const total=items.reduce((s,i)=>s+i.price*i.qty,0);
+    // 💳 Ordina & paga online
+    async function orderAndPayOnline(){
+      if(!PAY_ENABLED){ alert("Pagamento online non disponibile."); return; }
+      const saved = await createOrder();
+      if(!saved) return;
+
       const r = await fetch("/api/pay-sumup", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ amount: Number(total.toFixed(2)), currency:"EUR", description:"Mangia & Fuggi - Ordine" })
+        body: JSON.stringify({
+          amount: Number(saved.total.toFixed(2)),
+          currency:"EUR",
+          description:`Mangia & Fuggi - Ordine #${saved.order_id}`
+        })
       });
       const js = await r.json();
-      if(js.ok && js.url){ window.open(js.url, "_blank"); }
-      else { alert("Pagamento non disponibile. Verifica configurazione SumUp."); }
+      if(js.ok && js.url){
+        window.open(js.url, "_blank");
+        alert("Ordine creato! Si aprirà la pagina di pagamento SumUp.");
+        cart.clear(); renderCart();
+      } else {
+        alert("Pagamento non disponibile. Verifica configurazione SumUp.");
+      }
+    }
+
+    // 💵 Ordina & paga in cassa
+    async function orderPayAtCounter(){
+      const saved = await createOrder();
+      if(!saved) return;
+      alert("Ordine inviato! Presentati in cassa per il pagamento.");
+      cart.clear(); renderCart();
     }
   </script>
 </body>
