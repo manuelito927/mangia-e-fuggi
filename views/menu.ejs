@@ -18,6 +18,33 @@
     .btn-row{display:flex;flex-direction:column;gap:10px}
     .btn[disabled]{opacity:.5;cursor:not-allowed}
     @media (max-width:900px){.container{grid-template-columns:1fr}}
+
+    /* —— Modal semplice per "Dividi & paga" */
+    .modal-backdrop{
+      position:fixed; inset:0; background:#0008; display:none;
+      align-items:center; justify-content:center; z-index:50;
+    }
+    .modal{ width:min(680px, 94vw); background:#fff; border-radius:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.35); overflow:hidden }
+    .modal header{padding:14px 16px; border-bottom:1px solid #eee; margin:0; max-width:none}
+    .modal .body{padding:16px}
+    .close-x{margin-left:auto; font-size:22px; line-height:1; cursor:pointer}
+
+    .tabs{display:flex; gap:8px; margin-bottom:12px}
+    .tab{border:1px solid #e6e2df; background:#faf9f7; padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600}
+    .tab.active{background:#7b4b3a; color:#fff; border-color:#7b4b3a}
+
+    .row{display:flex; gap:8px; align-items:center; margin:6px 0}
+    .row input[type="text"]{flex:1; padding:8px 10px; border:1px solid #e6e2df; border-radius:8px}
+    .row input[type="number"]{width:130px; padding:8px 10px; border:1px solid #e6e2df; border-radius:8px}
+    .pill{background:#f3f1ef; padding:6px 10px; border-radius:999px; font-weight:700}
+    .split-actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .muted{color:#777; font-size:13px}
+    .err{color:#b42318; font-size:13px}
+
+    .quota-list{display:flex; flex-direction:column; gap:8px; margin-top:6px}
+    .quota-item{display:flex; gap:10px; align-items:center; justify-content:space-between;
+      border:1px dashed #e6e2df; padding:10px; border-radius:10px}
   </style>
 </head>
 <body>
@@ -83,16 +110,56 @@
       <div class="btn-row" style="margin-top:10px">
         <button id="btn-pay-online" class="btn" onclick="orderAndPayOnline()" disabled>💳 Ordina &amp; paga online</button>
         <button id="btn-pay-cashier" class="btn btn-ghost" onclick="orderPayAtCounter()" disabled>💵 Ordina &amp; paga in cassa</button>
+        <button id="btn-split" class="btn btn-ghost" onclick="openSplitModal()" disabled>➗ Dividi &amp; paga</button>
       </div>
       <div id="pay-note" class="note"></div>
     </aside>
   </div>
 
+  <!-- ===== Modal DIVIDI & PAGA ===== -->
+  <div id="split-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal">
+      <header>
+        <div class="title" style="font-size:20px;color:#7b4b3a;margin:0">Dividi &amp; paga</div>
+        <div class="close-x" onclick="closeSplitModal()">×</div>
+      </header>
+      <div class="body">
+        <div class="muted">Totale conto: <span id="split-total" class="pill">€ 0,00</span></div>
+
+        <div class="tabs">
+          <button id="tab-equal" class="tab active" onclick="setSplitMode('equal')">Alla romana</button>
+          <button id="tab-custom" class="tab" onclick="setSplitMode('custom')">Importi personalizzati</button>
+        </div>
+
+        <!-- Alla romana -->
+        <div id="pane-equal">
+          <div class="row">
+            <label>Numero persone:</label>
+            <input id="equal-n" type="number" min="2" value="2" oninput="renderEqual()" />
+            <span class="muted">Quota per persona calcolata automaticamente.</span>
+          </div>
+          <div id="equal-quotas" class="quota-list"></div>
+        </div>
+
+        <!-- Personalizzato -->
+        <div id="pane-custom" style="display:none">
+          <div id="custom-rows"></div>
+          <div class="split-actions">
+            <button class="btn btn-ghost" type="button" onclick="addCustomRow()">+ Aggiungi persona</button>
+            <span class="muted">La somma deve essere uguale al totale.</span>
+          </div>
+          <div id="custom-error" class="err" style="display:none"></div>
+          <div id="custom-quotas" class="quota-list" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // ======= Stato carrello / pagamenti =======
     const cart = new Map();
     let PAY_ENABLED = false;
 
-    // Stato pagamento online
     (async () => {
       try{
         const r = await fetch("/api/pay-config");
@@ -143,6 +210,7 @@
       document.getElementById('btn-pay-cashier').disabled = !hasItems;
       const onlineBtn = document.getElementById('btn-pay-online');
       onlineBtn.disabled = !(hasItems && PAY_ENABLED);
+      document.getElementById('btn-split').disabled = !(hasItems && PAY_ENABLED);
     }
 
     // —— Core: salva ordine e ritorna order_id
@@ -160,29 +228,14 @@
       return { order_id: js.order_id, total };
     }
 
-    // 💳 Ordina & paga online
+    // 💳 Ordina & paga online (intero)
     async function orderAndPayOnline(){
       if(!PAY_ENABLED){ alert("Pagamento online non disponibile."); return; }
       const saved = await createOrder();
       if(!saved) return;
 
-      const r = await fetch("/api/pay-sumup", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          amount: Number(saved.total.toFixed(2)),
-          currency:"EUR",
-          description:`Mangia & Fuggi - Ordine #${saved.order_id}`
-        })
-      });
-      const js = await r.json();
-      if(js.ok && js.url){
-        window.open(js.url, "_blank");
-        alert("Ordine creato! Si aprirà la pagina di pagamento SumUp.");
-        cart.clear(); renderCart();
-      } else {
-        alert("Pagamento non disponibile. Verifica configurazione SumUp.");
-      }
+      const ok = await payAmount(saved.total, `Mangia & Fuggi - Ordine #${saved.order_id}`);
+      if(ok){ cart.clear(); renderCart(); }
     }
 
     // 💵 Ordina & paga in cassa
@@ -191,6 +244,122 @@
       if(!saved) return;
       alert("Ordine inviato! Presentati in cassa per il pagamento.");
       cart.clear(); renderCart();
+    }
+
+    // ======= DIVIDI & PAGA =======
+    let splitMode = 'equal'; // 'equal' | 'custom'
+    function openSplitModal(){
+      document.getElementById('split-total').textContent = euro(cartTotal());
+      document.getElementById('split-backdrop').style.display = 'flex';
+      renderEqual();
+      resetCustom();
+    }
+    function closeSplitModal(){ document.getElementById('split-backdrop').style.display='none'; }
+
+    function setSplitMode(mode){
+      splitMode = mode;
+      document.getElementById('tab-equal').classList.toggle('active', mode==='equal');
+      document.getElementById('tab-custom').classList.toggle('active', mode==='custom');
+      document.getElementById('pane-equal').style.display = (mode==='equal')?'block':'none';
+      document.getElementById('pane-custom').style.display = (mode==='custom')?'block':'none';
+    }
+
+    // Alla romana
+    function renderEqual(){
+      const n = Math.max(2, Number(document.getElementById('equal-n').value || 2));
+      const tot = cartTotal();
+      const quota = Math.round((tot/n)*100)/100;
+      const list = document.getElementById('equal-quotas'); list.innerHTML = "";
+      for(let i=1;i<=n;i++){
+        const div = document.createElement('div');
+        div.className = "quota-item";
+        div.innerHTML = `
+          <div><strong>Persona ${i}</strong> — quota: <span class="pill">${euro(quota)}</span></div>
+          <button class="btn" type="button" onclick="payQuota(${quota.toFixed(2)})">Paga quota #${i}</button>
+        `;
+        list.appendChild(div);
+      }
+    }
+
+    // Personalizzato
+    function resetCustom(){
+      document.getElementById('custom-rows').innerHTML = "";
+      document.getElementById('custom-quotas').innerHTML = "";
+      document.getElementById('custom-error').style.display = "none";
+      for(let i=1;i<=2;i++) addCustomRow();
+    }
+    function addCustomRow(){
+      const wrap = document.getElementById('custom-rows');
+      const idx = wrap.children.length+1;
+      const row = document.createElement('div');
+      row.className="row";
+      row.innerHTML = `
+        <input type="text" placeholder="Nome (opzionale)" value="Persona ${idx}">
+        <input type="number" step="0.01" min="0" placeholder="Importo es. 7.50" oninput="renderCustom()">
+      `;
+      wrap.appendChild(row);
+      renderCustom();
+    }
+    function renderCustom(){
+      const rows = [...document.querySelectorAll('#custom-rows .row')];
+      const quotas = [];
+      for(const r of rows){
+        const name = r.querySelector('input[type="text"]').value.trim() || 'Persona';
+        const val = Number(r.querySelector('input[type="number"]').value || 0);
+        if(val>0) quotas.push({name, amount: Math.round(val*100)/100});
+      }
+      const sum = quotas.reduce((s,q)=>s+q.amount,0);
+      const tot = Math.round(cartTotal()*100)/100;
+
+      const err = document.getElementById('custom-error');
+      if(sum !== tot){
+        err.style.display = "block";
+        err.textContent = `La somma degli importi (${euro(sum)}) deve essere uguale al totale (${euro(tot)}).`;
+      } else {
+        err.style.display = "none";
+      }
+
+      const list = document.getElementById('custom-quotas'); list.innerHTML="";
+      quotas.forEach((q, i)=>{
+        const div = document.createElement('div');
+        div.className = "quota-item";
+        div.innerHTML = `
+          <div><strong>${q.name}</strong> — quota: <span class="pill">${euro(q.amount)}</span></div>
+          <button class="btn" type="button" ${sum!==tot?'disabled':''}
+                  onclick="payQuota(${q.amount.toFixed(2)})">Paga quota #${i+1}</button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    // — Esegue un pagamento SumUp per un importo specifico
+    async function payQuota(amount){
+      if(!PAY_ENABLED){ alert("Pagamento online non disponibile."); return; }
+      const saved = await createOrder(); // Un singolo ordine backend; la quota è pagata separatamente
+      if(!saved) return;
+      const ok = await payAmount(Number(amount), `Mangia & Fuggi - Quota ordine #${saved.order_id}`);
+      if(ok){ /* Non svuoto il carrello finché non paga tutti, scelta tua. */ }
+    }
+
+    // — Chiamata generica a /api/pay-sumup
+    async function payAmount(amount, description){
+      const r = await fetch("/api/pay-sumup", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          amount: Number(amount.toFixed(2)),
+          currency:"EUR",
+          description
+        })
+      });
+      const js = await r.json();
+      if(js.ok && js.url){
+        window.open(js.url, "_blank");
+        return true;
+      } else {
+        alert("Pagamento non disponibile. Verifica configurazione SumUp.");
+        return false;
+      }
     }
   </script>
 </body>
