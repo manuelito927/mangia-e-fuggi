@@ -86,7 +86,7 @@ app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/admin", (_req, res) =>
   res.render("admin", { SUPABASE_URL, SUPABASE_KEY })
 );
-
+app.get("/test-video", (_req,res) => res.render("test-video"));
 // =====================================================================================
 // API ORDINI
 // =====================================================================================
