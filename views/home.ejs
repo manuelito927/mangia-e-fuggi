@@ -10,8 +10,8 @@
       --brand:#9b5c2e;
       --ink:#ffffff;
       --ink-soft:#e9e3dd;
-      --glass:#ffffff18;         /* vetro più trasparente */
-      --glass-border:#ffffff33;  /* bordo leggero */
+      --glass:#ffffff18;
+      --glass-border:#ffffff33;
     }
     *{ box-sizing:border-box }
     body{
@@ -29,10 +29,9 @@
     .landing video.bg{
       position:absolute; inset:0; width:100%; height:100%;
       object-fit:cover;
-      filter:brightness(.72) saturate(1.05); /* più luminoso del prima */
+      filter:brightness(.72) saturate(1.05);
       pointer-events:none;
     }
-    /* overlay più leggero così il video si vede meglio */
     .overlay{
       position:absolute; inset:0;
       background: linear-gradient(180deg, #0006, #0000 25%, #0000 75%, #0006);
@@ -57,14 +56,9 @@
     }
     .brand-sub{ color:#ffffffcc; margin-top:4px; font-size:15px }
 
-    /* Cards “vetro” più compatte così lascia spazio al video */
-    .grid{
-      display:grid; gap:14px;
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 720px){
-      .grid{ grid-template-columns: repeat(3, 1fr); }
-    }
+    /* Cards “vetro” più compatte */
+    .grid{ display:grid; gap:14px; grid-template-columns: 1fr; }
+    @media (min-width: 720px){ .grid{ grid-template-columns: repeat(3, 1fr); } }
     .card{
       background:var(--glass);
       border:1px solid var(--glass-border);
@@ -85,12 +79,10 @@
     }
     .btn:hover{ background:#7c4621; transform:translateY(-1px) }
 
-    /* link testo */
     .links{ display:flex; gap:10px; flex-wrap:wrap; margin-top:2px }
     .link{ color:#fff; text-decoration:none; border-bottom:1px dashed #ffffff80; font-size:14px }
     .link:hover{ border-bottom-color:#fff }
 
-    /* Mobile */
     @media (max-width: 480px){
       .brand-title{ font-size:26px }
       .card{ min-height:135px }
@@ -124,12 +116,11 @@
           <a href="/menu" class="btn">Vai al menu</a>
         </div>
 
-        <!-- LA NOSTRA STORIA -->
+        <!-- LA NOSTRA STORIA (con link alla pagina dedicata) -->
         <div class="card">
           <h3>📖 La nostra storia</h3>
           <p>Nati nel cuore del Salento: farine selezionate, lievitazioni lente e materie prime italiane.</p>
-          <!-- Se vuoi una pagina dedicata, sblocca la riga sotto e crea views/storia.ejs -->
-          <!-- <a href="/storia" class="btn">Scopri di più</a> -->
+          <a href="/storia" class="btn">Leggi la storia</a>
         </div>
 
         <!-- RECENSIONI -->
@@ -137,7 +128,6 @@
           <h3>⭐ Recensioni</h3>
           <p>La tua opinione conta! Lascia una recensione e aiutaci a migliorare.</p>
           <div class="links">
-            <!-- Sostituisci gli URL con quelli reali -->
             <a class="btn" href="https://www.google.com/maps/place/?q=place_id:INSERISCI_PLACE_ID" target="_blank" rel="noopener">Scrivi su Google</a>
             <a class="link" href="https://www.tripadvisor.it/" target="_blank" rel="noopener">Oppure su TripAdvisor</a>
           </div>
