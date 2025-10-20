@@ -7,57 +7,167 @@
   <link rel="stylesheet" href="/styles.css">
   <style>
     /* --- Landing con video --- */
-    .landing{
-      position:relative; min-height:100dvh; display:flex; align-items:center; justify-content:center;
-      padding:28px 20px; overflow:hidden; background:#000;
+    .landing {
+      position: relative;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 20px;
+      overflow: hidden;
+      background: #000;
     }
-    .landing video.bg{
-      position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:brightness(.6);
+
+    .landing video.bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(0.9) contrast(1.1) saturate(1.2); /* visibile e caldo */
     }
-    .landing::after{ /* leggera sfumatura per leggibilità */
-      content:""; position:absolute; inset:0;
-      background: radial-gradient(1000px 700px at 50% 0%, #00000055, transparent);
-      pointer-events:none;
+
+    .landing::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(900px 600px at 50% 0%, #00000040, transparent);
+      pointer-events: none;
     }
-    .landing-inner{
-      position:relative; z-index:1; width:100%; max-width:780px; margin:auto;
+
+    .landing-inner {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 760px;
+      margin: auto;
     }
-    .brand-top{display:flex; align-items:center; gap:12px; margin-bottom:14px}
-    .brand-top .logo{
-      width:56px;height:56px;border-radius:14px;object-fit:cover;box-shadow:0 8px 24px #00000055;border:2px solid #ffffff40;background:#fff;
+
+    .brand-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
     }
-    .brand-title{color:#fff; font-family:"Playfair Display", Georgia, "Times New Roman", serif; font-size:36px; font-weight:800; letter-spacing:.3px}
-    .brand-sub{color:#ffffffcc; margin-top:6px}
+
+    .brand-top .logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      object-fit: cover;
+      box-shadow: 0 8px 24px #00000055;
+      border: 2px solid #ffffff50;
+      background: #fff;
+    }
+
+    .brand-title {
+      color: #fff;
+      font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+
+    .brand-sub {
+      color: #ffffffcc;
+      margin-top: 6px;
+      font-size: 17px;
+    }
 
     /* cards verticali categoria */
-    .cat-list{display:flex; flex-direction:column; gap:18px; margin-top:24px}
-    .cat-card{
-      display:flex; align-items:center; gap:14px;
-      background:#ffffffee; border:1px solid #ffffff80; border-radius:16px;
-      box-shadow:0 10px 30px #00000025; padding:12px; text-decoration:none; color:#1f1a17;
-      transition:transform .08s ease, box-shadow .12s ease, background .12s ease;
-      backdrop-filter:saturate(120%) blur(4px);
-      min-height:26vh; /* 3 card per schermo su mobile */
+    .cat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 20px;
+      overflow-y: auto;
+      max-height: 72vh; /* 3 visibili */
+      padding-right: 4px;
     }
-    .cat-card:hover{transform:translateY(-1px); box-shadow:0 14px 36px #00000030}
-    .cat-thumb{
-      width:90px; height:68px; border-radius:12px; overflow:hidden; background:#f2e8e1; flex-shrink:0;
-      box-shadow:inset 0 0 0 1px #0000000e;
-    }
-    .cat-thumb img{width:100%; height:100%; object-fit:cover; display:block}
-    .cat-info{min-width:0; flex:1}
-    .cat-title{font-weight:800; font-size:18px; line-height:1.15; margin:0}
-    .cat-sub{color:#6b5f58; font-size:.95rem; margin-top:2px}
-    .cat-go{
-      margin-left:auto; font-weight:700; background:#9b5c2e; color:#fff; border:0; border-radius:999px; padding:10px 14px; cursor:pointer;
-      box-shadow:0 4px 12px #9b5c2e55;
-    }
-    .cat-go:hover{background:#7c4621}
 
-    /* mobile spacing */
-    @media (max-width: 480px){
-      .brand-title{font-size:30px}
-      .cat-thumb{width:80px;height:60px}
+    .cat-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid #ffffff70;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px #00000025;
+      padding: 10px;
+      text-decoration: none;
+      color: #1f1a17;
+      transition: transform 0.08s ease, box-shadow 0.12s ease, background 0.12s ease;
+      backdrop-filter: saturate(140%) blur(6px);
+      min-height: 22vh;
+    }
+
+    .cat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px #00000030;
+    }
+
+    .cat-thumb {
+      width: 80px;
+      height: 58px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f2e8e1;
+      flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px #0000000e;
+    }
+
+    .cat-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .cat-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .cat-title {
+      font-weight: 800;
+      font-size: 17px;
+      line-height: 1.15;
+      margin: 0;
+    }
+
+    .cat-sub {
+      color: #6b5f58;
+      font-size: 0.9rem;
+      margin-top: 2px;
+    }
+
+    .cat-go {
+      margin-left: auto;
+      font-weight: 700;
+      background: #9b5c2e;
+      color: #fff;
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px #9b5c2e55;
+    }
+
+    .cat-go:hover {
+      background: #7c4621;
+    }
+
+    @media (max-width: 480px) {
+      .brand-title {
+        font-size: 30px;
+      }
+      .cat-thumb {
+        width: 70px;
+        height: 52px;
+      }
+      .cat-card {
+        min-height: 20vh;
+      }
     }
   </style>
 </head>
@@ -77,10 +187,9 @@
         </div>
       </div>
 
-      <!-- Cards verticali -->
       <div class="cat-list">
         <a class="cat-card" href="/menu#antipasti">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_ANTIPASTI.jpg" alt="Antipasti" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_ANTIPASTI.jpg" alt="Antipasti"></div>
           <div class="cat-info">
             <h3 class="cat-title">Antipasti</h3>
             <div class="cat-sub">Bruschette, caprese, fritti…</div>
@@ -89,7 +198,7 @@
         </a>
 
         <a class="cat-card" href="/menu#classiche">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_CLASSICHE.jpg" alt="Pizze classiche" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_CLASSICHE.jpg" alt="Pizze classiche"></div>
           <div class="cat-info">
             <h3 class="cat-title">Pizze classiche</h3>
             <div class="cat-sub">Margherita, Marinara, Diavola…</div>
@@ -98,7 +207,7 @@
         </a>
 
         <a class="cat-card" href="/menu#gourmet">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_GOURMET.jpg" alt="Pizze gourmet" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_GOURMET.jpg" alt="Pizze gourmet"></div>
           <div class="cat-info">
             <h3 class="cat-title">Pizze gourmet</h3>
             <div class="cat-sub">Bufalina, Tartufo, Mortazza…</div>
@@ -107,7 +216,7 @@
         </a>
 
         <a class="cat-card" href="/menu#bevande">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_BEVANDE.jpg" alt="Bevande" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_BEVANDE.jpg" alt="Bevande"></div>
           <div class="cat-info">
             <h3 class="cat-title">Bevande</h3>
             <div class="cat-sub">Acqua, birra, vino, soft drink</div>
@@ -116,7 +225,7 @@
         </a>
 
         <a class="cat-card" href="/menu#dessert">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_DESSERT.jpg" alt="Dessert" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_DESSERT.jpg" alt="Dessert"></div>
           <div class="cat-info">
             <h3 class="cat-title">Dessert</h3>
             <div class="cat-sub">Tiramisù, panna cotta, cheesecake</div>
@@ -125,7 +234,7 @@
         </a>
 
         <a class="cat-card" href="/menu">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_TUTTO.jpg" alt="Tutto il menu" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_TUTTO.jpg" alt="Tutto il menu"></div>
           <div class="cat-info">
             <h3 class="cat-title">Tutto il menu</h3>
             <div class="cat-sub">Vedi tutte le categorie insieme</div>
