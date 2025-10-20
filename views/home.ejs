@@ -6,181 +6,90 @@
   <title>Mangia & Fuggi</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
-    /* --- Sezione landing con video --- */
-    .landing {
-      position: relative;
-      min-height: 100dvh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 28px 20px;
-      overflow: hidden;
-      background: #000;
+    /* --- Layout base --- */
+    body,html{
+      margin:0;padding:0;overflow-x:hidden;
+      font-family:"Inter",sans-serif;
     }
 
-    .landing video.bg {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      filter: brightness(0.6);
+    /* --- Landing con video --- */
+    .landing{
+      position:relative;min-height:100vh;
+      display:flex;align-items:center;justify-content:center;
+      overflow:hidden;
     }
 
-    .landing::after {
-      /* sfumatura per leggibilità */
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(1000px 700px at 50% 0%, #00000055, transparent);
-      pointer-events: none;
+    .landing video.bg{
+      position:absolute;inset:0;width:100%;height:100%;
+      object-fit:cover;filter:brightness(0.6);
     }
 
-    .landing-inner {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 780px;
-      margin: auto;
+    .landing::after{
+      content:"";position:absolute;inset:0;
+      background:radial-gradient(800px 500px at 50% 0%,#00000077,transparent);
+      pointer-events:none;
     }
 
-    .brand-top {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
+    .landing-inner{
+      position:relative;z-index:2;width:100%;max-width:780px;margin:auto;
+      padding:24px;
     }
 
-    .brand-top .logo {
-      width: 56px;
-      height: 56px;
-      border-radius: 14px;
-      object-fit: cover;
-      box-shadow: 0 8px 24px #00000055;
-      border: 2px solid #ffffff40;
-      background: #fff;
+    .brand-top{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+    .brand-top .logo{
+      width:56px;height:56px;border-radius:14px;object-fit:cover;
+      border:2px solid #ffffff40;background:#fff;box-shadow:0 6px 20px #00000055;
     }
-
-    .brand-title {
-      color: #fff;
-      font-family: "Playfair Display", Georgia, "Times New Roman", serif;
-      font-size: 36px;
-      font-weight: 800;
-      letter-spacing: .3px;
-    }
-
-    .brand-sub {
-      color: #ffffffcc;
-      margin-top: 6px;
-    }
+    .brand-title{color:#fff;font-size:36px;font-weight:800;letter-spacing:.3px;}
+    .brand-sub{color:#ffffffcc;margin-top:6px;}
 
     /* --- Cards categoria --- */
-    .cat-list {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      margin-top: 24px;
+    .cat-list{display:flex;flex-direction:column;gap:16px;margin-top:24px;}
+    .cat-card{
+      display:flex;align-items:center;gap:14px;
+      background:#ffffffdd;border-radius:18px;
+      box-shadow:0 6px 20px #00000030;
+      padding:12px;text-decoration:none;color:#1f1a17;
+      transition:transform .1s ease,box-shadow .1s ease;
+      backdrop-filter:blur(4px);
     }
-
-    .cat-card {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      background: #ffffffee;
-      border: 1px solid #ffffff80;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px #00000025;
-      padding: 12px;
-      text-decoration: none;
-      color: #1f1a17;
-      transition: transform .08s ease, box-shadow .12s ease, background .12s ease;
-      backdrop-filter: saturate(120%) blur(4px);
-      min-height: 22vh; /* più piccole per far vedere il video dietro */
+    .cat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px #00000040;}
+    .cat-thumb{
+      width:80px;height:60px;border-radius:12px;overflow:hidden;background:#f2e8e1;flex-shrink:0;
     }
-
-    .cat-card:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 14px 36px #00000030;
+    .cat-thumb img{width:100%;height:100%;object-fit:cover;}
+    .cat-info{flex:1;}
+    .cat-title{font-weight:800;font-size:18px;margin:0;}
+    .cat-sub{color:#6b5f58;font-size:.95rem;margin-top:2px;}
+    .cat-go{
+      font-weight:700;background:#9b5c2e;color:#fff;border:0;border-radius:999px;
+      padding:10px 14px;cursor:pointer;box-shadow:0 4px 12px #9b5c2e55;
     }
-
-    .cat-thumb {
-      width: 85px;
-      height: 64px;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #f2e8e1;
-      flex-shrink: 0;
-      box-shadow: inset 0 0 0 1px #0000000e;
-    }
-
-    .cat-thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .cat-info {
-      min-width: 0;
-      flex: 1;
-    }
-
-    .cat-title {
-      font-weight: 800;
-      font-size: 18px;
-      line-height: 1.15;
-      margin: 0;
-    }
-
-    .cat-sub {
-      color: #6b5f58;
-      font-size: .95rem;
-      margin-top: 2px;
-    }
-
-    .cat-go {
-      margin-left: auto;
-      font-weight: 700;
-      background: #9b5c2e;
-      color: #fff;
-      border: 0;
-      border-radius: 999px;
-      padding: 10px 14px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px #9b5c2e55;
-    }
-
-    .cat-go:hover {
-      background: #7c4621;
-    }
-
-    @media (max-width: 480px) {
-      .brand-title { font-size: 30px; }
-      .cat-thumb { width: 80px; height: 60px; }
-    }
+    .cat-go:hover{background:#7c4621;}
   </style>
 </head>
-
 <body>
   <section class="landing">
     <!-- 🎥 Video di sfondo -->
-    <video class="bg" autoplay muted loop playsinline preload="auto" poster="/img/fallback.jpg">
+    <video class="bg" autoplay muted loop playsinline preload="metadata">
+      <source src="/img/pizza.mp4" type="video/mp4" />
       <source src="/pizza.mp4" type="video/mp4" />
+      Il tuo browser non supporta il video di sfondo.
     </video>
 
     <div class="landing-inner">
       <div class="brand-top">
-        <img class="logo" src="/img/LOGO.JPG" alt="Mangia & Fuggi" onerror="this.src='/img/fallback.jpg'">
+        <img class="logo" src="/img/LOGO.JPG" alt="Mangia & Fuggi">
         <div>
           <div class="brand-title">Mangia &amp; Fuggi</div>
           <div class="brand-sub">Scegli la categoria</div>
         </div>
       </div>
 
-      <!-- Cards verticali -->
+      <!-- 📋 Categorie -->
       <div class="cat-list">
         <a class="cat-card" href="/menu#antipasti">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_ANTIPASTI.jpg" alt="Antipasti" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_ANTIPASTI.jpg" alt="Antipasti"></div>
           <div class="cat-info">
             <h3 class="cat-title">Antipasti</h3>
             <div class="cat-sub">Bruschette, caprese, fritti…</div>
@@ -189,7 +98,7 @@
         </a>
 
         <a class="cat-card" href="/menu#classiche">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_CLASSICHE.jpg" alt="Pizze classiche" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_CLASSICHE.jpg" alt="Pizze classiche"></div>
           <div class="cat-info">
             <h3 class="cat-title">Pizze classiche</h3>
             <div class="cat-sub">Margherita, Marinara, Diavola…</div>
@@ -198,7 +107,7 @@
         </a>
 
         <a class="cat-card" href="/menu#gourmet">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_GOURMET.jpg" alt="Pizze gourmet" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_GOURMET.jpg" alt="Pizze gourmet"></div>
           <div class="cat-info">
             <h3 class="cat-title">Pizze gourmet</h3>
             <div class="cat-sub">Bufalina, Tartufo, Mortazza…</div>
@@ -207,7 +116,7 @@
         </a>
 
         <a class="cat-card" href="/menu#bevande">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_BEVANDE.jpg" alt="Bevande" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_BEVANDE.jpg" alt="Bevande"></div>
           <div class="cat-info">
             <h3 class="cat-title">Bevande</h3>
             <div class="cat-sub">Acqua, birra, vino, soft drink</div>
@@ -216,7 +125,7 @@
         </a>
 
         <a class="cat-card" href="/menu#dessert">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_DESSERT.jpg" alt="Dessert" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_DESSERT.jpg" alt="Dessert"></div>
           <div class="cat-info">
             <h3 class="cat-title">Dessert</h3>
             <div class="cat-sub">Tiramisù, panna cotta, cheesecake</div>
@@ -225,7 +134,7 @@
         </a>
 
         <a class="cat-card" href="/menu">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_TUTTO.jpg" alt="Tutto il menu" onerror="this.src='/img/fallback.jpg'"></div>
+          <div class="cat-thumb"><img src="/img/CATEGORIA_TUTTO.jpg" alt="Tutto il menu"></div>
           <div class="cat-info">
             <h3 class="cat-title">Tutto il menu</h3>
             <div class="cat-sub">Vedi tutte le categorie insieme</div>
