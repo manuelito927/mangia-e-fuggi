@@ -37,16 +37,16 @@ app.set("views", path.join(__dirname, "views"));
 // Statico principale (/public)
 app.use(express.static(path.join(__dirname, "public")));
 
-// Statico per /video (se decidi di usare /public/video/pizza.mp4)
+// Statico per /video (se usi /public/video/pizza.mp4)
 app.use("/video", express.static(path.join(__dirname, "public", "video"), {
   setHeaders: (res) => {
-    res.setHeader("Cache-Control", "public, max-age=604800, immutable"); // cache 7 giorni
+    res.setHeader("Cache-Control", "public, max-age=604800, immutable");
   }
 }));
 
 // Fallback esplicito per /pizza.mp4 direttamente in /public
 app.get("/pizza.mp4", (req, res) => {
-  const fp = path.join(__dirname, "public", "pizza.mp4"); // METTI QUI fisicamente /public/pizza.mp4
+  const fp = path.join(__dirname, "public", "pizza.mp4");
   res.sendFile(fp, (err) => {
     if (err) {
       console.error("Video non trovato:", fp, err?.message);
@@ -57,7 +57,7 @@ app.get("/pizza.mp4", (req, res) => {
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json()));
+app.use(bodyParser.json()); // <-- FIX QUI
 app.use(cookieParser());
 app.use(session({
   secret: process.env.SESSION_SECRET || "dev",
@@ -81,10 +81,7 @@ app.use("/admin", (req, res, next) => {
 });
 
 // ---------- Pagine
-// Home con video + categorie
 app.get("/", (_req, res) => res.render("home"));
-
-// Menu classico e Admin
 app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/admin", (_req, res) =>
   res.render("admin", { SUPABASE_URL, SUPABASE_KEY })
@@ -175,7 +172,7 @@ app.post("/api/orders/:id/ack", async (req, res) => {
 app.post("/api/orders/:id/printed", (_req, res) => res.json({ ok:true }));
 
 // =====================================================================================
-// API SETTINGS (tabella "settings": key text PK, value jsonb {v:boolean})
+// API SETTINGS
 // =====================================================================================
 app.get("/api/settings", async (_req, res) => {
   try {
@@ -207,7 +204,7 @@ app.post("/api/settings", async (req, res) => {
 });
 
 // =====================================================================================
-// API STATISTICHE (ripristinate)
+// API STATISTICHE
 // =====================================================================================
 async function loadRange(startISO, endISO){
   const { data: orders, error: oErr } = await supabase
@@ -264,7 +261,6 @@ function aggTop(items){
   };
 }
 
-// Giorno corrente o data specifica (YYYY-MM-DD)
 app.get("/api/stats/day", async (req, res) => {
   try {
     const q = (req.query.date || "").toString();
@@ -281,7 +277,6 @@ app.get("/api/stats/day", async (req, res) => {
   } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
 });
 
-// Intervallo (YYYY-MM-DD → YYYY-MM-DD)
 app.get("/api/stats/range", async (req, res) => {
   try {
     const f = (req.query.from || "").toString();
@@ -304,12 +299,7 @@ app.get("/api/stats/range", async (req, res) => {
 });
 
 // =====================================================================================
-// PAGAMENTI SUMUP (secret key, access token o client credentials)
-// Env supportate:
-//   SUMUP_SECRET_KEY  (il “sup_sk_…”, usabile direttamente come Bearer)
-//   oppure SUMUP_ACCESS_TOKEN
-//   oppure coppia SUMUP_CLIENT_ID + SUMUP_CLIENT_SECRET (OAuth)
-//   SEMPRE: SUMUP_PAY_TO_EMAIL (email del tuo account SumUp)
+// PAGAMENTI SUMUP
 // =====================================================================================
 const SUMUP_CLIENT_ID     = getEnvAny("SUMUP_CLIENT_ID","Sumup_client_id");
 const SUMUP_CLIENT_SECRET = getEnvAny("SUMUP_CLIENT_SECRET","Sumup_client_secret");
@@ -345,7 +335,6 @@ async function getSumUpBearer(){
   return js.access_token;
 }
 
-// Stato per il frontend (abilita bottone)
 app.get("/api/pay-config", async (_req,res) => {
   const enabled = !!(
     SUMUP_PAYTO &&
@@ -354,7 +343,6 @@ app.get("/api/pay-config", async (_req,res) => {
   res.json({ ok:true, enabled });
 });
 
-// Crea checkout
 app.post("/api/pay-sumup", async (req, res) => {
   try {
     const { amount, currency = "EUR", description = "Pagamento Mangia & Fuggi" } = req.body || {};
