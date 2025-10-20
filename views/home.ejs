@@ -5,84 +5,103 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mangia & Fuggi</title>
   <link rel="stylesheet" href="/styles.css">
+
   <style>
-    /* --- Landing con video --- */
+    /* ---------- Landing con video ---------- */
     .landing{
-      position:relative; min-height:100dvh;
-      display:flex; align-items:center; justify-content:center;
-      padding:20px 16px; overflow:hidden; background:#000;
+      position:relative;
+      min-height:100dvh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px 16px;
+      overflow:hidden;
+      background:#000;
     }
     .landing video.bg{
-      position:absolute; inset:0; width:100%; height:100%;
+      position:absolute; inset:0;
+      width:100%; height:100%;
       object-fit:cover;
-      filter:brightness(1) contrast(1.05) saturate(1.15);
-      opacity:1;                /* <<< visibile SUBITO */
-      transition:opacity .3s ease;
-      z-index:0;
+      filter:brightness(.8);     /* video più visibile */
+      pointer-events:none;       /* niente tocchi/controlli */
     }
-    .landing::after{            /* leggera sfumatura per leggibilità */
-      content:""; position:absolute; inset:0; z-index:1;
-      background: radial-gradient(900px 600px at 50% 0%, #00000040, transparent);
+    /* rimuove eventuali controlli su Safari iOS */
+    .landing video.bg::-webkit-media-controls,
+    .landing video.bg::-webkit-media-controls-enclosure{ display:none !important; }
+
+    /* leggera vignettatura per leggibilità, molto più soft */
+    .landing::after{
+      content:""; position:absolute; inset:0;
+      background: radial-gradient(1200px 800px at 50% -10%, #00000022, transparent),
+                  linear-gradient(#00000010,#00000010);
       pointer-events:none;
     }
+
     .landing-inner{
-      position:relative; z-index:2; width:100%; max-width:760px; margin:auto;
+      position:relative; z-index:1;
+      width:100%; max-width:720px; margin:auto;
     }
 
-    /* Brand */
     .brand-top{display:flex; align-items:center; gap:12px; margin-bottom:10px}
     .brand-top .logo{
-      width:56px;height:56px;border-radius:14px;object-fit:cover;
-      box-shadow:0 8px 24px #00000055;border:2px solid #ffffff50;background:#fff;
+      width:52px;height:52px;border-radius:14px;object-fit:cover;
+      box-shadow:0 8px 24px #0006;border:2px solid #ffffff40;background:#fff;
     }
-    .brand-title{color:#fff; font-family:"Playfair Display", Georgia, serif; font-size:32px; font-weight:800}
-    .brand-sub{color:#ffffffcc; margin-top:2px; font-size:16px}
+    .brand-title{
+      color:#fff;
+      font-family:"Playfair Display", Georgia, "Times New Roman", serif;
+      font-size:34px; font-weight:800; letter-spacing:.3px; line-height:1.05;
+    }
+    .brand-sub{color:#ffffffdd; margin-top:4px; font-size:18px}
 
-    /* Lista categorie – compatta per lasciare spazio al video */
-    .cat-list{
-      display:flex; flex-direction:column; gap:12px; margin-top:12px;
-      max-height:62vh; overflow:auto; padding-right:4px;
-    }
+    /* ---------- Cards verticali ---------- */
+    .cat-list{display:flex; flex-direction:column; gap:16px; margin-top:16px}
+
     .cat-card{
       display:flex; align-items:center; gap:14px;
-      background:rgba(255,255,255,.78); border:1px solid rgba(255,255,255,.65);
-      border-radius:16px;
-      box-shadow:0 8px 24px #00000025; padding:10px;
-      color:#1f1a17; text-decoration:none;
-      backdrop-filter:saturate(140%) blur(6px);
-      min-height:16.5vh;                   /* più piccole */
+      background:rgba(255,255,255,.78);
+      border:1px solid rgba(255,255,255,.6);
+      border-radius:18px;
+      box-shadow:0 10px 30px #0000002a;
+      padding:12px;
+      text-decoration:none; color:#1f1a17;
       transition:transform .08s ease, box-shadow .12s ease, background .12s ease;
+      backdrop-filter:saturate(110%) blur(3px);
+      min-height:22vh;                  /* ~3 card per schermata su mobile */
     }
-    .cat-card:hover{transform:translateY(-2px); box-shadow:0 12px 32px #00000030}
+    .cat-card:hover{transform:translateY(-1px); box-shadow:0 14px 36px #00000033}
 
     .cat-thumb{
-      width:70px; height:50px; border-radius:12px; overflow:hidden;
-      background:#f2e8e1; flex-shrink:0; box-shadow:inset 0 0 0 1px #0000000e;
+      width:82px; height:62px;
+      border-radius:12px; overflow:hidden; background:#f2e8e1; flex-shrink:0;
+      box-shadow:inset 0 0 0 1px #00000010;
     }
     .cat-thumb img{width:100%; height:100%; object-fit:cover; display:block}
 
     .cat-info{min-width:0; flex:1}
-    .cat-title{font-weight:800; font-size:17px; line-height:1.15; margin:0}
-    .cat-sub{color:#6b5f58; font-size:.9rem; margin-top:2px}
+    .cat-title{font-weight:800; font-size:18px; line-height:1.15; margin:0}
+    .cat-sub{color:#6b5f58; font-size:.95rem; margin-top:2px}
 
     .cat-go{
-      margin-left:auto; font-weight:700; background:#9b5c2e; color:#fff;
-      border:0; border-radius:999px; padding:8px 12px; cursor:pointer;
-      box-shadow:0 3px 10px #9b5c2e55;
+      margin-left:auto; font-weight:700;
+      background:#9b5c2e; color:#fff; border:0; border-radius:999px;
+      padding:10px 14px; cursor:pointer;
+      box-shadow:0 4px 12px #9b5c2e55;
     }
     .cat-go:hover{background:#7c4621}
 
-    @media (max-width:480px){
-      .brand-title{font-size:28px}
-      .cat-thumb{width:66px;height:46px}
-      .cat-card{min-height:16vh}
+    /* Mobile */
+    @media (max-width: 480px){
+      .brand-title{font-size:30px}
+      .cat-thumb{width:78px;height:58px}
+      .cat-card{min-height:24vh}
     }
   </style>
 </head>
 <body>
   <section class="landing">
-    <!-- Video di sfondo -->
-    <video class="bg" autoplay muted loop playsinline preload="auto" poster="/img/fallback.jpg">
+    <!-- Video di sfondo: deve esistere in /public/pizza.mp4 -->
+    <video class="bg" autoplay muted loop playsinline preload="auto">
       <source src="/pizza.mp4" type="video/mp4" />
     </video>
 
@@ -95,7 +114,6 @@
         </div>
       </div>
 
-      <!-- Cards verticali -->
       <div class="cat-list">
         <a class="cat-card" href="/menu#antipasti">
           <div class="cat-thumb"><img src="/img/CATEGORIA_ANTIPASTI.jpg" alt="Antipasti" onerror="this.src='/img/fallback.jpg'"></div>
