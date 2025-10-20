@@ -36,18 +36,14 @@ app.set("views", path.join(__dirname, "views"));
 
 // ---------- Statici
 app.use(express.static(path.join(__dirname, "public"))); // /public principale
-
-// Percorso alternativo per /video/pizza.mp4 (opzionale)
 app.use("/video", express.static(path.join(__dirname, "public", "video"), {
   setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
 }));
-
-// Rotta fallback diretta per /pizza.mp4
 app.get("/pizza.mp4", (req, res) => {
   const filePath = path.join(__dirname, "public", "pizza.mp4");
   res.sendFile(filePath, (err) => {
     if (err) {
-      console.error("❌ Video non trovato:", filePath);
+      console.error("❌ Video non trovato:", filePath, err?.message);
       res.status(404).send("pizza.mp4 non trovato in /public");
     }
   });
@@ -82,7 +78,7 @@ app.use("/admin", (req, res, next) => {
 // ---------- Pagine principali
 app.get("/", (_req, res) => res.render("home"));
 app.get("/menu", (_req, res) => res.render("menu"));
-app.get("/storia", (_req, res) => res.render("storia"));  // <-- NUOVA PAGINA STORIA
+app.get("/storia", (_req, res) => res.render("storia"));
 app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL, SUPABASE_KEY }));
 app.get("/test-video", (_req, res) => res.render("test-video"));
 
@@ -203,103 +199,6 @@ app.post("/api/settings", async (req, res) => {
 });
 
 // =====================================================================================
-// API STATISTICHE
-// =====================================================================================
-async function loadRange(startISO, endISO){
-  const { data: orders, error: oErr } = await supabase
-    .from("orders")
-    .select("id,total,created_at,table_code")
-    .gte("created_at", startISO).lt("created_at", endISO)
-    .order("created_at", { ascending: true });
-  if (oErr) throw oErr;
-
-  const ids = orders.map(o => o.id);
-  let items = [];
-  if (ids.length){
-    const { data: its, error: iErr } = await supabase
-      .from("order_items").select("order_id,name,qty,price").in("order_id", ids);
-    if (iErr) throw iErr;
-    items = its || [];
-  }
-  return { orders, items };
-}
-
-function aggPerHourOrDay(orders, startISO, endISO){
-  const start = new Date(startISO), end = new Date(endISO);
-  const multiDay = (end - start) > 24*60*60*1000;
-
-  const m = new Map();
-  for (const o of orders){
-    const d = new Date(o.created_at);
-    if (multiDay){ d.setHours(0,0,0,0); } else { d.setMinutes(0,0,0); }
-    const key = d.toISOString();
-    const cur = m.get(key) || { bucket:key, orders:0, revenue:0 };
-    cur.orders += 1;
-    cur.revenue += Number(o.total||0);
-    m.set(key, cur);
-  }
-  return { rows:[...m.values()].sort((a,b)=>a.bucket.localeCompare(b.bucket)), multiDay };
-}
-
-function aggTop(items){
-  const m = new Map(); let totQty=0, totRev=0;
-  for (const it of items){
-    const cur = m.get(it.name) || { name:it.name, qty:0, revenue:0 };
-    cur.qty     += Number(it.qty||0);
-    const rev = Number(it.qty||0)*Number(it.price||0);
-    cur.revenue += rev;
-    totQty += Number(it.qty||0);
-    totRev += rev;
-    m.set(it.name, cur);
-  }
-  const arr = [...m.values()].sort((a,b)=>b.qty-a.qty);
-  return {
-    list: arr.map(x => ({
-      ...x,
-      pctQty: totQty ? (x.qty*100/totQty) : 0,
-      pctRev: totRev ? (x.revenue*100/totRev) : 0
-    }))
-  };
-}
-
-app.get("/api/stats/day", async (req, res) => {
-  try {
-    const q = (req.query.date || "").toString();
-    const d = q && /^\d{4}-\d{2}-\d{2}$/.test(q) ? new Date(q+"T00:00:00") : new Date();
-    const start = new Date(d); start.setHours(0,0,0,0);
-    const end = new Date(start); end.setDate(end.getDate()+1);
-
-    const { orders, items } = await loadRange(start.toISOString(), end.toISOString());
-    const buckets = aggPerHourOrDay(orders, start.toISOString(), end.toISOString());
-    const top = aggTop(items);
-    const total = orders.reduce((s,o)=>s+Number(o.total||0),0);
-
-    res.json({ ok:true, range:{ start:start.toISOString(), end:end.toISOString() }, count:orders.length, total, perBucket:buckets, top });
-  } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
-});
-
-app.get("/api/stats/range", async (req, res) => {
-  try {
-    const f = (req.query.from || "").toString();
-    const t = (req.query.to   || "").toString();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || !/^\d{4}-\d{2}-\d{2}$/.test(t))
-      return res.status(400).json({ ok:false, error:"bad_dates" });
-
-    const start = new Date(f+"T00:00:00");
-    const end   = new Date(t+"T00:00:00"); end.setDate(end.getDate()+1);
-
-    const { orders, items } = await loadRange(start.toISOString(), end.toISOString());
-    const buckets = aggPerHourOrDay(orders, start.toISOString(), end.toISOString());
-    const top = aggTop(items);
-
-    const total = orders.reduce((s,o)=>s+Number(o.total||0),0);
-    const avg   = orders.length ? total/orders.length : 0;
-
-    res.json({ ok:true, range:{ from:f, to:t }, count:orders.length, total, avg, perBucket:buckets, top });
-  } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
-});
-
-// =====================================================================================
 // PAGAMENTI SUMUP
 // =====================================================================================
 const SUMUP_CLIENT_ID     = getEnvAny("SUMUP_CLIENT_ID","Sumup_client_id");
@@ -334,14 +233,61 @@ async function getSumUpBearer(){
   return js.access_token;
 }
 
+// Stato per il frontend (con motivo se off)
 app.get("/api/pay-config", async (_req,res) => {
-  const enabled = !!(
-    SUMUP_PAYTO &&
-    (SUMUP_ACCESS_TOKEN || SUMUP_SECRET_KEY || (SUMUP_CLIENT_ID && SUMUP_CLIENT_SECRET))
-  );
-  res.json({ ok:true, enabled });
+  const hasCreds = (SUMUP_ACCESS_TOKEN || SUMUP_SECRET_KEY || (SUMUP_CLIENT_ID && SUMUP_CLIENT_SECRET));
+  const enabled = !!(SUMUP_PAYTO && hasCreds);
+  res.json({
+    ok:true,
+    enabled,
+    reason: enabled ? null : {
+      payto: !!SUMUP_PAYTO,
+      hasCreds: !!hasCreds
+    }
+  });
 });
 
+// ---- TEST CHECKOUT (diagnostica)
+app.get("/test-sumup", async (req, res) => {
+  try {
+    const amount = Number(req.query.amount || 3.50);
+    const currency = "EUR";
+    const description = "Test pagamento Mangia & Fuggi";
+    const bearer = await getSumUpBearer();
+    const ref = "test_" + Math.random().toString(36).slice(2,10);
+
+    const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${bearer}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        amount: Number(euro(amount)),
+        currency,
+        checkout_reference: ref,
+        pay_to_email: SUMUP_PAYTO,
+        description
+      })
+    });
+
+    const raw = await resp.text();
+    let data; try { data = JSON.parse(raw); } catch { data = { raw }; }
+
+    if (!resp.ok) {
+      console.error("SumUp TEST error:", resp.status, raw);
+      return res.status(500).json({ ok:false, status: resp.status, data });
+    }
+
+    const url = data.checkout_url || data.redirect_url || data.url;
+    return res.json({ ok:true, url, data });
+  } catch (e) {
+    console.error("SumUp TEST exception:", e);
+    return res.status(500).json({ ok:false, error: String(e.message || e) });
+  }
+});
+
+// ---- API checkout reale dal menu
 app.post("/api/pay-sumup", async (req, res) => {
   try {
     const { amount, currency = "EUR", description = "Pagamento Mangia & Fuggi" } = req.body || {};
@@ -366,15 +312,16 @@ app.post("/api/pay-sumup", async (req, res) => {
       })
     });
 
+    const text = await resp.text();
+    let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
     if (!resp.ok) {
-      const text = await resp.text();
       console.error("SumUp checkout error:", resp.status, text);
-      return res.status(500).json({ ok:false, error:"sumup_api_error" });
+      return res.status(500).json({ ok:false, error:"sumup_api_error", status: resp.status, data });
     }
 
-    const data = await resp.json();
     const url = data.checkout_url || data.redirect_url || data.url;
-    if (!url) return res.status(500).json({ ok:false, error:"sumup_url_missing" });
+    if (!url) return res.status(500).json({ ok:false, error:"sumup_url_missing", data });
     res.json({ ok:true, url });
   } catch (e) {
     console.error("Pay error:", e);
