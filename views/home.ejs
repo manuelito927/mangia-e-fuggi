@@ -6,152 +6,133 @@
   <title>Mangia & Fuggi</title>
   <link rel="stylesheet" href="/styles.css">
   <style>
-    /* ===== Landing con video ===== */
-    :root{ --brand:#9b5c2e; --ink:#1f1a17; --ink-soft:#6b5f58; }
+    :root{ --brand:#9b5c2e; --ink:#1f1a17; --ink-soft:#e9e3dd; }
     *{ box-sizing:border-box }
-    body{ margin:0; background:#000; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif }
+    body{ margin:0; background:#000; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:#fff }
 
+    /* ===== Sezione landing con video ===== */
     .landing{
       position:relative; min-height:100dvh;
       display:flex; align-items:center; justify-content:center;
-      padding:24px 16px; overflow:hidden; background:#000;
+      padding:28px 16px; overflow:hidden; background:#000;
     }
     .landing video.bg{
       position:absolute; inset:0; width:100%; height:100%;
-      object-fit:cover; filter:brightness(.65) saturate(1.05);
-      /* iOS: cerca di nascondere i controlli */
+      object-fit:cover; filter:brightness(.55) saturate(1.05);
       pointer-events:none;
     }
-    .shade-top{                 /* sfumatura alto/basso per leggibilità */
-      content:""; position:absolute; inset:0;
-      background: linear-gradient(180deg, #00000066, #0000 30%, #0000 70%, #00000066);
-      z-index:0; pointer-events:none;
+    .overlay{
+      position:absolute; inset:0;
+      background: linear-gradient(180deg, #0008, #0000 25%, #0000 75%, #0008);
+      pointer-events:none;
     }
 
-    .landing-inner{ position:relative; z-index:1; width:100%; max-width:760px; margin:auto; }
-    .brand-top{ display:flex; align-items:center; gap:12px; margin-bottom:12px }
-    .brand-top .logo{
-      width:52px; height:52px; border-radius:14px; object-fit:cover;
-      box-shadow:0 8px 24px #0007; border:2px solid #ffffff60; background:#fff;
+    .wrap{
+      position:relative; z-index:1; width:100%; max-width:860px; margin:auto;
+      display:flex; flex-direction:column; gap:18px;
+    }
+
+    /* Brand */
+    .brand{
+      display:flex; align-items:center; gap:12px;
+    }
+    .brand .logo{
+      width:56px; height:56px; border-radius:14px; object-fit:cover;
+      border:2px solid #ffffff55; background:#fff; box-shadow:0 8px 24px #0007;
     }
     .brand-title{
-      color:#fff; font-family:"Playfair Display", Georgia, "Times New Roman", serif;
+      font-family:"Playfair Display", Georgia, "Times New Roman", serif;
       font-size:34px; font-weight:800; letter-spacing:.3px; line-height:1.05;
+      color:#fff;
     }
-    .brand-sub{ color:#ffffffd0; margin-top:4px; font-size:16px }
+    .brand-sub{ color:#ffffffcc; margin-top:4px; font-size:16px }
 
-    /* ===== Cards categoria in colonna ===== */
-    .cat-list{ display:flex; flex-direction:column; gap:14px; margin-top:10px }
-    .cat-card{
-      display:flex; align-items:center; gap:14px;
-      background:#fffdf8f0; border:1px solid #ffffff90; border-radius:18px;
-      box-shadow:0 10px 30px #00000030; padding:12px 14px;
-      text-decoration:none; color:var(--ink);
-      transition:transform .08s ease, box-shadow .12s ease;
-      backdrop-filter:saturate(120%) blur(2px);
-      min-height:22vh;              /* ~3 card per viewport su mobile */
+    /* Card semitrasparenti */
+    .grid{
+      display:grid; gap:16px;
+      grid-template-columns: 1fr;
     }
-    .cat-card:hover{ transform:translateY(-1px); box-shadow:0 16px 36px #00000040 }
-
-    .cat-thumb{
-      width:84px; height:64px; border-radius:12px; overflow:hidden; background:#f1d0ab; flex-shrink:0;
-      box-shadow:inset 0 0 0 1px #00000010;
+    @media (min-width: 720px){
+      .grid{ grid-template-columns: repeat(3, 1fr); }
     }
-    .cat-thumb img{ width:100%; height:100%; object-fit:cover; display:block }
-
-    .cat-info{ min-width:0; flex:1 }
-    .cat-title{ font-weight:800; font-size:18px; line-height:1.15; margin:0 0 2px 0 }
-    .cat-sub{ color:var(--ink-soft); font-size:.95rem; margin:0 }
-
-    .cat-go{
-      margin-left:auto; font-weight:700; background:var(--brand); color:#fff;
-      border:0; border-radius:999px; padding:10px 14px; cursor:pointer;
-      box-shadow:0 4px 12px #9b5c2e66;
+    .card{
+      background:#ffffff10; border:1px solid #ffffff25; color:#fff;
+      border-radius:18px; padding:16px;
+      box-shadow:0 10px 30px #00000040; backdrop-filter: blur(6px) saturate(120%);
+      display:flex; flex-direction:column; gap:10px; min-height:180px;
     }
-    .cat-go:hover{ background:#7c4621 }
+    .card h3{ margin:0; font-size:20px; color:#ffdcae }
+    .card p{ margin:0; color:var(--ink-soft); line-height:1.5 }
 
-    /* Mobile tuning */
+    .btn{
+      align-self:flex-start;
+      background:var(--brand); color:#fff; border:0; border-radius:999px;
+      padding:10px 16px; font-weight:700; cursor:pointer;
+      box-shadow:0 6px 16px #9b5c2e66; text-decoration:none;
+      transition: transform .08s ease, background .15s ease;
+    }
+    .btn:hover{ background:#7c4621; transform:translateY(-1px) }
+
+    /* Footer mini link recensioni */
+    .links{
+      display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;
+    }
+    .link{
+      color:#fff; text-decoration:none; border-bottom:1px dashed #ffffff66;
+    }
+    .link:hover{ border-bottom-color:#fff }
+
+    /* Piccoli aggiustamenti mobile */
     @media (max-width: 480px){
       .brand-title{ font-size:28px }
-      .cat-thumb{ width:78px; height:58px }
-      .cat-card{ min-height:23vh }
     }
   </style>
 </head>
 <body>
   <section class="landing">
-    <!-- Video di sfondo -->
-    <video class="bg" autoplay muted loop playsinline preload="auto"
-           webkit-playsinline x5-playsinline>
-      <!-- IMPORTANTE: metti il file in /public/pizza.mp4 -->
+    <!-- Video di sfondo: assicurati che il file sia in /public/pizza.mp4 -->
+    <video class="bg" autoplay muted loop playsinline preload="auto" webkit-playsinline x5-playsinline>
       <source src="/pizza.mp4" type="video/mp4" />
     </video>
-    <div class="shade-top"></div>
+    <div class="overlay"></div>
 
-    <div class="landing-inner">
-      <div class="brand-top">
+    <div class="wrap">
+      <!-- Brand -->
+      <div class="brand">
         <img class="logo" src="/img/LOGO.JPG" alt="Mangia & Fuggi" onerror="this.src='/img/fallback.jpg'">
         <div>
           <div class="brand-title">Mangia &amp; Fuggi</div>
-          <div class="brand-sub">Scegli la categoria</div>
+          <div class="brand-sub">Benvenuto! Scegli cosa vuoi fare</div>
         </div>
       </div>
 
-      <!-- Cards verticali: link alle ancore di /menu -->
-      <div class="cat-list">
-        <a class="cat-card" href="/menu#antipasti">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_ANTIPASTI.jpg" alt="Antipasti" onerror="this.src='/img/fallback.jpg'"></div>
-          <div class="cat-info">
-            <h3 class="cat-title">Antipasti</h3>
-            <p class="cat-sub">Bruschette, caprese, fritti…</p>
-          </div>
-          <button class="cat-go">Apri</button>
-        </a>
+      <!-- Tre sezioni -->
+      <div class="grid">
+        <!-- MENU -->
+        <div class="card">
+          <h3>🍕 Menu</h3>
+          <p>Dai classici intramontabili alle pizze gourmet: scopri tutte le nostre proposte, antipasti, bevande e dessert.</p>
+          <a href="/menu" class="btn">Vai al menu</a>
+        </div>
 
-        <a class="cat-card" href="/menu#classiche">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_CLASSICHE.jpg" alt="Pizze classiche" onerror="this.src='/img/fallback.jpg'"></div>
-          <div class="cat-info">
-            <h3 class="cat-title">Pizze classiche</h3>
-            <p class="cat-sub">Margherita, Marinara, Diavola…</p>
-          </div>
-          <button class="cat-go">Apri</button>
-        </a>
+        <!-- LA NOSTRA STORIA -->
+        <div class="card">
+          <h3>📖 La nostra storia</h3>
+          <p>Nati nel cuore del Salento: farine selezionate, lievitazioni lente e materie prime italiane per un gusto autentico.</p>
+          <!-- Se vuoi, link a una pagina dedicata -->
+          <!-- <a href="/storia" class="btn">Scopri di più</a> -->
+        </div>
 
-        <a class="cat-card" href="/menu#gourmet">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_GOURMET.jpg" alt="Pizze gourmet" onerror="this.src='/img/fallback.jpg'"></div>
-          <div class="cat-info">
-            <h3 class="cat-title">Pizze gourmet</h3>
-            <p class="cat-sub">Bufalina, Tartufo, Mortazza…</p>
+        <!-- RECENSIONI -->
+        <div class="card">
+          <h3>⭐ Recensioni</h3>
+          <p>La tua opinione conta! Lascia una recensione e aiutaci a migliorare ogni giorno.</p>
+          <div class="links">
+            <!-- Sostituisci gli URL con quelli reali del locale -->
+            <a class="btn" href="https://www.google.com/maps/place/?q=place_id:INSERISCI_PLACE_ID" target="_blank" rel="noopener">Scrivi su Google</a>
+            <a class="link" href="https://www.tripadvisor.it/" target="_blank" rel="noopener">Oppure su TripAdvisor</a>
           </div>
-          <button class="cat-go">Apri</button>
-        </a>
-
-        <a class="cat-card" href="/menu#bevande">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_BEVANDE.jpg" alt="Bevande" onerror="this.src='/img/fallback.jpg'"></div>
-          <div class="cat-info">
-            <h3 class="cat-title">Bevande</h3>
-            <p class="cat-sub">Acqua, birra, vino, soft drink</p>
-          </div>
-          <button class="cat-go">Apri</button>
-        </a>
-
-        <a class="cat-card" href="/menu#dessert">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_DESSERT.jpg" alt="Dessert" onerror="this.src='/img/fallback.jpg'"></div>
-          <div class="cat-info">
-            <h3 class="cat-title">Dessert</h3>
-            <p class="cat-sub">Tiramisù, panna cotta, cheesecake</p>
-          </div>
-          <button class="cat-go">Apri</button>
-        </a>
-
-        <a class="cat-card" href="/menu">
-          <div class="cat-thumb"><img src="/img/CATEGORIA_TUTTO.jpg" alt="Tutto il menu" onerror="this.src='/img/fallback.jpg'"></div>
-          <div class="cat-info">
-            <h3 class="cat-title">Tutto il menu</h3>
-            <p class="cat-sub">Vedi tutte le categorie insieme</p>
-          </div>
-          <button class="cat-go">Apri</button>
-        </a>
+        </div>
       </div>
     </div>
   </section>
