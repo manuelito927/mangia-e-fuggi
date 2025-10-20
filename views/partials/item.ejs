@@ -1,9 +1,15 @@
-<div class="item" data-name="<%= name %>" data-price="<%= price.toFixed(2) %>">
+<div
+  class="item"
+  data-name="<%= name %>"
+  data-price="<%= Number(price).toFixed(2) %>"
+>
   <!-- FOTO -->
   <div class="thumb">
-    <img 
-      src="<%= img || '/img/fallback.jpg' %>" 
-      alt="<%= name %>" 
+    <img
+      src="<%= img || '/img/fallback.jpg' %>"
+      alt="<%= name %>"
+      loading="lazy"
+      decoding="async"
       onerror="this.src='/img/fallback.jpg'">
   </div>
 
@@ -15,13 +21,28 @@
     <% } %>
   </div>
 
-  <!-- PREZZO + QUANTITÀ (sempre a destra, anche su mobile) -->
+  <!-- PREZZO + QUANTITÀ -->
   <div class="i-right">
-    <div class="i-price">€ <%= price.toFixed(2).replace('.', ',') %></div>
-    <div class="i-qty">
-      <button class="q" onclick="dec('<%= name %>')">−</button>
-      <span class="qv" id="q-<%= name.replace(/[^a-z0-9]+/gi,'_') %>">0</span>
-      <button class="q" onclick="inc('<%= name %>', <%= price %>)">+</button>
+    <div class="i-price">€ <%= Number(price).toFixed(2).replace('.', ',') %></div>
+
+    <div class="i-qty" role="group" aria-label="Quantità per <%= name %>">
+      <button
+        type="button"
+        class="q"
+        aria-label="Diminuisci <%= name %>"
+        onclick="dec('<%= name.replace(/'/g, "\\'") %>')">−</button>
+
+      <span
+        class="qv"
+        id="q-<%= name.replace(/[^a-z0-9]+/gi,'_') %>"
+        aria-live="polite"
+        aria-atomic="true">0</span>
+
+      <button
+        type="button"
+        class="q"
+        aria-label="Aumenta <%= name %>"
+        onclick="inc('<%= name.replace(/'/g, "\\'") %>', <%= Number(price) %>)">+</button>
     </div>
   </div>
 </div>
