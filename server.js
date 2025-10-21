@@ -22,11 +22,15 @@ function getEnvAny(...keys){
   }
   return "";
 }
-const euroString = v => Number(v || 0).toFixed(2);
-// arrotonda in centesimi e torna Number con due decimali stabili
-function toAmount2(n){
+function toAmount2(n){                 // arrotonda in centesimi, numero stabile
   const cents = Math.round(Number(n || 0) * 100);
   return Number((cents/100).toFixed(2));
+}
+function getBaseUrl(req){
+  const env = getEnvAny("BASE_URL","Base_url"); // es: https://mangia-e-fuggi.onrender.com
+  if (env) return env.replace(/\/+$/,"");
+  const proto = req.headers["x-forwarded-proto"] || req.protocol || "https";
+  return `${proto}://${req.get("host")}`;
 }
 
 // ---------- Supabase
@@ -42,7 +46,7 @@ app.set("views", path.join(__dirname, "views"));
 app.set("trust proxy", 1); // Render/Proxy
 
 // ---------- Statici
-app.use(express.static(path.join(__dirname, "public"))); // /public principale
+app.use(express.static(path.join(__dirname, "public")));
 app.use("/video", express.static(path.join(__dirname, "public", "video"), {
   setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
 }));
@@ -89,9 +93,9 @@ app.get("/storia", (_req, res) => res.render("storia"));
 app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL, SUPABASE_KEY }));
 app.get("/test-video", (_req, res) => res.render("test-video"));
 
-// (facoltative) pagine esito pagamento se usi BASE_URL
-app.get("/pagamento/successo", (req,res)=> res.send("Pagamento completato. Grazie!"));
-app.get("/pagamento/annullato", (req,res)=> res.send("Pagamento annullato. Puoi riprovare dal carrello."));
+// (facoltative) pagine esito pagamento
+app.get("/pagamento/successo", (_req,res)=> res.send("Pagamento completato. Grazie!"));
+app.get("/pagamento/annullato", (_req,res)=> res.send("Pagamento annullato. Puoi riprovare dal carrello."));
 
 // =====================================================================================
 // API ORDINI
@@ -178,38 +182,6 @@ app.post("/api/orders/:id/ack", async (req, res) => {
 app.post("/api/orders/:id/printed", (_req, res) => res.json({ ok:true }));
 
 // =====================================================================================
-// API SETTINGS
-// =====================================================================================
-app.get("/api/settings", async (_req, res) => {
-  try {
-    const keys = ["sound_enabled","autorefresh"];
-    const { data, error } = await supabase
-      .from("settings").select("key,value").in("key", keys);
-    if (error) throw error;
-
-    const map = Object.fromEntries((data||[]).map(r => [r.key, r.value?.v]));
-    res.json({
-      ok:true,
-      sound_enabled: !!map.sound_enabled,
-      autorefresh: !!map.autorefresh
-    });
-  } catch(e){ console.error(e); res.json({ ok:false }); }
-});
-
-app.post("/api/settings", async (req, res) => {
-  try {
-    const { sound_enabled=false, autorefresh=false } = req.body || {};
-    const rows = [
-      { key:"sound_enabled", value: { v: !!sound_enabled } },
-      { key:"autorefresh",   value: { v: !!autorefresh } }
-    ];
-    const { error } = await supabase.from("settings").upsert(rows);
-    if (error) throw error;
-    res.json({ ok:true });
-  } catch(e){ console.error(e); res.json({ ok:false }); }
-});
-
-// =====================================================================================
 // PAGAMENTI SUMUP
 // =====================================================================================
 const SUMUP_CLIENT_ID     = getEnvAny("SUMUP_CLIENT_ID","Sumup_client_id");
@@ -217,11 +189,11 @@ const SUMUP_CLIENT_SECRET = getEnvAny("SUMUP_CLIENT_SECRET","Sumup_client_secret
 const SUMUP_ACCESS_TOKEN  = getEnvAny("SUMUP_ACCESS_TOKEN","Sumup_access_token");
 const SUMUP_SECRET_KEY    = getEnvAny("SUMUP_SECRET_KEY","Sumup_secret_key");
 const SUMUP_PAYTO         = getEnvAny("SUMUP_PAY_TO_EMAIL","SUMUP_MERCHANT_EMAIL","Sumup_pay_to_email");
-const BASE_URL            = getEnvAny("BASE_URL","Base_url"); // es: https://mangia-e-fuggi.onrender.com
 
+// Bearer
 async function getSumUpBearer(){
-  if (SUMUP_ACCESS_TOKEN) return SUMUP_ACCESS_TOKEN;
-  if (SUMUP_SECRET_KEY)   return SUMUP_SECRET_KEY;
+  if (SUMUP_ACCESS_TOKEN) return SUMUP_ACCESS_TOKEN;  // token già generato
+  if (SUMUP_SECRET_KEY)   return SUMUP_SECRET_KEY;    // legacy key
   if (!(SUMUP_CLIENT_ID && SUMUP_CLIENT_SECRET)) throw new Error("missing_client_credentials");
 
   const form = new URLSearchParams();
@@ -259,7 +231,7 @@ app.get("/api/pay-config", async (_req,res) => {
   });
 });
 
-// ---- TEST CHECKOUT (diagnostica)
+// ---- TEST CHECKOUT (diagnostica rapida)
 app.get("/test-sumup", async (req, res) => {
   try {
     const amount = toAmount2(req.query.amount || 3.50);
@@ -268,18 +240,16 @@ app.get("/test-sumup", async (req, res) => {
     const bearer = await getSumUpBearer();
     const ref = "test_" + uuidv4().slice(0,8);
 
+    const base = getBaseUrl(req);
     const payload = {
       amount,
       currency,
       checkout_reference: ref,
       pay_to_email: SUMUP_PAYTO,
-      description
+      description,
+      return_url: `${base}/pagamento/successo`,
+      cancel_url: `${base}/pagamento/annullato`
     };
-    // se disponibile, aggiungi redirect
-    if (BASE_URL){
-      payload.return_url = `${BASE_URL}/pagamento/successo`;
-      payload.cancel_url = `${BASE_URL}/pagamento/annullato`;
-    }
 
     const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
@@ -317,18 +287,17 @@ app.post("/api/pay-sumup", async (req, res) => {
 
     const bearer = await getSumUpBearer();
     const ref = "ordine_" + uuidv4().slice(0,8);
+    const base = getBaseUrl(req);
 
     const payload = {
       amount: amt,
       currency,
       checkout_reference: ref,
       pay_to_email: SUMUP_PAYTO,
-      description
+      description,
+      return_url: `${base}/pagamento/successo`,
+      cancel_url: `${base}/pagamento/annullato`
     };
-    if (BASE_URL){
-      payload.return_url = `${BASE_URL}/pagamento/successo`;
-      payload.cancel_url = `${BASE_URL}/pagamento/annullato`;
-    }
 
     const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
@@ -349,7 +318,7 @@ app.post("/api/pay-sumup", async (req, res) => {
 
     const url = data.checkout_url || data.redirect_url || data.url;
     if (!url) return res.status(500).json({ ok:false, error:"sumup_url_missing", data });
-    res.json({ ok:true, url });
+    res.json({ ok:true, url, checkout_id: data.id || null });
   } catch (e) {
     console.error("Pay error:", e);
     let code = "server_error";
@@ -357,6 +326,26 @@ app.post("/api/pay-sumup", async (req, res) => {
     if (e.message === "token_request_failed")     code = "sumup_token_failed";
     if (e.message === "token_missing")            code = "sumup_token_missing";
     res.status(500).json({ ok:false, error:code });
+  }
+});
+
+// ---- Verifica stato pagamento (poll con checkout_id)
+app.get("/api/pay-verify", async (req, res) => {
+  try {
+    const id = (req.query.id||"").toString().trim();
+    if (!id) return res.status(400).json({ ok:false, error:"missing_id" });
+    const bearer = await getSumUpBearer();
+    const resp = await fetch(`https://api.sumup.com/v0.1/checkouts/${encodeURIComponent(id)}`, {
+      headers: { "Authorization": `Bearer ${bearer}` }
+    });
+    const text = await resp.text();
+    let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    if (!resp.ok) return res.status(500).json({ ok:false, status:resp.status, data });
+    // status: PENDING / PAID / FAILED / CANCELED
+    res.json({ ok:true, status: data.status || null, data });
+  } catch(e){
+    console.error("Verify error:", e);
+    res.status(500).json({ ok:false, error:"verify_failed" });
   }
 });
 
