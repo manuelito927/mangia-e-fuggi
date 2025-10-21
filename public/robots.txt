@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://mangia-e-fuggi.onrender.com/sitemap.xml
