@@ -9,6 +9,7 @@ import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
 import { v4 as uuidv4 } from "uuid";
+import fs from "fs";
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
@@ -41,6 +42,17 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.set("trust proxy", 1); // Render/Proxy
 
+// 🔒 Forza HTTPS in produzione
+if (process.env.NODE_ENV === "production") {
+  app.use((req, res, next) => {
+    const proto = req.headers["x-forwarded-proto"];
+    if (proto && proto !== "https") {
+      return res.redirect(301, "https://" + req.headers.host + req.originalUrl);
+    }
+    next();
+  });
+}
+
 // ---------- Statici
 app.use(express.static(path.join(__dirname, "public"))); // /public principale
 app.use("/video", express.static(path.join(__dirname, "public", "video"), {
@@ -54,6 +66,25 @@ app.get("/pizza.mp4", (req, res) => {
       res.status(404).send("pizza.mp4 non trovato in /public");
     }
   });
+});
+
+// ---------- SEO helper (robots.txt / sitemap.xml) ----------
+app.get("/robots.txt", (req, res) => {
+  const p = path.join(__dirname, "public", "robots.txt");
+  if (fs.existsSync(p)) return res.sendFile(p);
+  res.type("text/plain").send(`User-agent: *
+Allow: /
+Sitemap: ${getEnvAny("BASE_URL","Base_url") || (req.protocol + "://" + req.get("host"))}/sitemap.xml
+`);
+});
+
+app.get("/sitemap.xml", (req, res) => {
+  const p = path.join(__dirname, "public", "sitemap.xml");
+  if (fs.existsSync(p)) return res.sendFile(p);
+  const base = getEnvAny("BASE_URL","Base_url") || (req.protocol + "://" + req.get("host"));
+  const urls = ["/", "/menu", "/storia"].map(u => `<url><loc>${base}${u}</loc></url>`).join("");
+  res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
 });
 
 // ---------- Middleware sicurezza e sessioni
