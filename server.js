@@ -34,6 +34,13 @@ function getBaseUrl(req){
     (req?.headers?.["x-forwarded-proto"] ? `${req.headers["x-forwarded-proto"]}://${req.headers.host}` : `${req.protocol}://${req.get("host")}`)
   );
 }
+// helper limiti giorno in orario locale (Italia) → ISO UTC
+function localDayBounds(dayStr) {
+  const base = dayStr ? new Date(dayStr + "T00:00:00") : new Date();
+  const startLocal = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
+  const endLocal   = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999);
+  return { start: startLocal.toISOString(), end: endLocal.toISOString(), startLocal, endLocal };
+}
 
 // ---------- Supabase
 const SUPABASE_URL = getEnvAny("SUPABASE_URL","Supabase_url","supabase_url");
@@ -257,28 +264,20 @@ app.post("/api/settings", async (req, res) => {
 });
 
 // =====================================================================================
-// API STATISTICHE
+// API STATISTICHE — compatibili con dashboard (day + range top)
 // =====================================================================================
 
-// /api/stats -> statistiche del giorno (o di un giorno passato con ?day=YYYY-MM-DD)
+// Riassunto semplice (resta per compatibilità)
 app.get("/api/stats", async (req, res) => {
   try {
-    const day = (req.query.day || "").toString().slice(0,10); // YYYY-MM-DD
-    const now = new Date();
-
-    const start = day
-      ? new Date(`${day}T00:00:00.000Z`)
-      : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
-    const end = day
-      ? new Date(`${day}T23:59:59.999Z`)
-      : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+    const day = (req.query.day || "").toString().slice(0,10);
+    const { start, end } = localDayBounds(day);
 
     const { data: rows, error } = await supabase
       .from("orders")
       .select("id,total,status,created_at")
-      .gte("created_at", start.toISOString())
-      .lte("created_at", end.toISOString());
-
+      .gte("created_at", start)
+      .lte("created_at", end);
     if (error) throw error;
 
     const all = rows || [];
@@ -287,10 +286,9 @@ app.get("/api/stats", async (req, res) => {
     const revenue = completed.reduce((s, o) => s + Number(o.total || 0), 0);
     const average = count ? revenue / count : 0;
 
-    return res.json({
+    res.json({
       ok: true,
-      from: start.toISOString(),
-      to: end.toISOString(),
+      from: start, to: end,
       orders_total: all.length,
       orders_completed: count,
       revenue: Number(revenue.toFixed(2)),
@@ -302,28 +300,80 @@ app.get("/api/stats", async (req, res) => {
   }
 });
 
-// /api/stats/range?from=YYYY-MM-DD&to=YYYY-MM-DD -> serie giornaliera
+// ---- /api/stats/day?date=YYYY-MM-DD
+// { ok, count, total, perBucket: { rows:[{bucket, count, revenue}] } }
+app.get("/api/stats/day", async (req, res) => {
+  try {
+    const day = (req.query.date || req.query.day || "").toString().slice(0,10);
+    const { start, end, startLocal } = localDayBounds(day);
+
+    const { data: orders, error } = await supabase
+      .from("orders")
+      .select("id,total,status,created_at")
+      .gte("created_at", start)
+      .lte("created_at", end);
+    if (error) throw error;
+
+    const all = orders || [];
+    const completed = all.filter(o => o.status === "completed");
+
+    // KPI: numero ordini totali, incasso dei soli 'completed'
+    const countAll = all.length;
+    const totalRev = completed.reduce((s,o)=>s+Number(o.total||0),0);
+
+    // 24 bucket orari locali
+    const buckets = Array.from({length:24}, (_,h) => {
+      const b = new Date(startLocal); b.setHours(h,0,0,0);
+      return { key: h, bucket: b.toISOString(), count: 0, revenue: 0 };
+    });
+
+    for (const o of all) {
+      const dt = new Date(o.created_at);
+      const h = dt.getHours(); // locale
+      const idx = (h>=0 && h<=23) ? h : 0;
+      buckets[idx].count += 1;
+      if (o.status === "completed") buckets[idx].revenue += Number(o.total||0);
+    }
+
+    // arrotonda revenue
+    for (const b of buckets) b.revenue = Number(b.revenue.toFixed(2));
+
+    res.json({
+      ok: true,
+      count: countAll,
+      total: Number(totalRev.toFixed(2)),
+      perBucket: { rows: buckets }
+    });
+  } catch (e) {
+    console.error("stats day error:", e);
+    res.status(500).json({ ok:false, error:"stats_day_failed" });
+  }
+});
+
+// ---- /api/stats/range?from=YYYY-MM-DD&to=YYYY-MM-DD
+// aggiunge top prodotti: { top: { list: [{name, qty, revenue, pctQty, pctRev}] } }
 app.get("/api/stats/range", async (req, res) => {
   try {
     const fromStr = (req.query.from || "").toString().slice(0,10);
     const toStr   = (req.query.to   || "").toString().slice(0,10);
     if (!fromStr || !toStr) return res.status(400).json({ ok:false, error:"missing_range" });
 
-    const start = new Date(`${fromStr}T00:00:00.000Z`);
-    const end   = new Date(`${toStr}T23:59:59.999Z`);
+    const { start: fromIso } = localDayBounds(fromStr);
+    const { end: toIso }     = localDayBounds(toStr);
 
-    const { data: rows, error } = await supabase
+    const { data: orders, error } = await supabase
       .from("orders")
       .select("id,total,status,created_at")
-      .gte("created_at", start.toISOString())
-      .lte("created_at", end.toISOString());
-
+      .gte("created_at", fromIso)
+      .lte("created_at", toIso);
     if (error) throw error;
 
-    // raggruppo per giorno
+    const all = orders || [];
+
+    // Serie per giorno (tot ordini e revenue completed)
     const byDay = {};
-    for (const o of rows || []) {
-      const d = (o.created_at || "").slice(0,10); // YYYY-MM-DD
+    for (const o of all) {
+      const d = (o.created_at || "").slice(0,10);
       if (!byDay[d]) byDay[d] = { date:d, orders:0, completed:0, revenue:0 };
       byDay[d].orders += 1;
       if (o.status === "completed") {
@@ -331,16 +381,53 @@ app.get("/api/stats/range", async (req, res) => {
         byDay[d].revenue += Number(o.total || 0);
       }
     }
-    // ordina e calcola scontrino medio
     const series = Object.values(byDay)
-      .sort((a,b) => a.date.localeCompare(b.date))
-      .map(d => ({
+      .sort((a,b)=>a.date.localeCompare(b.date))
+      .map(d=>({
         ...d,
         average_ticket: d.completed ? Number((d.revenue/d.completed).toFixed(2)) : 0,
         revenue: Number(d.revenue.toFixed(2))
       }));
 
-    return res.json({ ok:true, from: fromStr, to: toStr, series });
+    // ---- TOP PRODOTTI su ordini COMPLETED nel range
+    const completedIds = all.filter(o=>o.status==="completed").map(o=>o.id);
+    let top = { list: [] };
+
+    if (completedIds.length) {
+      const chunk = (arr, n)=>arr.length<=n?[arr]:Array.from({length:Math.ceil(arr.length/n)}, (_,i)=>arr.slice(i*n,(i+1)*n));
+      const idChunks = chunk(completedIds, 1000); // sicurezza
+
+      const items = [];
+      for (const ids of idChunks) {
+        const { data: rows, error: iErr } = await supabase
+          .from("order_items")
+          .select("order_id,name,price,qty")
+          .in("order_id", ids);
+        if (iErr) throw iErr;
+        items.push(...(rows||[]));
+      }
+
+      const byName = {};
+      for (const it of items) {
+        const name = it.name || "Senza nome";
+        if (!byName[name]) byName[name] = { name, qty:0, revenue:0 };
+        byName[name].qty += Number(it.qty||0);
+        byName[name].revenue += Number(it.qty||0) * Number(it.price||0);
+      }
+      const list = Object.values(byName)
+        .map(x=>({ ...x, revenue: Number(x.revenue.toFixed(2)) }))
+        .sort((a,b)=> b.qty - a.qty || b.revenue - a.revenue);
+
+      const totQty = list.reduce((s,x)=>s+x.qty,0);
+      const totRev = list.reduce((s,x)=>s+x.revenue,0);
+      top.list = list.map(x=>({
+        ...x,
+        pctQty: totQty ? (x.qty/totQty*100) : 0,
+        pctRev: totRev ? (x.revenue/totRev*100) : 0
+      }));
+    }
+
+    res.json({ ok:true, from: fromStr, to: toStr, series, top });
   } catch (e) {
     console.error("stats range error:", e);
     res.status(500).json({ ok:false, error:"stats_range_failed" });
@@ -405,9 +492,7 @@ app.get("/test-sumup", async (req, res) => {
     const bearer = await getSumUpBearer();
     const ref = "test_" + uuidv4().slice(0,8);
 
-    // redirect_url gestisce il ritorno dopo pagamento
     const base = getBaseUrl(req);
-
     const payload = {
       amount,
       currency,
@@ -435,7 +520,6 @@ app.get("/test-sumup", async (req, res) => {
       return res.status(500).json({ ok:false, status: resp.status, data });
     }
 
-    // hosted_checkout_url è il link giusto da aprire
     let url = data.hosted_checkout_url || data.checkout_url || data.redirect_url || data.url;
     if (!url && (data.id || data.checkout_id)) {
       const id = data.id || data.checkout_id;
