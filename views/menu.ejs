@@ -335,29 +335,40 @@
     // — Esegue un pagamento SumUp per un importo specifico
     async function payQuota(amount){
       if(!PAY_ENABLED){ alert("Pagamento online non disponibile."); return; }
-      const saved = await createOrder(); // Un singolo ordine backend; la quota è pagata separatamente
+      const saved = await createOrder(); // un ordine backend; quota pagata separatamente
       if(!saved) return;
-      const ok = await payAmount(Number(amount), `Mangia & Fuggi - Quota ordine #${saved.order_id}`);
-      if(ok){ /* Non svuoto il carrello finché non paga tutti, scelta tua. */ }
+      await payAmount(Number(amount), `Mangia & Fuggi - Quota ordine #${saved.order_id}`);
     }
 
-    // — Chiamata generica a /api/pay-sumup
+    // — Chiamata generica a /api/pay-sumup (con diagnostica e redirect diretto)
     async function payAmount(amount, description){
-      const r = await fetch("/api/pay-sumup", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-          amount: Number(amount.toFixed(2)),
-          currency:"EUR",
-          description
-        })
-      });
-      const js = await r.json();
-      if(js.ok && js.url){
-        window.open(js.url, "_blank");
-        return true;
-      } else {
-        alert("Pagamento non disponibile. Verifica configurazione SumUp.");
+      try{
+        const r = await fetch("/api/pay-sumup", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({
+            amount: Number(amount.toFixed(2)),
+            currency:"EUR",
+            description
+          })
+        });
+
+        const text = await r.text();
+        let js; try { js = JSON.parse(text); } catch { js = { ok:false, raw:text }; }
+
+        if (r.ok && js.ok && js.url){
+          // Redirect diretto (evita blocchi popup su iOS)
+          location.href = js.url;
+          return true;
+        }
+
+        const msg = js?.error || js?.data?.message || js?.raw || `HTTP ${r.status}`;
+        alert("Pagamento non disponibile.\nDettagli: " + msg);
+        console.error("pay-sumup error:", {status:r.status, js});
+        return false;
+      }catch(err){
+        alert("Pagamento non disponibile.\nErrore di rete.");
+        console.error(err);
         return false;
       }
     }
