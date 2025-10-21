@@ -249,6 +249,96 @@ app.post("/api/settings", async (req, res) => {
     res.json({ ok:true });
   } catch(e){ console.error(e); res.json({ ok:false }); }
 });
+// =====================================================================================
+// API STATISTICHE
+// =====================================================================================
+
+// /api/stats -> statistiche del giorno (o di un giorno passato con ?day=YYYY-MM-DD)
+app.get("/api/stats", async (req, res) => {
+  try {
+    const day = (req.query.day || "").toString().slice(0,10); // YYYY-MM-DD
+    const now = new Date();
+
+    const start = day
+      ? new Date(`${day}T00:00:00.000Z`)
+      : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+    const end = day
+      ? new Date(`${day}T23:59:59.999Z`)
+      : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+
+    const { data: rows, error } = await supabase
+      .from("orders")
+      .select("id,total,status,created_at")
+      .gte("created_at", start.toISOString())
+      .lte("created_at", end.toISOString());
+
+    if (error) throw error;
+
+    const all = rows || [];
+    const completed = all.filter(o => o.status === "completed");
+    const count = completed.length;
+    const revenue = completed.reduce((s, o) => s + Number(o.total || 0), 0);
+    const average = count ? revenue / count : 0;
+
+    return res.json({
+      ok: true,
+      from: start.toISOString(),
+      to: end.toISOString(),
+      orders_total: all.length,
+      orders_completed: count,
+      revenue: Number(revenue.toFixed(2)),
+      average_ticket: Number(average.toFixed(2))
+    });
+  } catch (e) {
+    console.error("stats error:", e);
+    res.status(500).json({ ok:false, error:"stats_failed" });
+  }
+});
+
+// /api/stats/range?from=YYYY-MM-DD&to=YYYY-MM-DD -> serie giornaliera
+app.get("/api/stats/range", async (req, res) => {
+  try {
+    const fromStr = (req.query.from || "").toString().slice(0,10);
+    const toStr   = (req.query.to   || "").toString().slice(0,10);
+    if (!fromStr || !toStr) return res.status(400).json({ ok:false, error:"missing_range" });
+
+    const start = new Date(`${fromStr}T00:00:00.000Z`);
+    const end   = new Date(`${toStr}T23:59:59.999Z`);
+
+    const { data: rows, error } = await supabase
+      .from("orders")
+      .select("id,total,status,created_at")
+      .gte("created_at", start.toISOString())
+      .lte("created_at", end.toISOString());
+
+    if (error) throw error;
+
+    // raggruppo per giorno
+    const byDay = {};
+    for (const o of rows || []) {
+      const d = (o.created_at || "").slice(0,10); // YYYY-MM-DD
+      if (!byDay[d]) byDay[d] = { date:d, orders:0, completed:0, revenue:0 };
+      byDay[d].orders += 1;
+      if (o.status === "completed") {
+        byDay[d].completed += 1;
+        byDay[d].revenue += Number(o.total || 0);
+      }
+    }
+    // ordina e calcola scontrino medio
+    const series = Object.values(byDay)
+      .sort((a,b) => a.date.localeCompare(b.date))
+      .map(d => ({
+        ...d,
+        average_ticket: d.completed ? Number((d.revenue/d.completed).toFixed(2)) : 0,
+        revenue: Number(d.revenue.toFixed(2))
+      }));
+
+    return res.json({ ok:true, from: fromStr, to: toStr, series });
+  } catch (e) {
+    console.error("stats range error:", e);
+    res.status(500).json({ ok:false, error:"stats_range_failed" });
+  }
+});
 
 // =====================================================================================
 // PAGAMENTI SUMUP
