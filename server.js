@@ -28,6 +28,12 @@ function toAmount2(n){
   const cents = Math.round(Number(n || 0) * 100);
   return Number((cents/100).toFixed(2));
 }
+function getBaseUrl(req){
+  return (
+    getEnvAny("BASE_URL","Base_url") ||
+    (req?.headers?.["x-forwarded-proto"] ? `${req.headers["x-forwarded-proto"]}://${req.headers.host}` : `${req.protocol}://${req.get("host")}`)
+  );
+}
 
 // ---------- Supabase
 const SUPABASE_URL = getEnvAny("SUPABASE_URL","Supabase_url","supabase_url");
@@ -85,13 +91,13 @@ app.get("/robots.txt", (req, res) => {
   if (fs.existsSync(p)) return res.sendFile(p);
   res.type("text/plain").send(`User-agent: *
 Allow: /
-Sitemap: ${getEnvAny("BASE_URL","Base_url") || (req.protocol + "://" + req.get("host"))}/sitemap.xml
+Sitemap: ${getBaseUrl(req)}/sitemap.xml
 `);
 });
 app.get("/sitemap.xml", (req, res) => {
   const p = path.join(__dirname, "public", "sitemap.xml");
   if (fs.existsSync(p)) return res.sendFile(p);
-  const base = getEnvAny("BASE_URL","Base_url") || (req.protocol + "://" + req.get("host"));
+  const base = getBaseUrl(req);
   const urls = ["/", "/menu", "/storia"].map(u => `<url><loc>${base}${u}</loc></url>`).join("");
   res.type("application/xml").send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
@@ -130,7 +136,7 @@ app.get("/storia", (_req, res) => res.render("storia"));
 app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL, SUPABASE_KEY }));
 app.get("/test-video", (_req, res) => res.render("test-video"));
 
-// Esiti pagamento
+// Esiti pagamento (pagine semplici)
 app.get("/pagamento/successo", (_req,res)=> res.send("Pagamento completato. Grazie!"));
 app.get("/pagamento/annullato", (_req,res)=> res.send("Pagamento annullato. Puoi riprovare dal carrello."));
 
@@ -249,6 +255,7 @@ app.post("/api/settings", async (req, res) => {
     res.json({ ok:true });
   } catch(e){ console.error(e); res.json({ ok:false }); }
 });
+
 // =====================================================================================
 // API STATISTICHE
 // =====================================================================================
@@ -341,14 +348,13 @@ app.get("/api/stats/range", async (req, res) => {
 });
 
 // =====================================================================================
-// PAGAMENTI SUMUP
+// PAGAMENTI SUMUP (Hosted Checkout + redirect_url)
 // =====================================================================================
 const SUMUP_CLIENT_ID     = getEnvAny("SUMUP_CLIENT_ID","Sumup_client_id");
 const SUMUP_CLIENT_SECRET = getEnvAny("SUMUP_CLIENT_SECRET","Sumup_client_secret");
 const SUMUP_ACCESS_TOKEN  = getEnvAny("SUMUP_ACCESS_TOKEN","Sumup_access_token");
 const SUMUP_SECRET_KEY    = getEnvAny("SUMUP_SECRET_KEY","Sumup_secret_key");
 const SUMUP_PAYTO         = getEnvAny("SUMUP_PAY_TO_EMAIL","SUMUP_MERCHANT_EMAIL","Sumup_pay_to_email");
-const BASE_URL            = getEnvAny("BASE_URL","Base_url"); // es: https://mangia-e-fuggi.onrender.com
 
 async function getSumUpBearer(){
   if (SUMUP_ACCESS_TOKEN) return SUMUP_ACCESS_TOKEN;
@@ -390,7 +396,7 @@ app.get("/api/pay-config", async (_req,res) => {
   });
 });
 
-// TEST CHECKOUT (diagnostica)
+// TEST CHECKOUT (diagnostica) — Hosted Checkout + redirect_url
 app.get("/test-sumup", async (req, res) => {
   try {
     const amount = toAmount2(req.query.amount || 3.50);
@@ -399,17 +405,18 @@ app.get("/test-sumup", async (req, res) => {
     const bearer = await getSumUpBearer();
     const ref = "test_" + uuidv4().slice(0,8);
 
+    // redirect_url gestisce il ritorno dopo pagamento
+    const base = getBaseUrl(req);
+
     const payload = {
       amount,
       currency,
       checkout_reference: ref,
       pay_to_email: SUMUP_PAYTO,
-      description
+      description,
+      hosted_checkout: { enabled: true },
+      redirect_url: `${base}/pagamento/successo`
     };
-    if (BASE_URL){
-      payload.return_url = `${BASE_URL}/pagamento/successo`;
-      payload.cancel_url = `${BASE_URL}/pagamento/annullato`;
-    }
 
     const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
@@ -428,7 +435,8 @@ app.get("/test-sumup", async (req, res) => {
       return res.status(500).json({ ok:false, status: resp.status, data });
     }
 
-    let url = data.checkout_url || data.redirect_url || data.url;
+    // hosted_checkout_url è il link giusto da aprire
+    let url = data.hosted_checkout_url || data.checkout_url || data.redirect_url || data.url;
     if (!url && (data.id || data.checkout_id)) {
       const id = data.id || data.checkout_id;
       url = `https://pay.sumup.com/checkout/${id}`;
@@ -441,7 +449,7 @@ app.get("/test-sumup", async (req, res) => {
   }
 });
 
-// API checkout reale dal menu (intero importo o “quota”)
+// API checkout reale (intero importo o “quota”) — Hosted Checkout + redirect_url
 app.post("/api/pay-sumup", async (req, res) => {
   try {
     const { amount, currency = "EUR", description = "Pagamento Mangia & Fuggi" } = req.body || {};
@@ -452,18 +460,17 @@ app.post("/api/pay-sumup", async (req, res) => {
 
     const bearer = await getSumUpBearer();
     const ref = "ordine_" + uuidv4().slice(0,8);
+    const base = getBaseUrl(req);
 
     const payload = {
       amount: amt,
       currency,
       checkout_reference: ref,
       pay_to_email: SUMUP_PAYTO,
-      description
+      description,
+      hosted_checkout: { enabled: true },
+      redirect_url: `${base}/pagamento/successo`
     };
-    if (BASE_URL){
-      payload.return_url = `${BASE_URL}/pagamento/successo`;
-      payload.cancel_url = `${BASE_URL}/pagamento/annullato`;
-    }
 
     const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
@@ -482,7 +489,7 @@ app.post("/api/pay-sumup", async (req, res) => {
       return res.status(500).json({ ok:false, error:"sumup_api_error", status: resp.status, data });
     }
 
-    let url = data.checkout_url || data.redirect_url || data.url;
+    let url = data.hosted_checkout_url || data.checkout_url || data.redirect_url || data.url;
     if (!url && (data.id || data.checkout_id)) {
       const id = data.id || data.checkout_id;
       url = `https://pay.sumup.com/checkout/${id}`;
