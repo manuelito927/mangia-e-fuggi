@@ -24,7 +24,6 @@ function getEnvAny(...keys){
   return "";
 }
 const euroString = v => Number(v || 0).toFixed(2);
-// arrotonda in centesimi e torna Number con due decimali stabili
 function toAmount2(n){
   const cents = Math.round(Number(n || 0) * 100);
   return Number((cents/100).toFixed(2));
@@ -53,8 +52,20 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+// 🌐 CORS: consenti chiamate dal frontend + preflight
+app.use((req, res, next) => {
+  const origin = req.headers.origin || "*";
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Vary", "Origin");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+
 // ---------- Statici
-app.use(express.static(path.join(__dirname, "public"))); // /public principale
+app.use(express.static(path.join(__dirname, "public")));
 app.use("/video", express.static(path.join(__dirname, "public", "video"), {
   setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
 }));
@@ -68,7 +79,7 @@ app.get("/pizza.mp4", (req, res) => {
   });
 });
 
-// ---------- SEO helper (robots.txt / sitemap.xml) ----------
+// ---------- SEO helper (robots.txt / sitemap.xml)
 app.get("/robots.txt", (req, res) => {
   const p = path.join(__dirname, "public", "robots.txt");
   if (fs.existsSync(p)) return res.sendFile(p);
@@ -77,7 +88,6 @@ Allow: /
 Sitemap: ${getEnvAny("BASE_URL","Base_url") || (req.protocol + "://" + req.get("host"))}/sitemap.xml
 `);
 });
-
 app.get("/sitemap.xml", (req, res) => {
   const p = path.join(__dirname, "public", "sitemap.xml");
   if (fs.existsSync(p)) return res.sendFile(p);
@@ -87,7 +97,7 @@ app.get("/sitemap.xml", (req, res) => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
 });
 
-// ---------- Middleware sicurezza e sessioni
+// ---------- Sicurezza & sessioni
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -113,14 +123,14 @@ app.use("/admin", (req, res, next) => {
   next();
 });
 
-// ---------- Pagine principali
+// ---------- Pagine
 app.get("/", (_req, res) => res.render("home"));
 app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/storia", (_req, res) => res.render("storia"));
 app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL, SUPABASE_KEY }));
 app.get("/test-video", (_req, res) => res.render("test-video"));
 
-// (facoltative) pagine esito pagamento se usi BASE_URL
+// Esiti pagamento
 app.get("/pagamento/successo", (_req,res)=> res.send("Pagamento completato. Grazie!"));
 app.get("/pagamento/annullato", (_req,res)=> res.send("Pagamento annullato. Puoi riprovare dal carrello."));
 
@@ -290,7 +300,7 @@ app.get("/api/pay-config", async (_req,res) => {
   });
 });
 
-// ---- TEST CHECKOUT (diagnostica)
+// TEST CHECKOUT (diagnostica)
 app.get("/test-sumup", async (req, res) => {
   try {
     const amount = toAmount2(req.query.amount || 3.50);
@@ -328,7 +338,6 @@ app.get("/test-sumup", async (req, res) => {
       return res.status(500).json({ ok:false, status: resp.status, data });
     }
 
-    // URL + Fallback costruito da id
     let url = data.checkout_url || data.redirect_url || data.url;
     if (!url && (data.id || data.checkout_id)) {
       const id = data.id || data.checkout_id;
@@ -342,7 +351,7 @@ app.get("/test-sumup", async (req, res) => {
   }
 });
 
-// ---- API checkout reale dal menu (intero importo o “quota”)
+// API checkout reale dal menu (intero importo o “quota”)
 app.post("/api/pay-sumup", async (req, res) => {
   try {
     const { amount, currency = "EUR", description = "Pagamento Mangia & Fuggi" } = req.body || {};
@@ -383,7 +392,6 @@ app.post("/api/pay-sumup", async (req, res) => {
       return res.status(500).json({ ok:false, error:"sumup_api_error", status: resp.status, data });
     }
 
-    // URL + Fallback costruito da id
     let url = data.checkout_url || data.redirect_url || data.url;
     if (!url && (data.id || data.checkout_id)) {
       const id = data.id || data.checkout_id;
