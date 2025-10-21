@@ -318,7 +318,7 @@ app.post("/api/pay-sumup", async (req, res) => {
     if (!SUMUP_PAYTO) return res.status(400).json({ ok:false, error:"sumup_missing_payto" });
 
     const amt = toAmount2(amount);
-    if (!amt || amt <= 0) return res.status(400).json({ ok:false, error:"invalid_amount" });
+    if (!amt || amt < 1) return res.status(400).json({ ok:false, error:"importo_minimo_1_euro" });
 
     const bearer = await getSumUpBearer();
     const ref = "ordine_" + uuidv4().slice(0,8);
