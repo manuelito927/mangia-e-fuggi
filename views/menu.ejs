@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="it">
+<html lang="it" data-lang="it">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -15,6 +15,8 @@
     header{max-width:1100px;margin:0 auto 20px;display:flex;gap:12px;align-items:center}
     header img.logo{width:46px;height:46px;object-fit:cover;border-radius:8px;border:2px solid #7b4b3a22}
     .title{font-weight:700;font-size:28px;color:#7b4b3a}
+    .header-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .lang-select{padding:6px 10px;border:1px solid #e6e2df;border-radius:8px;background:#fafafa;cursor:pointer}
     .btn-row{display:flex;flex-direction:column;gap:10px}
     .btn[disabled]{opacity:.5;cursor:not-allowed}
     @media (max-width:900px){.container{grid-template-columns:1fr}}
@@ -51,13 +53,21 @@
   <header>
     <img class="logo" src="/img/LOGO.JPG" alt="Logo" onerror="this.src='/img/fallback.jpg'">
     <div class="title">Mangia &amp; Fuggi</div>
+    <div class="header-right">
+      <label for="lang" class="muted" data-i18n="label_language">Lingua</label>
+      <select id="lang" class="lang-select" aria-label="Language">
+        <option value="it">Italiano</option>
+        <option value="en">English</option>
+      </select>
+    </div>
   </header>
 
   <div class="container">
     <main>
       <!-- ANTIPASTI -->
       <section id="antipasti" class="card">
-        <h2>Antipasti</h2>
+        <h2 data-i18n="sec_starters">Antipasti</h2>
+        <!-- I prodotti restano come sono (IT) -->
         <%- include('partials/item', {name:'Bruschette',        desc:'Pomodoro, basilico, olio EVO', price:4.00, img:'/img/BRUSCHETTE.JPG.jpg'}) %>
         <%- include('partials/item', {name:'Olive & Taralli',    desc:'Selezione tipica pugliese',    price:3.50, img:'/img/TARALLINI E OLIVE.JPG'}) %>
         <%- include('partials/item', {name:'Caprese',            desc:'Mozzarella, pomodoro, origano',price:7.00, img:'/img/CAPRESE.JPG'}) %>
@@ -67,7 +77,7 @@
 
       <!-- PIZZE CLASSICHE -->
       <section id="classiche" class="card">
-        <h2>Pizze classiche</h2>
+        <h2 data-i18n="sec_classic">Pizze classiche</h2>
         <%- include('partials/item', {name:'Margherita',         desc:'Pomodoro, mozzarella, basilico', price:5.00, img:'/img/MARGHERITA.JPG'}) %>
         <%- include('partials/item', {name:'Marinara',           desc:'Pomodoro, aglio, origano',       price:4.50, img:'/img/MARINARA.JPG'}) %>
         <%- include('partials/item', {name:'Diavola',            desc:'Salame piccante',                price:7.00, img:'/img/DIAVOLA.JPG'}) %>
@@ -77,7 +87,7 @@
 
       <!-- PIZZE GOURMET -->
       <section id="gourmet" class="card">
-        <h2>Pizze gourmet</h2>
+        <h2 data-i18n="sec_gourmet">Pizze gourmet</h2>
         <%- include('partials/item', {name:'Bufalina',           desc:'Pomodoro, bufala DOP, basilico', price:9.00,  img:'/img/BURRATA.JPG'}) %>
         <%- include('partials/item', {name:'Tartufo',            desc:'Crema di tartufo, provola, speck',price:11.00, img:'/img/TARTUFO.JPG'}) %>
         <%- include('partials/item', {name:'Mortazza',           desc:'Pistacchio, stracciatella, mortadella', price:10.50, img:'/img/MORTAZZA.JPG'}) %>
@@ -86,7 +96,7 @@
 
       <!-- BEVANDE -->
       <section id="bevande" class="card">
-        <h2>Bevande</h2>
+        <h2 data-i18n="sec_drinks">Bevande</h2>
         <%- include('partials/item', {name:'Acqua',              desc:'Naturale o frizzante', price:1.50, img:'/img/ACQUA.JPG'}) %>
         <%- include('partials/item', {name:'Coca-Cola',          desc:'Lattina 33cl',          price:2.50, img:'/img/COCACOLA.JPG'}) %>
         <%- include('partials/item', {name:'Birra',              desc:'Chiara alla spina',     price:4.00, img:'/img/BIRRA.JPG'}) %>
@@ -95,7 +105,7 @@
 
       <!-- DESSERT -->
       <section id="dessert" class="card">
-        <h2>Dessert</h2>
+        <h2 data-i18n="sec_desserts">Dessert</h2>
         <%- include('partials/item', {name:'Tiramisù',           desc:'Classico',            price:4.50, img:'/img/TIRAMISU.JPG'}) %>
         <%- include('partials/item', {name:'Panna cotta',        desc:'Frutti di bosco',     price:4.00, img:'/img/PANNACOTTA.JPG'}) %>
         <%- include('partials/item', {name:'Cheesecake',         desc:'Ricotta e pistacchio',price:4.50, img:'/img/CHEESECAKE.JPG'}) %>
@@ -103,14 +113,14 @@
     </main>
 
     <aside class="card cart">
-      <h3>Carrello</h3>
+      <h3 data-i18n="cart_title">Carrello</h3>
       <ul id="cart"></ul>
-      <div class="tot"><span>Totale</span><span id="total">€ 0,00</span></div>
+      <div class="tot"><span data-i18n="cart_total">Totale</span><span id="total">€ 0,00</span></div>
 
       <div class="btn-row" style="margin-top:10px">
-        <button id="btn-pay-online" class="btn" onclick="orderAndPayOnline()" disabled>💳 Ordina &amp; paga online</button>
-        <button id="btn-pay-cashier" class="btn btn-ghost" onclick="orderPayAtCounter()" disabled>💵 Ordina &amp; paga in cassa</button>
-        <button id="btn-split" class="btn btn-ghost" onclick="openSplitModal()" disabled>➗ Dividi &amp; paga</button>
+        <button id="btn-pay-online" class="btn" onclick="orderAndPayOnline()" disabled data-i18n="btn_pay_online">💳 Ordina &amp; paga online</button>
+        <button id="btn-pay-cashier" class="btn btn-ghost" onclick="orderPayAtCounter()" disabled data-i18n="btn_pay_counter">💵 Ordina &amp; paga in cassa</button>
+        <button id="btn-split" class="btn btn-ghost" onclick="openSplitModal()" disabled data-i18n="btn_split_pay">➗ Dividi &amp; paga</button>
       </div>
       <div id="pay-note" class="note"></div>
     </aside>
@@ -120,23 +130,24 @@
   <div id="split-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal">
       <header>
-        <div class="title" style="font-size:20px;color:#7b4b3a;margin:0">Dividi &amp; paga</div>
+        <div class="title" style="font-size:20px;color:#7b4b3a;margin:0" data-i18n="split_title">Dividi &amp; paga</div>
         <div class="close-x" onclick="closeSplitModal()">×</div>
       </header>
       <div class="body">
-        <div class="muted">Totale conto: <span id="split-total" class="pill">€ 0,00</span></div>
+        <div class="muted" data-i18n="bill_total_prefix">Totale conto:</div>
+        <span id="split-total" class="pill" style="margin-left:6px">€ 0,00</span>
 
-        <div class="tabs">
-          <button id="tab-equal" class="tab active" onclick="setSplitMode('equal')">Alla romana</button>
-          <button id="tab-custom" class="tab" onclick="setSplitMode('custom')">Importi personalizzati</button>
+        <div class="tabs" style="margin-top:8px">
+          <button id="tab-equal" class="tab active" onclick="setSplitMode('equal')" data-i18n="tab_equal">Alla romana</button>
+          <button id="tab-custom" class="tab" onclick="setSplitMode('custom')" data-i18n="tab_custom">Importi personalizzati</button>
         </div>
 
         <!-- Alla romana -->
         <div id="pane-equal">
           <div class="row">
-            <label>Numero persone:</label>
+            <label for="equal-n" data-i18n="label_people">Numero persone:</label>
             <input id="equal-n" type="number" min="2" value="2" oninput="renderEqual()" />
-            <span class="muted">Quota per persona calcolata automaticamente.</span>
+            <span class="muted" data-i18n="hint_auto_share">Quota per persona calcolata automaticamente.</span>
           </div>
           <div id="equal-quotas" class="quota-list"></div>
         </div>
@@ -145,8 +156,8 @@
         <div id="pane-custom" style="display:none">
           <div id="custom-rows"></div>
           <div class="split-actions">
-            <button class="btn btn-ghost" type="button" onclick="addCustomRow()">+ Aggiungi persona</button>
-            <span class="muted">La somma deve essere uguale al totale.</span>
+            <button class="btn btn-ghost" type="button" onclick="addCustomRow()" data-i18n="btn_add_person">+ Aggiungi persona</button>
+            <span class="muted" data-i18n="hint_sum_equal">La somma deve essere uguale al totale.</span>
           </div>
           <div id="custom-error" class="err" style="display:none"></div>
           <div id="custom-quotas" class="quota-list" style="margin-top:10px"></div>
@@ -154,6 +165,118 @@
       </div>
     </div>
   </div>
+
+  <script>
+    /* ====== Mini i18n (IT predefinito, EN opzionale) ====== */
+    const I18N = {
+      it: {
+        label_language: "Lingua",
+        sec_starters: "Antipasti",
+        sec_classic: "Pizze classiche",
+        sec_gourmet: "Pizze gourmet",
+        sec_drinks: "Bevande",
+        sec_desserts: "Dessert",
+        cart_title: "Carrello",
+        cart_total: "Totale",
+        btn_pay_online: "💳 Ordina & paga online",
+        btn_pay_counter: "💵 Ordina & paga in cassa",
+        btn_split_pay: "➗ Dividi & paga",
+        split_title: "Dividi & paga",
+        bill_total_prefix: "Totale conto:",
+        tab_equal: "Alla romana",
+        tab_custom: "Importi personalizzati",
+        label_people: "Numero persone:",
+        hint_auto_share: "Quota per persona calcolata automaticamente.",
+        btn_add_person: "+ Aggiungi persona",
+        hint_sum_equal: "La somma deve essere uguale al totale.",
+        person_n: i => `Persona ${i}`,
+        person_generic: "Persona",
+        pay_share_n: i => `Paga quota #${i}`,
+        placeholder_name: "Nome (opzionale)",
+        placeholder_amount: "Importo es. 7.50",
+        alert_add_item: "Aggiungi almeno un prodotto",
+        err_send_order: "Errore invio ordine",
+        pay_enabled_note: "Il pagamento online aprirà SumUp con l’importo del carrello.",
+        pay_disabled_note: "Pagamento online disabilitato: verifica credenziali SumUp.",
+        pay_not_available: "Pagamento online non disponibile.",
+        order_sent_counter: "Ordine inviato! Presentati in cassa per il pagamento.",
+        sum_must_equal: (sum, tot) => `La somma degli importi (${sum}) deve essere uguale al totale (${tot}).`
+      },
+      en: {
+        label_language: "Language",
+        sec_starters: "Starters",
+        sec_classic: "Classic pizzas",
+        sec_gourmet: "Gourmet pizzas",
+        sec_drinks: "Drinks",
+        sec_desserts: "Desserts",
+        cart_title: "Cart",
+        cart_total: "Total",
+        btn_pay_online: "💳 Order & pay online",
+        btn_pay_counter: "💵 Order & pay at counter",
+        btn_split_pay: "➗ Split & pay",
+        split_title: "Split & pay",
+        bill_total_prefix: "Bill total:",
+        tab_equal: "Split evenly",
+        tab_custom: "Custom amounts",
+        label_people: "Number of people:",
+        hint_auto_share: "Per-person share calculated automatically.",
+        btn_add_person: "+ Add person",
+        hint_sum_equal: "The sum must equal the total.",
+        person_n: i => `Person ${i}`,
+        person_generic: "Person",
+        pay_share_n: i => `Pay share #${i}`,
+        placeholder_name: "Name (optional)",
+        placeholder_amount: "Amount e.g. 7.50",
+        alert_add_item: "Add at least one item",
+        err_send_order: "Error sending order",
+        pay_enabled_note: "Online payment will open SumUp with the cart amount.",
+        pay_disabled_note: "Online payment disabled: check SumUp credentials.",
+        pay_not_available: "Online payment not available.",
+        order_sent_counter: "Order sent! Please pay at the counter.",
+        sum_must_equal: (sum, tot) => `The sum of amounts (${sum}) must equal the total (${tot}).`
+      }
+    };
+
+    function getLang(){
+      return localStorage.getItem("lang") || document.documentElement.dataset.lang || "it";
+    }
+    function setLang(lang){
+      const newLang = (lang==="en") ? "en" : "it";
+      localStorage.setItem("lang", newLang);
+      document.documentElement.lang = newLang;
+      document.documentElement.dataset.lang = newLang;
+      applyI18n();
+    }
+    function t(key){
+      const lang = getLang();
+      return I18N[lang][key] ?? I18N.it[key] ?? key;
+    }
+    function applyI18n(){
+      // elementi con data-i18n (testo semplice)
+      document.querySelectorAll("[data-i18n]").forEach(el=>{
+        const k = el.getAttribute("data-i18n");
+        const val = t(k);
+        if(typeof val === "string") el.textContent = val;
+      });
+      // placeholder input nel pannello custom
+      document.querySelectorAll('#custom-rows input[type="text"]').forEach(i=>i.placeholder = t("placeholder_name"));
+      document.querySelectorAll('#custom-rows input[type="number"]').forEach(i=>i.placeholder = t("placeholder_amount"));
+      // nota pagamento
+      renderPayNote();
+      // ri-render pannelli split per aggiornare testi dinamici
+      if (document.getElementById('split-backdrop').style.display === 'flex'){
+        (splitMode==='equal') ? renderEqual() : renderCustom();
+      }
+    }
+
+    // imposta selettore lingua
+    (function initLang(){
+      const sel = document.getElementById("lang");
+      sel.value = getLang();
+      sel.addEventListener("change", e=>setLang(e.target.value));
+      applyI18n();
+    })();
+  </script>
 
   <script>
     // ======= Stato carrello / pagamenti =======
@@ -165,12 +288,18 @@
         const r = await fetch("/api/pay-config");
         const j = await r.json();
         PAY_ENABLED = !!(j && j.enabled);
-        document.getElementById("pay-note").innerHTML = PAY_ENABLED
-          ? "Il pagamento online aprirà SumUp con l’importo del carrello."
-          : '<span class="warn">Pagamento online disabilitato: verifica credenziali SumUp.</span>';
       }catch{}
+      renderPayNote();
       updateButtons();
     })();
+
+    function renderPayNote(){
+      const el = document.getElementById("pay-note");
+      if(!el) return;
+      el.innerHTML = PAY_ENABLED
+        ? t("pay_enabled_note")
+        : `<span class="warn">${t("pay_disabled_note")}</span>`;
+    }
 
     // Utils
     function cssId(s){ return s.replace(/[^a-z0-9]+/gi,'_'); }
@@ -181,19 +310,22 @@
     function inc(name, price){
       const it = cart.get(name)||{price,qty:0};
       it.qty++; cart.set(name,it);
-      document.getElementById('q-'+cssId(name)).textContent=it.qty;
+      const qEl = document.getElementById('q-'+cssId(name));
+      if(qEl) qEl.textContent=it.qty;
       renderCart();
     }
     function dec(name){
       const it = cart.get(name)||{qty:0,price:0};
       it.qty=Math.max(0,it.qty-1);
       if(it.qty===0) cart.delete(name); else cart.set(name,it);
-      document.getElementById('q-'+cssId(name)).textContent=it.qty||0;
+      const qEl = document.getElementById('q-'+cssId(name));
+      if(qEl) qEl.textContent=it.qty||0;
       renderCart();
     }
 
     function renderCart(){
-      const ul=document.getElementById('cart'); ul.innerHTML="";
+      const ul=document.getElementById('cart'); if(!ul) return;
+      ul.innerHTML="";
       let tot=0;
       for(const [n,it] of cart.entries()){
         tot+=it.qty*it.price;
@@ -201,22 +333,25 @@
         li.innerHTML=`<span>${it.qty} × ${n}</span><span>${euro(it.qty*it.price)}</span>`;
         ul.appendChild(li);
       }
-      document.getElementById('total').textContent=euro(tot);
+      const totEl = document.getElementById('total');
+      if(totEl) totEl.textContent=euro(tot);
       updateButtons();
     }
 
     function updateButtons(){
       const hasItems = cart.size > 0 && cartTotal() > 0;
-      document.getElementById('btn-pay-cashier').disabled = !hasItems;
-      const onlineBtn = document.getElementById('btn-pay-online');
-      onlineBtn.disabled = !(hasItems && PAY_ENABLED);
-      document.getElementById('btn-split').disabled = !(hasItems && PAY_ENABLED);
+      const btnCash = document.getElementById('btn-pay-cashier');
+      const btnOnline = document.getElementById('btn-pay-online');
+      const btnSplit = document.getElementById('btn-split');
+      if(btnCash) btnCash.disabled = !hasItems;
+      if(btnOnline) btnOnline.disabled = !(hasItems && PAY_ENABLED);
+      if(btnSplit) btnSplit.disabled = !(hasItems && PAY_ENABLED);
     }
 
     // —— Core: salva ordine e ritorna order_id
     async function createOrder(){
       const items=Array.from(cart.entries()).map(([n,it])=>({name:n,price:it.price,qty:it.qty}));
-      if(items.length===0){ alert("Aggiungi almeno un prodotto"); return null; }
+      if(items.length===0){ alert(t("alert_add_item")); return null; }
       const total=items.reduce((s,i)=>s+i.price*i.qty,0);
       const r=await fetch("/api/checkout",{
         method:"POST",
@@ -224,13 +359,13 @@
         body:JSON.stringify({ tableCode:null, items, total })
       });
       const js = await r.json();
-      if(!js.ok){ alert("Errore invio ordine"); return null; }
+      if(!js.ok){ alert(t("err_send_order")); return null; }
       return { order_id: js.order_id, total };
     }
 
     // 💳 Ordina & paga online (intero)
     async function orderAndPayOnline(){
-      if(!PAY_ENABLED){ alert("Pagamento online non disponibile."); return; }
+      if(!PAY_ENABLED){ alert(t("pay_not_available")); return; }
       const saved = await createOrder();
       if(!saved) return;
 
@@ -242,7 +377,7 @@
     async function orderPayAtCounter(){
       const saved = await createOrder();
       if(!saved) return;
-      alert("Ordine inviato! Presentati in cassa per il pagamento.");
+      alert(t("order_sent_counter"));
       cart.clear(); renderCart();
     }
 
@@ -253,6 +388,7 @@
       document.getElementById('split-backdrop').style.display = 'flex';
       renderEqual();
       resetCustom();
+      applyI18n(); // aggiorna testi visibili
     }
     function closeSplitModal(){ document.getElementById('split-backdrop').style.display='none'; }
 
@@ -262,6 +398,7 @@
       document.getElementById('tab-custom').classList.toggle('active', mode==='custom');
       document.getElementById('pane-equal').style.display = (mode==='equal')?'block':'none';
       document.getElementById('pane-custom').style.display = (mode==='custom')?'block':'none';
+      (mode==='equal') ? renderEqual() : renderCustom();
     }
 
     // Alla romana
@@ -274,8 +411,9 @@
         const div = document.createElement('div');
         div.className = "quota-item";
         div.innerHTML = `
-          <div><strong>Persona ${i}</strong> — quota: <span class="pill">${euro(quota)}</span></div>
-          <button class="btn" type="button" onclick="payQuota(${quota.toFixed(2)})">Paga quota #${i}</button>
+          <div><strong>${t("person_n")(i)}</strong> — <span class="muted">${t("cart_total")}</span>:
+               <span class="pill">${euro(quota)}</span></div>
+          <button class="btn" type="button" onclick="payQuota(${quota.toFixed(2)})">${t("pay_share_n")(i)}</button>
         `;
         list.appendChild(div);
       }
@@ -287,6 +425,9 @@
       document.getElementById('custom-quotas').innerHTML = "";
       document.getElementById('custom-error').style.display = "none";
       for(let i=1;i<=2;i++) addCustomRow();
+      // set placeholder tradotti
+      document.querySelectorAll('#custom-rows input[type="text"]').forEach(i=>i.placeholder = t("placeholder_name"));
+      document.querySelectorAll('#custom-rows input[type="number"]').forEach(i=>i.placeholder = t("placeholder_amount"));
     }
     function addCustomRow(){
       const wrap = document.getElementById('custom-rows');
@@ -294,8 +435,8 @@
       const row = document.createElement('div');
       row.className="row";
       row.innerHTML = `
-        <input type="text" placeholder="Nome (opzionale)" value="Persona ${idx}">
-        <input type="number" step="0.01" min="0" placeholder="Importo es. 7.50" oninput="renderCustom()">
+        <input type="text" placeholder="${t("placeholder_name")}" value="${t("person_n")(idx)}">
+        <input type="number" step="0.01" min="0" placeholder="${t("placeholder_amount")}" oninput="renderCustom()">
       `;
       wrap.appendChild(row);
       renderCustom();
@@ -304,7 +445,7 @@
       const rows = [...document.querySelectorAll('#custom-rows .row')];
       const quotas = [];
       for(const r of rows){
-        const name = r.querySelector('input[type="text"]').value.trim() || 'Persona';
+        const name = r.querySelector('input[type="text"]').value.trim() || t('person_generic');
         const val = Number(r.querySelector('input[type="number"]').value || 0);
         if(val>0) quotas.push({name, amount: Math.round(val*100)/100});
       }
@@ -314,7 +455,7 @@
       const err = document.getElementById('custom-error');
       if(sum !== tot){
         err.style.display = "block";
-        err.textContent = `La somma degli importi (${euro(sum)}) deve essere uguale al totale (${euro(tot)}).`;
+        err.textContent = t("sum_must_equal")(euro(sum), euro(tot));
       } else {
         err.style.display = "none";
       }
@@ -324,9 +465,10 @@
         const div = document.createElement('div');
         div.className = "quota-item";
         div.innerHTML = `
-          <div><strong>${q.name}</strong> — quota: <span class="pill">${euro(q.amount)}</span></div>
+          <div><strong>${q.name}</strong> — <span class="muted">${t("cart_total")}</span>:
+               <span class="pill">${euro(q.amount)}</span></div>
           <button class="btn" type="button" ${sum!==tot?'disabled':''}
-                  onclick="payQuota(${q.amount.toFixed(2)})">Paga quota #${i+1}</button>
+                  onclick="payQuota(${q.amount.toFixed(2)})">${t("pay_share_n")(i+1)}</button>
         `;
         list.appendChild(div);
       });
@@ -334,7 +476,7 @@
 
     // — Esegue un pagamento SumUp per un importo specifico
     async function payQuota(amount){
-      if(!PAY_ENABLED){ alert("Pagamento online non disponibile."); return; }
+      if(!PAY_ENABLED){ alert(t("pay_not_available")); return; }
       const saved = await createOrder(); // un ordine backend; quota pagata separatamente
       if(!saved) return;
       await payAmount(Number(amount), `Mangia & Fuggi - Quota ordine #${saved.order_id}`);
@@ -357,17 +499,16 @@
         let js; try { js = JSON.parse(text); } catch { js = { ok:false, raw:text }; }
 
         if (r.ok && js.ok && js.url){
-          // Redirect diretto (evita blocchi popup su iOS)
-          location.href = js.url;
+          location.href = js.url; // redirect diretto
           return true;
         }
 
         const msg = js?.error || js?.data?.message || js?.raw || `HTTP ${r.status}`;
-        alert("Pagamento non disponibile.\nDettagli: " + msg);
+        alert(t("pay_not_available") + "\nDettagli: " + msg);
         console.error("pay-sumup error:", {status:r.status, js});
         return false;
       }catch(err){
-        alert("Pagamento non disponibile.\nErrore di rete.");
+        alert(t("pay_not_available") + "\nNetwork error.");
         console.error(err);
         return false;
       }
