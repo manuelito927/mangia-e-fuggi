@@ -87,9 +87,26 @@
       .brand-title{ font-size:26px }
       .card{ min-height:135px }
     }
+
+    /* Switch lingua */
+    .lang-switch{
+      position:absolute; top:16px; right:16px; z-index:2;
+      display:flex; gap:6px; background:var(--glass); border:1px solid var(--glass-border);
+      padding:6px; border-radius:999px; backdrop-filter: blur(6px) saturate(120%);
+    }
+    .lang-switch button{
+      background:transparent; color:#fff; border:0; padding:6px 10px; border-radius:999px; cursor:pointer; font-weight:700;
+    }
+    .lang-switch button.active{ background:#ffffff22 }
   </style>
 </head>
 <body>
+  <!-- 🔘 Selettore lingua -->
+  <div class="lang-switch" aria-label="Language selector">
+    <button id="btn-it">🇮🇹 ITA</button>
+    <button id="btn-en">🇬🇧 ENG</button>
+  </div>
+
   <section class="landing">
     <!-- Video di sfondo: DEVE esistere /public/pizza.mp4 -->
     <video class="bg" autoplay muted loop playsinline preload="auto" webkit-playsinline x5-playsinline>
@@ -103,7 +120,7 @@
         <img class="logo" src="/img/LOGO.JPG" alt="Mangia & Fuggi" onerror="this.src='/img/fallback.jpg'">
         <div>
           <div class="brand-title">Mangia &amp; Fuggi</div>
-          <div class="brand-sub">Benvenuto! Scegli cosa vuoi fare</div>
+          <div class="brand-sub" data-i18n="brand.subtitle">Benvenuto! Scegli cosa vuoi fare</div>
         </div>
       </div>
 
@@ -111,29 +128,104 @@
       <div class="grid">
         <!-- MENU -->
         <div class="card">
-          <h3>🍕 Menu</h3>
-          <p>Dai classici intramontabili alle pizze gourmet: scopri antipasti, bevande e dessert.</p>
-          <a href="/menu" class="btn">Vai al menu</a>
+          <h3 data-i18n="menu.title">🍕 Menu</h3>
+          <p data-i18n="menu.desc">Dai classici intramontabili alle pizze gourmet: scopri antipasti, bevande e dessert.</p>
+          <a id="link-menu" href="/menu" class="btn" data-i18n="menu.cta">Vai al menu</a>
         </div>
 
-        <!-- LA NOSTRA STORIA (con link alla pagina dedicata) -->
+        <!-- LA NOSTRA STORIA -->
         <div class="card">
-          <h3>📖 La nostra storia</h3>
-          <p>Nati nel cuore del Salento: farine selezionate, lievitazioni lente e materie prime italiane.</p>
-          <a href="/storia" class="btn">Leggi la storia</a>
+          <h3 data-i18n="story.title">📖 La nostra storia</h3>
+          <p data-i18n="story.desc">Nati nel cuore del Salento: farine selezionate, lievitazioni lente e materie prime italiane.</p>
+          <a id="link-storia" href="/storia" class="btn" data-i18n="story.cta">Leggi la storia</a>
         </div>
 
         <!-- RECENSIONI -->
         <div class="card">
-          <h3>⭐ Recensioni</h3>
-          <p>La tua opinione conta! Lascia una recensione e aiutaci a migliorare.</p>
+          <h3 data-i18n="reviews.title">⭐ Recensioni</h3>
+          <p data-i18n="reviews.desc">La tua opinione conta! Lascia una recensione e aiutaci a migliorare.</p>
           <div class="links">
-            <a class="btn" href="https://www.google.com/maps/place/?q=place_id:INSERISCI_PLACE_ID" target="_blank" rel="noopener">Scrivi su Google</a>
-            <a class="link" href="https://www.tripadvisor.it/" target="_blank" rel="noopener">Oppure su TripAdvisor</a>
+            <a class="btn" href="https://www.google.com/maps/place/?q=place_id:INSERISCI_PLACE_ID" target="_blank" rel="noopener" data-i18n="reviews.google">Scrivi su Google</a>
+            <a class="link" href="https://www.tripadvisor.it/" target="_blank" rel="noopener" data-i18n="reviews.trip">Oppure su TripAdvisor</a>
           </div>
         </div>
       </div>
     </div>
   </section>
+
+  <!-- 🌍 Dizionari e logica lingua -->
+  <script>
+    // 1) Dizionari
+    const I18N = {
+      it: {
+        "brand.subtitle": "Benvenuto! Scegli cosa vuoi fare",
+        "menu.title": "🍕 Menu",
+        "menu.desc": "Dai classici intramontabili alle pizze gourmet: scopri antipasti, bevande e dessert.",
+        "menu.cta": "Vai al menu",
+        "story.title": "📖 La nostra storia",
+        "story.desc": "Nati nel cuore del Salento: farine selezionate, lievitazioni lente e materie prime italiane.",
+        "story.cta": "Leggi la storia",
+        "reviews.title": "⭐ Recensioni",
+        "reviews.desc": "La tua opinione conta! Lascia una recensione e aiutaci a migliorare.",
+        "reviews.google": "Scrivi su Google",
+        "reviews.trip": "Oppure su TripAdvisor"
+      },
+      en: {
+        "brand.subtitle": "Welcome! Choose what you want to do",
+        "menu.title": "🍕 Menu",
+        "menu.desc": "From timeless classics to gourmet pizzas: explore starters, drinks and desserts.",
+        "menu.cta": "See the menu",
+        "story.title": "📖 Our story",
+        "story.desc": "Born in the heart of Salento: selected flours, slow leavening and premium Italian ingredients.",
+        "story.cta": "Read our story",
+        "reviews.title": "⭐ Reviews",
+        "reviews.desc": "Your opinion matters! Leave a review and help us improve.",
+        "reviews.google": "Write on Google",
+        "reviews.trip": "Or on TripAdvisor"
+      }
+    };
+
+    // 2) Rileva/salva lingua (URL ?lang=, altrimenti localStorage, fallback it)
+    function getParam(name){
+      const m = new URLSearchParams(location.search).get(name);
+      return m ? m.trim() : null;
+    }
+    function currentLang(){
+      const fromUrl = getParam('lang');
+      if (fromUrl && I18N[fromUrl]) { localStorage.setItem('lang', fromUrl); return fromUrl; }
+      const stored = localStorage.getItem('lang');
+      if (stored && I18N[stored]) return stored;
+      return 'it';
+    }
+    function applyLang(lang){
+      // cambia lang su <html>
+      document.documentElement.setAttribute('lang', lang);
+      // traduci testi
+      document.querySelectorAll('[data-i18n]').forEach(el=>{
+        const key = el.getAttribute('data-i18n');
+        const val = I18N[lang][key];
+        if (val) el.textContent = val; // manteniamo il tuo HTML originale come fallback
+      });
+      // evidenzia bottone attivo
+      document.getElementById('btn-it').classList.toggle('active', lang==='it');
+      document.getElementById('btn-en').classList.toggle('active', lang==='en');
+      // aggiungi ?lang ai link interni
+      const qs = `?lang=${lang}`;
+      const linkMenu = document.getElementById('link-menu');
+      const linkStoria = document.getElementById('link-storia');
+      if (linkMenu)  linkMenu.href  = '/menu'  + qs;
+      if (linkStoria)linkStoria.href= '/storia'+ qs;
+      // opzionale: aggiorna URL corrente senza ricaricare
+      const url = new URL(location.href);
+      url.searchParams.set('lang', lang);
+      history.replaceState({}, '', url);
+    }
+
+    // 3) Eventi switch
+    const lang = currentLang();
+    applyLang(lang);
+    document.getElementById('btn-it').addEventListener('click', ()=>{ localStorage.setItem('lang','it'); applyLang('it'); });
+    document.getElementById('btn-en').addEventListener('click', ()=>{ localStorage.setItem('lang','en'); applyLang('en'); });
+  </script>
 </body>
 </html>
