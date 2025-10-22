@@ -237,6 +237,64 @@
       }
     };
 
+    // Dizionario prodotti/ingredienti (IT -> EN) senza toccare gli include
+    const ITEM_I18N = {
+      // — Antipasti
+      "Bruschette":"Bruschetta",
+      "Pomodoro, basilico, olio EVO":"Tomato, basil, extra-virgin olive oil",
+      "Olive & Taralli":"Olives & Taralli",
+      "Selezione tipica pugliese":"Typical Apulian selection",
+      "Caprese":"Caprese",
+      "Mozzarella, pomodoro, origano":"Mozzarella, tomato, oregano",
+      "Parmigiana":"Eggplant Parmigiana",
+      "Melanzane, pomodoro, grana":"Eggplant, tomato, Grana cheese",
+      "Fritto misto":"Mixed fried starters",
+      "Arancini, crocchè, panelle":"Rice balls, potato croquettes, chickpea fritters",
+
+      // — Pizze classiche
+      "Margherita":"Margherita",
+      "Pomodoro, mozzarella, basilico":"Tomato, mozzarella, basil",
+      "Marinara":"Marinara",
+      "Pomodoro, aglio, origano":"Tomato, garlic, oregano",
+      "Diavola":"Diavola",
+      "Salame piccante":"Spicy salami",
+      "Prosciutto e funghi":"Ham & mushrooms",
+      "Cotto e champignon":"Cooked ham and mushrooms",
+      "Quattro formaggi":"Four cheeses",
+      "Mozzarella, gorgonzola, grana, provola":"Mozzarella, gorgonzola, Grana, provola",
+
+      // — Pizze gourmet
+      "Pizze gourmet":"Gourmet pizzas",
+      "Bufalina":"Bufalina",
+      "Pomodoro, bufala DOP, basilico":"Tomato, buffalo mozzarella PDO, basil",
+      "Tartufo":"Truffle",
+      "Crema di tartufo, provola, speck":"Truffle cream, provola, speck",
+      "Mortazza":"Mortazza",
+      "Pistacchio, stracciatella, mortadella":"Pistachio, stracciatella, mortadella",
+      "Nduja & Burrata":"’Nduja & Burrata",
+      "’Nduja calabrese, burrata":"Calabrian ’nduja, burrata",
+
+      // — Bevande
+      "Bevande":"Drinks",
+      "Acqua":"Water",
+      "Naturale o frizzante":"Still or sparkling",
+      "Coca-Cola":"Coca-Cola",
+      "Lattina 33cl":"33cl can",
+      "Birra":"Beer",
+      "Chiara alla spina":"Light draft",
+      "Vino della casa":"House wine",
+      "Bicchiere":"Glass",
+
+      // — Dessert
+      "Dessert":"Desserts",
+      "Tiramisù":"Tiramisu",
+      "Classico":"Classic",
+      "Panna cotta":"Panna cotta",
+      "Frutti di bosco":"Mixed berries",
+      "Cheesecake":"Cheesecake",
+      "Ricotta e pistacchio":"Ricotta & pistachio"
+    };
+
     function getLang(){
       return localStorage.getItem("lang") || document.documentElement.dataset.lang || "it";
     }
@@ -251,6 +309,38 @@
       const lang = getLang();
       return I18N[lang][key] ?? I18N.it[key] ?? key;
     }
+
+    function translateItems(){
+      const lang = getLang();
+      // salva IT originale la prima volta
+      document.querySelectorAll('.i-left .i-name').forEach(el=>{
+        if(!el.dataset.it) el.dataset.it = el.textContent.trim();
+      });
+      document.querySelectorAll('.i-left .i-desc em, .i-left .i-desc').forEach(el=>{
+        if(!el.dataset.it) el.dataset.it = el.textContent.trim();
+      });
+
+      if(lang === 'en'){
+        document.querySelectorAll('.i-left .i-name').forEach(el=>{
+          const it = el.dataset.it || el.textContent.trim();
+          el.textContent = ITEM_I18N[it] || it;
+        });
+        document.querySelectorAll('.i-left .i-desc em, .i-left .i-desc').forEach(el=>{
+          const it = el.dataset.it || el.textContent.trim();
+          const en = ITEM_I18N[it] || it;
+          el.textContent = en;
+        });
+      } else {
+        // ripristina Italiano
+        document.querySelectorAll('.i-left .i-name').forEach(el=>{
+          if(el.dataset.it) el.textContent = el.dataset.it;
+        });
+        document.querySelectorAll('.i-left .i-desc em, .i-left .i-desc').forEach(el=>{
+          if(el.dataset.it) el.textContent = el.dataset.it;
+        });
+      }
+    }
+
     function applyI18n(){
       // elementi con data-i18n (testo semplice)
       document.querySelectorAll("[data-i18n]").forEach(el=>{
@@ -258,6 +348,7 @@
         const val = t(k);
         if(typeof val === "string") el.textContent = val;
       });
+      translateItems(); // <— traduce nomi e descrizioni prodotti senza toccare il markup
       // placeholder input nel pannello custom
       document.querySelectorAll('#custom-rows input[type="text"]').forEach(i=>i.placeholder = t("placeholder_name"));
       document.querySelectorAll('#custom-rows input[type="number"]').forEach(i=>i.placeholder = t("placeholder_amount"));
@@ -425,7 +516,6 @@
       document.getElementById('custom-quotas').innerHTML = "";
       document.getElementById('custom-error').style.display = "none";
       for(let i=1;i<=2;i++) addCustomRow();
-      // set placeholder tradotti
       document.querySelectorAll('#custom-rows input[type="text"]').forEach(i=>i.placeholder = t("placeholder_name"));
       document.querySelectorAll('#custom-rows input[type="number"]').forEach(i=>i.placeholder = t("placeholder_amount"));
     }
