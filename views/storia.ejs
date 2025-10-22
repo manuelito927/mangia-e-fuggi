@@ -37,8 +37,6 @@
     .btn{background:var(--brand);color:#fff;border:0;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 8px 20px #9b5c2e55}
     .btn:hover{background:var(--brand-dark)}
     .btn.ghost{background:#00000008;color:var(--ink);border:1px solid var(--line);box-shadow:none}
-    .list{padding-left:18px;margin:10px 0}
-    .list li{margin:6px 0}
     .quote{background:#fff8f1;border:1px solid #f0e2d6;border-radius:14px;padding:14px 16px;color:#5a4b40;font-style:italic}
     .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
     .chip{background:#f6ece1;border:1px solid #e7d6c7;padding:6px 10px;border-radius:999px;font-weight:600;color:#6b4a2f}
@@ -47,7 +45,6 @@
   </style>
 </head>
 <body>
-  <!-- Testata -->
   <section class="hero">
     <div class="hero-inner">
       <div style="display:flex;align-items:center;gap:16px">
@@ -64,12 +61,44 @@
     </div>
   </section>
 
-  <!-- Tutto il contenuto resta invariato -->
-  <main class="wrap" id="story">
-    <!-- Qui rimane esattamente la tua storia (nessuna modifica al testo) -->
-    <!-- Tutto sarà tradotto in futuro tramite script -->
-    <!-- ↓ Puoi mantenere l'intero blocco originale qui -->
-    <!-- (lo script non cancella né altera nulla) -->
+  <main class="wrap">
+    <article class="card">
+      <h2 data-i18n="who_title">Chi siamo</h2>
+      <p data-i18n="who_text1">Mangia &amp; Fuggi nasce come una piccola bottega di quartiere con un’idea semplice: fare pizze oneste, buone sempre. Negli anni, tra impasti curati e ingredienti selezionati, siamo diventati il punto di riferimento per chi cerca una pizza che profuma di casa, con il morso croccante e un cuore soffice.</p>
+      <p data-i18n="who_text2">Non rincorriamo le mode: preferiamo gesti che si ripetono, tempi giusti, forni caldi e materie prime italiane. Ogni pizza racconta il nostro territorio, il lavoro dei piccoli produttori e la cura quotidiana del nostro team.</p>
+    </article>
+
+    <article class="card grid-2">
+      <div>
+        <h2 data-i18n="dough_title">L’impasto, il nostro segreto più semplice</h2>
+        <p data-i18n="dough_text">Usiamo un blend di farine italiane con una piccola percentuale di integrale per dare profumo e carattere. Il nostro lievito madre vive con noi: lo rinfreschiamo ogni giorno e lo rispettiamo con una maturazione di 24–48 ore, così l’impasto risulta leggero, digeribile e naturalmente saporito.</p>
+      </div>
+      <div>
+        <h2 data-i18n="ingredients_title">Ingredienti, filiera corta e buon senso</h2>
+        <p data-i18n="ingredients_text">Crediamo nella stagionalità e nella trasparenza: pomodori corposi, fior di latte fresco, olio extravergine fruttato, salumi artigianali, verdure locali. Ogni ingrediente è scelto per equilibrio, non per stupire.</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2 data-i18n="oven_title">Forno e cottura</h2>
+      <p data-i18n="oven_text">Cotto in forno tradizionale con curva di temperatura costante: base asciutta, cornicione dorato, ingredienti rispettati. Le pizze escono una alla volta perché il tempo del forno è il nostro ritmo.</p>
+    </article>
+
+    <article class="card grid-2">
+      <div>
+        <h2 data-i18n="sustain_title">Sostenibilità quotidiana</h2>
+        <p data-i18n="sustain_text">Usiamo imballi riciclabili, ottimizziamo gli ordini per ridurre gli sprechi e selezioniamo fornitori vicini a noi. Anche in laboratorio limitiamo i consumi: luci a LED, processi ragionati e detergenti certificati.</p>
+      </div>
+      <div>
+        <h2 data-i18n="team_title">La nostra squadra</h2>
+        <p data-i18n="team_text">Siamo una famiglia allargata: pizzaioli, fornaio, banco e sala. Cresciamo con formazione interna su impasti, cotture e servizio; condividiamo ricette e appunti, perché la qualità è un lavoro di squadra.</p>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2 data-i18n="values_title">I nostri valori</h2>
+      <p data-i18n="values_text">Vogliamo che ogni cliente si senta a casa. Se qualcosa non è come ti aspettavi, diccelo: troveremo insieme la soluzione migliore.</p>
+    </article>
   </main>
 
   <footer>
@@ -77,25 +106,36 @@
   </footer>
 
   <script>
-    // Multilingua semplice
     const translations = {
       en: {
-        subtitle: "Our story: craftsmanship, sourdough and real ingredients."
+        subtitle: "Our story: craftsmanship, sourdough and real ingredients.",
+        who_title: "Who we are",
+        who_text1: "Mangia & Fuggi began as a small neighborhood workshop with a simple idea: to make honest pizzas, always good. Over the years, through carefully crafted doughs and selected ingredients, we have become a reference point for those seeking a pizza that smells like home — with a crispy bite and a soft heart.",
+        who_text2: "We don’t chase trends: we prefer repeated gestures, proper timing, hot ovens and Italian raw materials. Every pizza tells the story of our land, of small local producers, and of the daily care of our team.",
+        dough_title: "The dough, our simplest secret",
+        dough_text: "We use a blend of Italian flours with a small percentage of whole grain for aroma and character. Our sourdough lives with us: we refresh it every day and respect it with a 24–48 hour maturation, making the dough light, digestible and naturally tasty.",
+        ingredients_title: "Ingredients, short supply chain and good sense",
+        ingredients_text: "We believe in seasonality and transparency: rich tomatoes, fresh mozzarella, fruity extra virgin olive oil, artisanal cold cuts, local vegetables. Each ingredient is chosen for balance, not for show.",
+        oven_title: "Oven and baking",
+        oven_text: "Baked in a traditional oven with a constant temperature curve: dry base, golden crust, respected ingredients. Pizzas come out one at a time, because the oven’s rhythm is our own.",
+        sustain_title: "Daily sustainability",
+        sustain_text: "We use recyclable packaging, optimize orders to reduce waste, and select suppliers close to us. Even in the workshop we limit consumption: LED lighting, thoughtful processes, and certified detergents.",
+        team_title: "Our team",
+        team_text: "We’re an extended family: pizza makers, baker, counter and dining room. We grow through internal training on doughs, baking and service; we share recipes and notes because quality is a team effort.",
+        values_title: "Our values",
+        values_text: "We want every customer to feel at home. If something isn’t as you expected, tell us: we’ll find the best solution together."
       },
-      it: {
-        subtitle: "La nostra storia: artigianalità, lievito madre e ingredienti veri."
-      }
+      it: {}
     };
 
-    function setLang(lang) {
+    function setLang(lang){
       document.documentElement.lang = lang;
       localStorage.setItem("lang", lang);
-      for (const el of document.querySelectorAll("[data-i18n]")) {
+      for (const el of document.querySelectorAll("[data-i18n]")){
         const key = el.dataset.i18n;
-        el.textContent = translations[lang][key] || el.textContent;
+        el.textContent = translations[lang][key] || translations.it[key] || el.textContent;
       }
     }
-
     const saved = localStorage.getItem("lang") || "it";
     document.getElementById("langSelect").value = saved;
     setLang(saved);
