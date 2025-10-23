@@ -142,7 +142,7 @@ app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/storia", (_req, res) => res.render("storia"));
 app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL, SUPABASE_KEY }));
 app.get("/test-video", (_req, res) => res.render("test-video"));
-
+app.get("/prenota", (_req, res) => res.render("prenota"));
 // Esiti pagamento (pagine semplici)
 app.get("/pagamento/successo", (_req,res)=> res.send("Pagamento completato. Grazie!"));
 app.get("/pagamento/annullato", (_req,res)=> res.send("Pagamento annullato. Puoi riprovare dal carrello."));
