@@ -22,13 +22,11 @@
     }
 
     /* ======== AGGIUNTA: sfondo foto ======== */
-    /* Imposta l'immagine come sfondo di pagina */
     body{
       background: url('/img/IMPASTA.JPG.jpg') no-repeat center center fixed;
       background-size: cover;
       background-attachment: fixed;
     }
-    /* Velo scuro per migliorare leggibilità sopra la foto */
     body::before{
       content:"";
       position:fixed;
@@ -36,17 +34,15 @@
       background: rgba(0,0,0,0.55);
       z-index:0;
     }
-    /* Porta i contenuti sopra il velo */
     .landing, .wrap, .card, .grid, .brand{ position:relative; z-index:1; }
-    /* Nascondi il video per usare lo sfondo foto (togli questo blocco se vuoi rivedere il video) */
     .landing video.bg{ display:none; }
     /* ======== FINE AGGIUNTA ======== */
 
-    /* ===== Sezione landing con video ===== */
     .landing{
       position:relative; min-height:100dvh;
       display:flex; align-items:center; justify-content:center;
-      padding:22px 14px; overflow:hidden; background:#0000; /* trasparente: lascia vedere la foto */
+      padding:22px 14px;
+      overflow:hidden; background:#0000;
     }
     .landing video.bg{
       position:absolute; inset:0; width:100%; height:100%;
@@ -60,13 +56,12 @@
       pointer-events:none;
     }
 
-    /* wrapper contenuti */
     .wrap{
       position:relative; z-index:1; width:100%; max-width:860px; margin:auto;
       display:flex; flex-direction:column; gap:16px;
+      padding-top:72px; /* lascia spazio sotto il selettore lingue */
     }
 
-    /* Brand */
     .brand{ display:flex; align-items:center; gap:12px }
     .brand .logo{
       width:54px; height:54px; border-radius:14px; object-fit:cover;
@@ -78,26 +73,40 @@
     }
     .brand-sub{ color:#ffffffcc; margin-top:4px; font-size:15px }
 
-    /* Cards “vetro” più compatte */
-    .grid{ display:grid; gap:14px; grid-template-columns: 1fr; }
-    @media (min-width: 720px){ .grid{ grid-template-columns: repeat(3, 1fr); } }
+    /* Cards vetro più leggere */
+    .grid{ display:grid; gap:12px; grid-template-columns:1fr; }
+    @media (min-width:720px){ .grid{ grid-template-columns:repeat(3,1fr); } }
+
+    :root{
+      --glass:#ffffff12;
+      --glass-border:#ffffff22;
+    }
     .card{
       background:var(--glass);
       border:1px solid var(--glass-border);
-      border-radius:16px; padding:14px;
-      box-shadow:0 10px 30px #00000040; backdrop-filter: blur(6px) saturate(120%);
-      display:flex; flex-direction:column; gap:8px; min-height:140px;
+      border-radius:14px;
+      padding:12px 14px;
+      box-shadow:0 6px 20px #00000030;
+      backdrop-filter:blur(5px) saturate(115%);
+      display:flex; flex-direction:column; gap:8px;
+      min-height:110px;
     }
-    .card h3{ margin:0; font-size:18px; color:#ffe0b3 }
-    .card p{ margin:0; color:var(--ink-soft); line-height:1.45; font-size:14.5px }
+    .card h3{ margin:0; font-size:17px; color:#ffe0b3 }
+    .card p{ margin:0; color:var(--ink-soft); line-height:1.45; font-size:13.5px }
 
     .btn{
       align-self:flex-start;
-      background:var(--brand); color:#fff; border:0; border-radius:999px;
-      padding:9px 14px; font-weight:700; cursor:pointer;
-      box-shadow:0 6px 16px #9b5c2e66; text-decoration:none;
-      transition: transform .08s ease, background .15s ease;
-      font-size:14px;
+      background:var(--brand);
+      color:#fff;
+      border:0;
+      border-radius:999px;
+      padding:8px 12px;
+      font-weight:700;
+      cursor:pointer;
+      font-size:13.5px;
+      text-decoration:none;
+      box-shadow:0 6px 14px #9b5c2e40;
+      transition:transform .08s ease, background .15s ease;
     }
     .btn:hover{ background:#7c4621; transform:translateY(-1px) }
 
@@ -105,39 +114,50 @@
     .link{ color:#fff; text-decoration:none; border-bottom:1px dashed #ffffff80; font-size:14px }
     .link:hover{ border-bottom-color:#fff }
 
-    @media (max-width: 480px){
+    @media (max-width:480px){
       .brand-title{ font-size:26px }
-      .card{ min-height:135px }
+      .card{ min-height:100px }
     }
 
-    /* Switch lingua */
+    /* Selettore lingua (fisso in alto a destra, non copre titolo) */
     .lang-switch{
-      position:absolute; top:16px; right:16px; z-index:2;
-      display:flex; gap:6px; background:var(--glass); border:1px solid var(--glass-border);
-      padding:6px; border-radius:999px; backdrop-filter: blur(6px) saturate(120%);
+      position:fixed;
+      top:14px;
+      right:14px;
+      z-index:20;
+      display:flex;
+      gap:6px;
+      background:var(--glass);
+      border:1px solid var(--glass-border);
+      padding:6px;
+      border-radius:999px;
+      backdrop-filter:blur(6px) saturate(120%);
     }
     .lang-switch button{
-      background:transparent; color:#fff; border:0; padding:6px 10px; border-radius:999px; cursor:pointer; font-weight:700;
+      background:transparent;
+      color:#fff;
+      border:0;
+      padding:6px 10px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:700;
     }
     .lang-switch button.active{ background:#ffffff22 }
   </style>
 </head>
 <body>
-  <!-- 🔘 Selettore lingua -->
   <div class="lang-switch" aria-label="Language selector">
     <button id="btn-it">🇮🇹 ITA</button>
     <button id="btn-en">🇬🇧 ENG</button>
   </div>
 
   <section class="landing">
-    <!-- Video di sfondo (tenuto per compatibilità; è nascosto via CSS) -->
     <video class="bg" autoplay muted loop playsinline preload="auto" webkit-playsinline x5-playsinline>
       <source src="/pizza.mp4" type="video/mp4" />
     </video>
     <div class="overlay"></div>
 
     <div class="wrap">
-      <!-- Brand -->
       <div class="brand">
         <img class="logo" src="/img/LOGO.JPG" alt="Mangia & Fuggi" onerror="this.src='/img/fallback.jpg'">
         <div>
@@ -146,28 +166,25 @@
         </div>
       </div>
 
-      <!-- Tre sezioni -->
       <div class="grid">
-        <!-- MENU -->
         <div class="card">
           <h3 data-i18n="menu.title">🍕 Menu</h3>
           <p data-i18n="menu.desc">Dai classici intramontabili alle pizze gourmet: scopri antipasti, bevande e dessert.</p>
           <a id="link-menu" href="/menu" class="btn" data-i18n="menu.cta">Vai al menu</a>
         </div>
-  <!-- PRENOTA UN TAVOLO -->
-  <div class="card">
-    <h3 data-i18n="booking.title">🍽️ Prenota un tavolo</h3>
-    <p data-i18n="booking.desc">Controlla i tavoli disponibili e prenota in pochi secondi.</p>
-    <a id="link-prenota" href="/prenota" class="btn" data-i18n="booking.cta">Prenota ora</a>
-  </div>
-        <!-- LA NOSTRA STORIA -->
+
+        <div class="card">
+          <h3 data-i18n="booking.title">🍽️ Prenota un tavolo</h3>
+          <p data-i18n="booking.desc">Controlla i tavoli disponibili e prenota in pochi secondi.</p>
+          <a id="link-prenota" href="/prenota" class="btn" data-i18n="booking.cta">Prenota ora</a>
+        </div>
+
         <div class="card">
           <h3 data-i18n="story.title">📖 La nostra storia</h3>
           <p data-i18n="story.desc">Nati nel cuore del Salento: farine selezionate, lievitazioni lente e materie prime italiane.</p>
           <a id="link-storia" href="/storia" class="btn" data-i18n="story.cta">Leggi la storia</a>
         </div>
 
-        <!-- RECENSIONI -->
         <div class="card">
           <h3 data-i18n="reviews.title">⭐ Recensioni</h3>
           <p data-i18n="reviews.desc">La tua opinione conta! Lascia una recensione e aiutaci a migliorare.</p>
@@ -180,9 +197,7 @@
     </div>
   </section>
 
-  <!-- 🌍 Dizionari e logica lingua -->
   <script>
-    // 1) Dizionari
     const I18N = {
       it: {
         "brand.subtitle": "Benvenuto! Scegli cosa vuoi fare",
@@ -212,7 +227,6 @@
       }
     };
 
-    // 2) Rileva/salva lingua (URL ?lang=, altrimenti localStorage, fallback it)
     function getParam(name){
       const m = new URLSearchParams(location.search).get(name);
       return m ? m.trim() : null;
@@ -225,30 +239,24 @@
       return 'it';
     }
     function applyLang(lang){
-      // cambia lang su <html>
       document.documentElement.setAttribute('lang', lang);
-      // traduci testi
       document.querySelectorAll('[data-i18n]').forEach(el=>{
         const key = el.getAttribute('data-i18n');
         const val = I18N[lang][key];
-        if (val) el.textContent = val; // fallback: lascia originale
+        if (val) el.textContent = val;
       });
-      // evidenzia bottone attivo
       document.getElementById('btn-it').classList.toggle('active', lang==='it');
       document.getElementById('btn-en').classList.toggle('active', lang==='en');
-      // aggiungi ?lang ai link interni
       const qs = `?lang=${lang}`;
       const linkMenu = document.getElementById('link-menu');
       const linkStoria = document.getElementById('link-storia');
       if (linkMenu)  linkMenu.href  = '/menu'  + qs;
       if (linkStoria)linkStoria.href= '/storia'+ qs;
-      // aggiorna URL corrente senza ricaricare
       const url = new URL(location.href);
       url.searchParams.set('lang', lang);
       history.replaceState({}, '', url);
     }
 
-    // 3) Eventi switch
     const lang = currentLang();
     applyLang(lang);
     document.getElementById('btn-it').addEventListener('click', ()=>{ localStorage.setItem('lang','it'); applyLang('it'); });
