@@ -591,6 +591,174 @@ app.post("/api/pay-sumup", async (req, res) => {
   }
 });
 
+
+// =====================================================================================
+// API TAVOLI & PRENOTAZIONI (NUOVE)  ✅
+//   - usa le tabelle/viste create in Supabase con lo SQL che ti ho dato
+//   - NON modifica nulla delle parti esistenti
+// =====================================================================================
+
+// Lista tavoli “grezza”
+app.get("/api/tables", async (_req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("restaurant_tables")
+      .select("id,name,seats,status,current_reservation")
+      .order("id", { ascending: true });
+    if (error) throw error;
+    res.json({ ok:true, tables:data||[] });
+  } catch (e) {
+    console.error("tables list error:", e);
+    res.status(500).json({ ok:false, error:"tables_list_failed" });
+  }
+});
+
+// Stato tavoli con media ed ETA (vista v_table_status)
+app.get("/api/tables/status", async (_req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("v_table_status")
+      .select("*")
+      .order("id", { ascending: true });
+    if (error) throw error;
+    res.json({ ok:true, tables:data||[] });
+  } catch (e) {
+    console.error("tables status error:", e);
+    res.status(500).json({ ok:false, error:"tables_status_failed" });
+  }
+});
+
+// Aggiorna stato tabolo (free|reserved|occupied)
+app.post("/api/tables/:id/status", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const status = (req.body?.status||"").toString();
+    if (!["free","reserved","occupied"].includes(status))
+      return res.status(400).json({ ok:false, error:"bad_status" });
+
+    const { error } = await supabase
+      .from("restaurant_tables")
+      .update({ status })
+      .eq("id", id);
+    if (error) throw error;
+    res.json({ ok:true });
+  } catch (e) {
+    console.error("table status error:", e);
+    res.status(500).json({ ok:false, error:"table_status_failed" });
+  }
+});
+
+// Crea prenotazione
+app.post("/api/reservations", async (req, res) => {
+  try {
+    const { table_id, customer_name, customer_phone, size=2, requested_for=null } = req.body || {};
+    if (!table_id || !customer_name) return res.status(400).json({ ok:false, error:"missing_params" });
+
+    const { data: ins, error } = await supabase
+      .from("reservations")
+      .insert([{ table_id, customer_name, customer_phone, size, requested_for, status:"confirmed" }])
+      .select()
+      .single();
+    if (error) throw error;
+
+    // segna tavolo come "reserved"
+    await supabase.from("restaurant_tables")
+      .update({ status:"reserved", current_reservation: ins.id })
+      .eq("id", table_id);
+
+    res.json({ ok:true, reservation:ins });
+  } catch (e) {
+    console.error("reservation create error:", e);
+    res.status(500).json({ ok:false, error:"reservation_create_failed" });
+  }
+});
+
+// Lista prenotazioni (facoltativo: ?status=confirmed)
+app.get("/api/reservations", async (req, res) => {
+  try {
+    const q = supabase.from("reservations")
+      .select("id,table_id,customer_name,customer_phone,size,requested_for,status,created_at,seated_at,completed_at")
+      .order("created_at",{ascending:false});
+    const status = (req.query.status||"").toString();
+    const { data, error } = status ? await q.eq("status", status) : await q;
+    if (error) throw error;
+    res.json({ ok:true, reservations:data||[] });
+  } catch (e) {
+    console.error("reservations list error:", e);
+    res.status(500).json({ ok:false, error:"reservations_list_failed" });
+  }
+});
+
+// Segna “seduti”
+app.post("/api/reservations/:id/seat", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { data: r0, error: e0 } = await supabase.from("reservations").select("id,table_id").eq("id", id).single();
+    if (e0 || !r0) throw e0||new Error("not_found");
+
+    const { error } = await supabase.from("reservations")
+      .update({ status:"seated", seated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
+
+    await supabase.from("restaurant_tables")
+      .update({ status:"occupied" })
+      .eq("id", r0.table_id);
+
+    res.json({ ok:true });
+  } catch (e) {
+    console.error("reservation seat error:", e);
+    res.status(500).json({ ok:false, error:"reservation_seat_failed" });
+  }
+});
+
+// Completa (tavolo libero + media aggiornata via vista)
+app.post("/api/reservations/:id/complete", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { data: r0, error: e0 } = await supabase.from("reservations").select("id,table_id").eq("id", id).single();
+    if (e0 || !r0) throw e0||new Error("not_found");
+
+    const { error } = await supabase.from("reservations")
+      .update({ status:"completed", completed_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
+
+    await supabase.from("restaurant_tables")
+      .update({ status:"free", current_reservation: null })
+      .eq("id", r0.table_id);
+
+    res.json({ ok:true });
+  } catch (e) {
+    console.error("reservation complete error:", e);
+    res.status(500).json({ ok:false, error:"reservation_complete_failed" });
+  }
+});
+
+// Annulla
+app.post("/api/reservations/:id/cancel", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { data: r0, error: e0 } = await supabase.from("reservations").select("id,table_id").eq("id", id).single();
+    if (e0 || !r0) throw e0||new Error("not_found");
+
+    const { error } = await supabase.from("reservations")
+      .update({ status:"cancelled" })
+      .eq("id", id);
+    if (error) throw error;
+
+    await supabase.from("restaurant_tables")
+      .update({ status:"free", current_reservation: null })
+      .eq("id", r0.table_id);
+
+    res.json({ ok:true });
+  } catch (e) {
+    console.error("reservation cancel error:", e);
+    res.status(500).json({ ok:false, error:"reservation_cancel_failed" });
+  }
+});
+
+
 // ---- Avvio
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server avviato sulla porta ${PORT}`));
