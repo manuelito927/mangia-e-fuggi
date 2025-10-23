@@ -49,6 +49,8 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
       <div class="nav">
         <a href="#" class="item active" data-section="orders">📋 Ordini</a>
         <a href="#" class="item" data-section="stats">📊 Statistiche</a>
+        <!-- 👇 AGGIUNTA: voce Tavoli -->
+        <a href="#" class="item" data-section="tables">🪑 Tavoli</a>
       </div>
       <div class="card">
         <label style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
@@ -112,6 +114,30 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
           </div>
         </div>
       </section>
+
+      <!-- 👇 AGGIUNTA: sezione TAVOLI -->
+      <section id="sec-tables" class="card" style="display:none">
+        <div class="row" style="flex-wrap:wrap">
+          <h3 style="margin:0">Tavoli</h3>
+          <div class="muted">Segna manualmente se un tavolo è libero o occupato.</div>
+        </div>
+
+        <div class="tbl" style="margin-top:10px">
+          <table>
+            <thead>
+              <tr>
+                <th>Tavolo</th>
+                <th>Posti</th>
+                <th>Stato</th>
+                <th>Ultimo aggiornamento</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="tablesBody"></tbody>
+          </table>
+        </div>
+      </section>
+      <!-- 🔼 FINE AGGIUNTA -->
     </main>
   </div>
 </div>
@@ -325,6 +351,85 @@ async function loadRange(){
 })();
 $('#btn-day').addEventListener('click', loadDay);
 $('#btn-range').addEventListener('click', loadRange);
+
+/* ===================== AGGIUNTE: gestione Tavoli ===================== */
+
+/* 1) Click sulla voce "Tavoli" (non tocco il tuo handler esistente) */
+const linkTables = document.querySelector('.nav .item[data-section="tables"]');
+if (linkTables) {
+  linkTables.addEventListener('click', (e)=>{
+    e.preventDefault();
+    // attiva il tab cliccato
+    $$('[data-section]').forEach(x=>x.classList.remove('active'));
+    linkTables.classList.add('active');
+    // mostra solo la sezione tavoli
+    const orders = document.getElementById('sec-orders');
+    const stats  = document.getElementById('sec-stats');
+    const tables = document.getElementById('sec-tables');
+    if (orders) orders.style.display='none';
+    if (stats)  stats.style.display='none';
+    if (tables) tables.style.display='block';
+    // carica dati
+    loadTables();
+  });
+}
+
+/* 2) Funzioni per caricare e aggiornare tavoli (usa le API del server) */
+async function loadTables() {
+  try{
+    const r = await fetch('/api/tables');
+    const j = await r.json();
+    if(!j.ok) return;
+
+    const tbody = document.getElementById('tablesBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    j.tables.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${t.table_code}</td>
+        <td>${t.seats ?? '-'}</td>
+        <td>${t.is_free ? '🟢 Libero' : '🔴 Occupato'}</td>
+        <td>${t.updated_at ? new Date(t.updated_at).toLocaleString() : '-'}</td>
+        <td>
+          <button class="btn ok"     onclick="updateTable('${t.table_code}', true)">Libera</button>
+          <button class="btn danger" onclick="updateTable('${t.table_code}', false)">Siede</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }catch(e){ console.error(e); }
+}
+
+async function updateTable(code, free){
+  try{
+    await fetch('/api/tables/update', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ table_code: code, is_free: free })
+    });
+    loadTables();
+  }catch(e){ console.error(e); }
+}
+
+/* 3) Realtime per tavoli (se disponibile in Supabase) */
+function attachRealtimeTables(){
+  try{
+    if(typeof supabase.channel !== 'function') return;
+    supabase.channel("rt:tables")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tables" }, async () => {
+        await loadTables();
+      })
+      .subscribe();
+  }catch(e){ console.error(e); }
+}
+
+/* 4) Boot aggiuntivo per tavoli (non tocco il tuo boot esistente) */
+(async ()=>{
+  await loadTables();          // carica all’avvio (non fa nulla se la sezione è nascosta)
+  attachRealtimeTables();      // attiva realtime tavoli
+})();
 </script>
 </body>
 </html>
