@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mangia & Fuggi — Prenota</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    body{background:#f7f4f1;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#2b2622;margin:0}
+    header{max-width:1100px;margin:0 auto;display:flex;gap:12px;align-items:center;padding:12px 16px}
+    .logo{width:40px;height:40px;border-radius:8px;object-fit:cover;border:2px solid #00000010}
+    .title{font-weight:800;font-size:26px;color:#7b4b3a}
+    .wrap{max-width:1100px;margin:10px auto 30px;padding:0 16px;display:grid;grid-template-columns:1fr 360px;gap:16px}
+    @media (max-width:980px){.wrap{grid-template-columns:1fr}}
+    .card{background:#fff;border:1px solid #eee;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:16px 18px}
+    h2{margin:6px 0 12px;color:#7b4b3a}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media (max-width:720px){.grid{grid-template-columns:1fr}}
+    .table{border:1px solid #eee;border-radius:12px;padding:12px}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .muted{color:#777}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-weight:700;font-size:12px;border:1px solid #eee}
+    .b-free{background:#eaf9ef;color:#166534;border-color:#b7e3c5}
+    .b-reserved{background:#fff7ed;color:#9a3412;border-color:#f2d3b7}
+    .b-occupied{background:#fef2f2;color:#991b1b;border-color:#f3c1c1}
+    .btn{background:#9b5c2e;color:#fff;border:0;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn.ghost{background:#00000007;color:#2b2622;border:1px solid #eee}
+    .eta{font-weight:700}
+    .help{font-size:13px;color:#6b6b6b;margin-top:6px}
+
+    /* Modal */
+    .backdrop{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:50}
+    .modal{width:min(520px,94vw);background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+    .modal header{display:flex;gap:8px;align-items:center;border-bottom:1px solid #eee;padding:12px 14px}
+    .modal .body{padding:14px}
+    .close{margin-left:auto;font-size:22px;cursor:pointer}
+    .field{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+    input,select{padding:10px;border:1px solid #e6e2df;border-radius:10px}
+    .ok{color:#166534}
+    .err{color:#991b1b}
+  </style>
+</head>
+<body>
+  <header>
+    <img class="logo" src="/img/LOGO.JPG" alt="Logo" onerror="this.src='/img/fallback.jpg'">
+    <div class="title">Mangia &amp; Fuggi</div>
+    <div style="margin-left:auto"><a class="btn ghost" href="/">← Home</a></div>
+  </header>
+
+  <div class="wrap">
+    <main class="card">
+      <h2>🪑 Prenota un tavolo</h2>
+      <p class="muted">Vedi disponibilità in tempo reale e il tempo stimato di liberazione (ETA) calcolato sulle medie storiche.</p>
+      <div id="list" class="grid"></div>
+      <p id="error" class="err" style="display:none"></p>
+    </main>
+
+    <aside class="card">
+      <h3>Come funziona</h3>
+      <p class="help">
+        • <b>Libero</b>: prenotabile subito.<br>
+        • <b>Riservato</b>: è in attesa/arrivo.<br>
+        • <b>Occupato</b>: puoi prenotare per quando si libera (in base alle medie).
+      </p>
+      <p class="help">Dopo la prenotazione ricevi conferma sulla pagina. Il ristoratore vede tutto nella dashboard.</p>
+    </aside>
+  </div>
+
+  <!-- Modal prenotazione -->
+  <div id="bk-backdrop" class="backdrop" aria-hidden="true">
+    <div class="modal">
+      <header>
+        <strong id="bk-title">Prenota</strong>
+        <div class="close" onclick="closeModal()">×</div>
+      </header>
+      <div class="body">
+        <form id="bk-form" onsubmit="return submitBooking(event)">
+          <input type="hidden" id="f-table-id" />
+          <div class="field">
+            <label for="f-name">Nome</label>
+            <input id="f-name" required placeholder="Mario Rossi" />
+          </div>
+          <div class="field">
+            <label for="f-phone">Telefono (opzionale)</label>
+            <input id="f-phone" inputmode="tel" placeholder="333 1234567" />
+          </div>
+          <div class="field">
+            <label for="f-size">Persone</label>
+            <select id="f-size">
+              <option>2</option><option>3</option><option>4</option>
+              <option>5</option><option>6</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-when">Quando</label>
+            <input id="f-when" type="datetime-local" />
+            <small class="muted">Lascia vuoto per subito.</small>
+          </div>
+          <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px">
+            <button type="button" class="btn ghost" onclick="closeModal()">Annulla</button>
+            <button type="submit" class="btn">Prenota</button>
+          </div>
+          <p id="bk-msg" class="ok" style="display:none"></p>
+          <p id="bk-err" class="err" style="display:none"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const elList = document.getElementById('list');
+    const elErr  = document.getElementById('error');
+
+    async function load(){
+      elList.innerHTML = "";
+      elErr.style.display = "none";
+      try{
+        const r = await fetch("/api/tables/status");
+        const js = await r.json();
+        if(!js.ok) throw new Error("Errore caricamento tavoli");
+        for(const t of js.tables){
+          const s = t.status;
+          const badge = s==="free"?"b-free":(s==="reserved"?"b-reserved":"b-occupied");
+          const eta = (t.eta_minutes!=null) ? `${t.eta_minutes} min` : (s==="free"?"—":"n.d.");
+          const btnDisabled = (s==="reserved");
+          const div = document.createElement('div');
+          div.className="table";
+          div.innerHTML = `
+            <div class="row">
+              <div>
+                <div><strong>${t.name}</strong> · <span class="muted">${t.seats} posti</span></div>
+                <div class="muted">Media sosta: <span class="eta">${t.avg_minutes ?? "n.d."}</span> min · ETA: <span class="eta">${eta}</span></div>
+              </div>
+              <div style="text-align:right">
+                <div class="badge ${badge}">${s}</div><br>
+                <button class="btn" ${btnDisabled?"disabled":""} onclick='openModal(${JSON.stringify({id:t.id,name:t.name}).replace(/'/g,"&#39;")})'>
+                  Prenota
+                </button>
+              </div>
+            </div>`;
+          elList.appendChild(div);
+        }
+      }catch(e){
+        elErr.textContent = "Impossibile caricare i tavoli.";
+        elErr.style.display = "block";
+        console.error(e);
+      }
+    }
+
+    // Modal
+    function openModal(t){
+      document.getElementById('bk-title').textContent = "Prenota · " + t.name;
+      document.getElementById('f-table-id').value = t.id;
+      document.getElementById('bk-backdrop').style.display = 'flex';
+      document.getElementById('bk-msg').style.display = 'none';
+      document.getElementById('bk-err').style.display = 'none';
+    }
+    function closeModal(){ document.getElementById('bk-backdrop').style.display='none'; }
+
+    async function submitBooking(e){
+      e.preventDefault();
+      const table_id = Number(document.getElementById('f-table-id').value);
+      const customer_name  = document.getElementById('f-name').value.trim();
+      const customer_phone = document.getElementById('f-phone').value.trim();
+      const size = Number(document.getElementById('f-size').value);
+      const requested_for = document.getElementById('f-when').value || null;
+
+      const msg = document.getElementById('bk-msg');
+      const err = document.getElementById('bk-err');
+      msg.style.display = err.style.display = "none";
+
+      try{
+        const r = await fetch("/api/reservations",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ table_id, customer_name, customer_phone, size, requested_for })
+        });
+        const js = await r.json();
+        if(!r.ok || !js.ok) throw new Error(js.error||"Errore");
+        msg.textContent = "Prenotazione confermata! Grazie.";
+        msg.style.display = "block";
+        await load(); // aggiorna la lista
+        setTimeout(closeModal, 900);
+      }catch(e){
+        err.textContent = "Errore prenotazione. Riprova.";
+        err.style.display = "block";
+        console.error(e);
+      }
+      return false;
+    }
+
+    load();
+  </script>
+</body>
+</html>
