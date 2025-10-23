@@ -532,7 +532,37 @@ app.post("/api/pay-sumup", async (req, res) => {
     res.status(500).json({ ok:false, error:code });
   }
 });
+// --- Helpers prenotazioni/waitlist ---
+async function promoteNextWaiter(tableId){
+  // prende la prima prenotazione in attesa per quel tavolo
+  const { data: next, error: e1 } = await supabase
+    .from("reservations")
+    .select("id")
+    .eq("table_id", tableId)
+    .eq("status", "waiting")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (e1) throw e1;
 
+  if (next && next.id){
+    // promuovi a confirmed e ri-riserva il tavolo
+    const { error: e2 } = await supabase
+      .from("reservations")
+      .update({ status: "confirmed" })
+      .eq("id", next.id);
+    if (e2) throw e2;
+
+    const { error: e3 } = await supabase
+      .from("restaurant_tables")
+      .update({ status: "reserved", current_reservation: next.id, updated_at: new Date().toISOString() })
+      .eq("id", tableId);
+    if (e3) throw e3;
+
+    return { promoted: true, reservation_id: next.id };
+  }
+  return { promoted: false };
+}
 // =====================================================================================
 // TAVOLI & PRENOTAZIONI (UNICA VERSIONE, senza duplicati) ✅
 // =====================================================================================
