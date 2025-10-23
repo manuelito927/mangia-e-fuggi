@@ -48,9 +48,14 @@
     .actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
     @media (min-width:560px){ .actions{flex-direction:row;align-items:center} }
 
-    /* Dettagli collapsible */
-    .details{display:none;margin-top:10px;border-top:1px dashed var(--ring);padding-top:10px;color:#433}
-    .toggle{font-size:13px;cursor:pointer;color:#7b4b3a}
+    /* Modal (inline per semplicità) */
+    .backdrop{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:50}
+    .modal{width:min(520px,94vw);background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+    .modal header{display:flex;gap:8px;align-items:center;border-bottom:1px solid #eee;padding:12px 14px}
+    .modal .body{padding:14px}
+    .close{margin-left:auto;font-size:22px;cursor:pointer}
+    .field{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+    input,select{padding:10px;border:1px solid #e6e2df;border-radius:10px}
   </style>
 </head>
 <body>
@@ -78,33 +83,33 @@
   </div>
 
   <!-- Modal prenotazione -->
-  <div id="bk-backdrop" class="backdrop" aria-hidden="true" style="position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:50">
-    <div class="modal" style="width:min(520px,94vw);background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden">
-      <header style="display:flex;gap:8px;align-items:center;border-bottom:1px solid #eee;padding:12px 14px">
+  <div id="bk-backdrop" class="backdrop" aria-hidden="true">
+    <div class="modal">
+      <header>
         <strong id="bk-title">Prenota</strong>
-        <div class="close" onclick="closeModal()" style="margin-left:auto;font-size:22px;cursor:pointer">×</div>
+        <div class="close" onclick="closeModal()">×</div>
       </header>
-      <div class="body" style="padding:14px">
+      <div class="body">
         <form id="bk-form" onsubmit="return submitBooking(event)">
           <input type="hidden" id="f-table-id" />
-          <div class="field" style="display:flex;flex-direction:column;gap:4px;margin:8px 0">
+          <div class="field">
             <label for="f-name">Nome</label>
-            <input id="f-name" required placeholder="Mario Rossi" style="padding:10px;border:1px solid #e6e2df;border-radius:10px"/>
+            <input id="f-name" required placeholder="Mario Rossi" />
           </div>
-          <div class="field" style="display:flex;flex-direction:column;gap:4px;margin:8px 0">
+          <div class="field">
             <label for="f-phone">Telefono (opzionale)</label>
-            <input id="f-phone" inputmode="tel" placeholder="333 1234567" style="padding:10px;border:1px solid #e6e2df;border-radius:10px"/>
+            <input id="f-phone" inputmode="tel" placeholder="333 1234567" />
           </div>
-          <div class="field" style="display:flex;flex-direction:column;gap:4px;margin:8px 0">
+          <div class="field">
             <label for="f-size">Persone</label>
-            <select id="f-size" style="padding:10px;border:1px solid #e6e2df;border-radius:10px">
+            <select id="f-size">
               <option>2</option><option>3</option><option>4</option>
               <option>5</option><option>6</option><option>7</option>
             </select>
           </div>
-          <div class="field" style="display:flex;flex-direction:column;gap:4px;margin:8px 0">
+          <div class="field">
             <label for="f-when">Quando</label>
-            <input id="f-when" type="datetime-local" style="padding:10px;border:1px solid #e6e2df;border-radius:10px"/>
+            <input id="f-when" type="datetime-local" />
             <small class="muted">Lascia vuoto per “appena possibile” (subito se libero, ETA se occupato).</small>
           </div>
           <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px">
@@ -121,6 +126,7 @@
   <script>
     const elList = document.getElementById('list');
     const elErr  = document.getElementById('error');
+    let refreshTimer = null, loading = false;
 
     function badgeClass(status){
       if(status==='free') return 'ok';
@@ -134,66 +140,60 @@
     }
 
     async function load(){
-      elList.innerHTML = "";
+      if(loading) return;
+      loading = true;
       elErr.style.display = "none";
       try{
-        const r = await fetch("/api/tables/status");
+        const r = await fetch("/api/tables/status", { cache:"no-store" });
         const js = await r.json();
         if(!js.ok) throw new Error("Errore caricamento tavoli");
 
+        elList.innerHTML = "";
         for(const t of js.tables){
-          const s = t.status; // 'free' | 'reserved' | 'occupied'
+          const s   = t.status; // 'free' | 'reserved' | 'occupied'
           const eta = (t.eta_minutes!=null) ? `${t.eta_minutes} min` : (s==='free'?'—':'n.d.');
           const avg = (t.avg_minutes!=null) ? `${t.avg_minutes} min` : 'n.d.';
           const btnText =
-            s==='free' ? 'Prenota subito' :
+            s==='free'     ? 'Prenota subito' :
             s==='occupied' ? `Prenota tra ${eta}` :
-            'Non prenotabile';
+                             'Non prenotabile';
           const btnDisabled = (s==='reserved');
 
-          // riga
           const card = document.createElement('div');
           card.className = `table-card ${cardClass(s)}`;
           card.innerHTML = `
             <div class="row">
               <div>
                 <div class="title-row">
-                  <h3><strong>${t.name}</strong></h3>
-                  <span class="muted sub">· ${t.seats} posti</span>
+                  <h3><strong>${t.name || ('Tavolo ' + t.id)}</strong></h3>
+                  <span class="muted sub">· ${t.seats ?? '-'} posti</span>
                 </div>
                 <div class="muted sub">Media sosta: <span class="eta">${avg}</span> · ETA: <span class="eta">${eta}</span></div>
-                <div class="toggle" data-tid="${t.id}">Dettagli ▾</div>
               </div>
               <div class="actions">
                 <span class="pill ${badgeClass(s)}">${s}</span>
                 <button class="btn" ${btnDisabled?'disabled':''}
-                  onclick='openModal(${JSON.stringify({id:t.id,name:t.name}).replace(/'/g,"&#39;")})'>
+                  onclick='openModal(${JSON.stringify({id:t.id,name:t.name || ("Tavolo "+t.id)}).replace(/'/g,"&#39;")})'>
                   ${btnText}
                 </button>
               </div>
             </div>
-            <div class="details" id="det-${t.id}">
-              <div class="muted">• Ultimo cambio stato: ${t.updated_at ? new Date(t.updated_at).toLocaleString() : 'n.d.'}</div>
-              <div class="muted">• Note: ${t.note || '—'}</div>
-            </div>
           `;
           elList.appendChild(card);
         }
-
-        // toggle dettagli
-        elList.addEventListener('click', (e)=>{
-          const tg = e.target.closest('.toggle'); if(!tg) return;
-          const id = tg.getAttribute('data-tid');
-          const box = document.getElementById('det-'+id);
-          const vis = box.style.display==='block';
-          box.style.display = vis ? 'none' : 'block';
-          tg.textContent = vis ? 'Dettagli ▾' : 'Dettagli ▴';
-        }, { once:true }); // attiva un solo listener
       }catch(e){
+        console.error(e);
         elErr.textContent = "Impossibile caricare i tavoli.";
         elErr.style.display = "inline-block";
-        console.error(e);
+      }finally{
+        loading = false;
       }
+    }
+
+    // Auto-refresh ogni 8s (così riflette i click “Libera/Siede” dall’admin)
+    function startAutoRefresh(){
+      if(refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(load, 8000);
     }
 
     // Modal
@@ -228,17 +228,19 @@
         if(!r.ok || !js.ok) throw new Error(js.error||"Errore");
         msg.textContent = "Prenotazione confermata! Grazie.";
         msg.style.display = "inline-block";
-        await load(); // aggiorna lista
+        await load(); // aggiorna elenco con nuovo stato (di solito 'reserved')
         setTimeout(closeModal, 900);
       }catch(e){
+        console.error(e);
         err.textContent = "Errore prenotazione. Riprova.";
         err.style.display = "inline-block";
-        console.error(e);
       }
       return false;
     }
 
+    // Boot
     load();
+    startAutoRefresh();
   </script>
 </body>
 </html>
