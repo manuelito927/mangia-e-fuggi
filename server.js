@@ -532,9 +532,9 @@ app.post("/api/pay-sumup", async (req, res) => {
     res.status(500).json({ ok:false, error:code });
   }
 });
+
 // --- Helpers prenotazioni/waitlist ---
 async function promoteNextWaiter(tableId){
-  // prende la prima prenotazione in attesa per quel tavolo
   const { data: next, error: e1 } = await supabase
     .from("reservations")
     .select("id")
@@ -546,7 +546,6 @@ async function promoteNextWaiter(tableId){
   if (e1) throw e1;
 
   if (next && next.id){
-    // promuovi a confirmed e ri-riserva il tavolo
     const { error: e2 } = await supabase
       .from("reservations")
       .update({ status: "confirmed" })
@@ -563,6 +562,7 @@ async function promoteNextWaiter(tableId){
   }
   return { promoted: false };
 }
+
 // =====================================================================================
 // TAVOLI & PRENOTAZIONI (UNICA VERSIONE, senza duplicati) ✅
 // =====================================================================================
@@ -570,11 +570,27 @@ async function promoteNextWaiter(tableId){
 // ---- TAVOLI (dashboard)
 app.get("/api/tables", async (_req, res) => {
   try{
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("restaurant_tables")
       .select("id,name,seats,status,updated_at")
       .order("id",{ascending:true});
     if (error) throw error;
+
+    // 🔹 AUTO-SEED se vuota
+    if (!data || data.length === 0) {
+      const seed = [
+        { id:1, name:"Tavolo 1", seats:2, status:"free" },
+        { id:2, name:"Tavolo 2", seats:2, status:"free" },
+        { id:3, name:"Tavolo 3", seats:4, status:"free" },
+        { id:4, name:"Tavolo 4", seats:4, status:"free" },
+        { id:5, name:"Tavolo 5", seats:6, status:"free" },
+        { id:6, name:"Tavolo 6", seats:6, status:"free" }
+      ];
+      const ins = await supabase.from("restaurant_tables").insert(seed).select();
+      if (ins.error) throw ins.error;
+      data = ins.data || seed;
+    }
+
     res.json({ ok:true, tables:data || [] });
   }catch(e){ console.error("tables list error:", e); res.status(500).json({ ok:false, error:"tables_list_failed" }); }
 });
@@ -583,17 +599,14 @@ app.post("/api/tables/:id/free", async (req, res) => {
   try{
     const { id } = req.params;
 
-    // libera il tavolo…
     const { error: e0 } = await supabase
       .from("restaurant_tables")
       .update({ status:"free", current_reservation: null, updated_at:new Date().toISOString() })
       .eq("id", id);
     if (e0) throw e0;
 
-    // …e prova a promuovere il primo in attesa
     const promo = await promoteNextWaiter(id);
     if (promo.promoted){
-      // se promosso, il tavolo torna subito "reserved"
       return res.json({ ok:true, autoConfirmed: true, reservation_id: promo.reservation_id });
     }
 
@@ -619,142 +632,40 @@ app.post("/api/tables/:id/seat", async (req, res) => {
 // ---- STATO per i clienti (prenota)
 app.get("/api/tables/status", async (_req, res) => {
   try{
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("restaurant_tables")
       .select("id,name,seats,status")
       .order("id",{ascending:true});
     if (error) throw error;
+
+    // 🔹 AUTO-SEED anche lato clienti (se fosse il primo accesso)
+    if (!data || data.length === 0) {
+      const seed = [
+        { id:1, name:"Tavolo 1", seats:2, status:"free" },
+        { id:2, name:"Tavolo 2", seats:2, status:"free" },
+        { id:3, name:"Tavolo 3", seats:4, status:"free" },
+        { id:4, name:"Tavolo 4", seats:4, status:"free" },
+        { id:5, name:"Tavolo 5", seats:6, status:"free" },
+        { id:6, name:"Tavolo 6", seats:6, status:"free" }
+      ];
+      const ins = await supabase.from("restaurant_tables").insert(seed).select();
+      if (ins.error) throw ins.error;
+      data = ins.data || seed;
+    }
+
     res.json({ ok:true, tables:data || [] });
   }catch(e){ console.error("tables status error:", e); res.status(500).json({ ok:false, error:"tables_status_failed" }); }
 });
 
-// ---- PRENOTAZIONI (opzionali: usale se ti servono)
+// ---- PRENOTAZIONI
 app.post("/api/reservations", async (req, res) => {
   try {
     const { table_id, customer_name, customer_phone, size=2, requested_for=null } = req.body || {};
     if (!table_id || !customer_name) return res.status(400).json({ ok:false, error:"missing_params" });
 
-    // leggi lo stato attuale del tavolo
     const { data: t, error: te } = await supabase
       .from("restaurant_tables")
       .select("id,status")
       .eq("id", table_id)
       .single();
     if (te || !t) throw te || new Error("table_not_found");
-
-    // se il tavolo è libero -> conferma subito e marca "reserved"
-    // altrimenti metti in WAITING senza toccare lo stato del tavolo
-    const initialStatus = (t.status === "free") ? "confirmed" : "waiting";
-
-    const { data: ins, error } = await supabase
-      .from("reservations")
-      .insert([{ table_id, customer_name, customer_phone, size, requested_for, status: initialStatus }])
-      .select()
-      .single();
-    if (error) throw error;
-
-    if (initialStatus === "confirmed"){
-      await supabase.from("restaurant_tables")
-        .update({ status:"reserved", current_reservation: ins.id })
-        .eq("id", table_id);
-    }
-
-    res.json({ ok:true, reservation:ins, queued: initialStatus === "waiting" });
-  } catch (e) {
-    console.error("reservation create error:", e);
-    res.status(500).json({ ok:false, error:"reservation_create_failed" });
-  }
-});
-
-app.get("/api/reservations", async (req, res) => {
-  try {
-    const q = supabase.from("reservations")
-      .select("id,table_id,customer_name,customer_phone,size,requested_for,status,created_at,seated_at,completed_at")
-      .order("created_at",{ascending:false});
-    const status = (req.query.status||"").toString();
-    const { data, error } = status ? await q.eq("status", status) : await q;
-    if (error) throw error;
-    res.json({ ok:true, reservations:data||[] });
-  } catch (e) {
-    console.error("reservations list error:", e);
-    res.status(500).json({ ok:false, error:"reservations_list_failed" });
-  }
-});
-
-app.post("/api/reservations/:id/seat", async (req, res) => {
-  try {
-    const id = req.params.id;
-    const { data: r0, error: e0 } = await supabase.from("reservations").select("id,table_id").eq("id", id).single();
-    if (e0 || !r0) throw e0||new Error("not_found");
-
-    const { error } = await supabase.from("reservations")
-      .update({ status:"seated", seated_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) throw error;
-
-    await supabase.from("restaurant_tables")
-      .update({ status:"occupied" })
-      .eq("id", r0.table_id);
-
-    res.json({ ok:true });
-  } catch (e) {
-    console.error("reservation seat error:", e);
-    res.status(500).json({ ok:false, error:"reservation_seat_failed" });
-  }
-});
-
-app.post("/api/reservations/:id/complete", async (req, res) => {
-  try {
-    const id = req.params.id;
-    const { data: r0, error: e0 } = await supabase.from("reservations").select("id,table_id").eq("id", id).single();
-    if (e0 || !r0) throw e0||new Error("not_found");
-
-    const { error } = await supabase.from("reservations")
-      .update({ status:"completed", completed_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) throw error;
-
-    // libera e poi promuovi eventuale attesa
-    await supabase.from("restaurant_tables")
-      .update({ status:"free", current_reservation: null })
-      .eq("id", r0.table_id);
-
-    await promoteNextWaiter(r0.table_id);
-
-    res.json({ ok:true });
-  } catch (e) {
-    console.error("reservation complete error:", e);
-    res.status(500).json({ ok:false, error:"reservation_complete_failed" });
-  }
-});
-
-app.post("/api/reservations/:id/cancel", async (req, res) => {
-  try {
-    const id = req.params.id;
-    const { data: r0, error: e0 } = await supabase.from("reservations")
-      .select("id,table_id")
-      .eq("id", id).single();
-    if (e0 || !r0) throw e0||new Error("not_found");
-
-    const { error } = await supabase.from("reservations")
-      .update({ status:"cancelled" })
-      .eq("id", id);
-    if (error) throw error;
-
-    // libera tavolo (se era quello corrente) e promuovi eventuale attesa
-    await supabase.from("restaurant_tables")
-      .update({ status:"free", current_reservation: null })
-      .eq("id", r0.table_id);
-
-    await promoteNextWaiter(r0.table_id);
-
-    res.json({ ok:true });
-  } catch (e) {
-    console.error("reservation cancel error:", e);
-    res.status(500).json({ ok:false, error:"reservation_cancel_failed" });
-  }
-});
-
-// ---- Avvio (LO METTO ALLA FINE)
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server avviato sulla porta ${PORT}`));
