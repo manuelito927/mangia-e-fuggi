@@ -68,9 +68,11 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
       <section id="sec-orders" class="card">
         <div class="row" style="flex-wrap:wrap">
           <div class="kg">
-            <span class="muted">Stato:</span>
-            <button class="btn tab active" data-status="pending">Pendenti <span id="c-pend" class="pill" style="padding:2px 8px"></span></button>
-            <button class="btn tab" data-status="completed">Completati <span id="c-comp" class="pill" style="padding:2px 8px"></span></button>
+            <span class="muted">Vista:</span>
+            <!-- 🔄 NUOVI TAB -->
+            <button class="btn tab active" data-status="all">Tutti gli ordini <span id="c-all" class="pill" style="padding:2px 8px"></span></button>
+            <button class="btn tab" data-status="due">Da incassare <span id="c-due" class="pill" style="padding:2px 8px"></span></button>
+            <button class="btn tab" data-status="paid">Pagamenti accettati <span id="c-paid" class="pill" style="padding:2px 8px"></span></button>
             <button class="btn tab" data-status="canceled">Eliminati <span id="c-canc" class="pill" style="padding:2px 8px"></span></button>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
@@ -184,41 +186,67 @@ $('#chk-sound').addEventListener('change', saveSettings);
 $('#chk-autorefresh').addEventListener('change', saveSettings);
 
 // ====== ORDINI ======
-let STATUS='pending', ORDERS=[], SUBS=false, refreshTimer=null;
+let STATUS='all', ORDERS=[], SUBS=false, refreshTimer=null;
 
+// contatori per le viste
 async function counters(){
   try{
-    const [a,b,c] = await Promise.all([
+    const [pnd, cmp, cnc] = await Promise.all([
       fetch('/api/orders?status=pending').then(r=>r.json()),
       fetch('/api/orders?status=completed').then(r=>r.json()),
       fetch('/api/orders?status=canceled').then(r=>r.json())
     ]);
-    $('#c-pend').textContent = a.ok ? a.orders.length : 0;
-    $('#c-comp').textContent = b.ok ? b.orders.length : 0;
-    $('#c-canc').textContent = c.ok ? c.orders.length : 0;
+    const nPending   = (pnd.ok ? pnd.orders.length : 0);
+    const nCompleted = (cmp.ok ? cmp.orders.length : 0);
+    const nCanceled  = (cnc.ok ? cnc.orders.length : 0);
+
+    $('#c-all').textContent  = nPending + nCompleted;
+    $('#c-due').textContent  = nPending;      // Da incassare = pending
+    $('#c-paid').textContent = nCompleted;    // Pagamenti accettati = completed
+    $('#c-canc').textContent = nCanceled;     // Eliminati = canceled
   }catch(e){console.error(e);}
 }
 
 async function fetchOrders(){
   const q=$('#q').value.toLowerCase();
-  const r=await fetch(`/api/orders?status=${STATUS}`);
-  const j=await r.json();
-  if(!j.ok) return;
-  ORDERS=j.orders||[];
+
+  let list = [];
+  if(STATUS==='all'){
+    // unisce pending + completed (esclude canceled)
+    const [pnd, cmp] = await Promise.all([
+      fetch('/api/orders?status=pending').then(r=>r.json()),
+      fetch('/api/orders?status=completed').then(r=>r.json())
+    ]);
+    if(pnd.ok) list = list.concat(pnd.orders||[]);
+    if(cmp.ok) list = list.concat(cmp.orders||[]);
+    // ordina per data desc come in /api/orders
+    list.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+  }else if(STATUS==='due'){
+    const r=await fetch('/api/orders?status=pending'); const j=await r.json();
+    if(j.ok) list=j.orders||[];
+  }else if(STATUS==='paid'){
+    const r=await fetch('/api/orders?status=completed'); const j=await r.json();
+    if(j.ok) list=j.orders||[];
+  }else if(STATUS==='canceled'){
+    const r=await fetch('/api/orders?status=canceled'); const j=await r.json();
+    if(j.ok) list=j.orders||[];
+  }
+
+  ORDERS=list;
   renderOrders(q);
   counters();
 }
 
 function renderOrders(q){
   const root=$('#orders'); root.innerHTML="";
-  const list = q ? ORDERS.filter(o=>{
+  const filtered = q ? ORDERS.filter(o=>{
     const text=(o.table_code||"-")+" "+(o.items||[]).map(i=>i.name).join(" ");
     return text.toLowerCase().includes(q);
   }) : ORDERS;
 
-  if(!list.length){ root.innerHTML='<div class="muted">Nessun ordine</div>'; return; }
+  if(!filtered.length){ root.innerHTML='<div class="muted">Nessun ordine</div>'; return; }
 
-  for(const o of list){
+  for(const o of filtered){
     const when=new Date(o.created_at).toLocaleString();
     const rows=(o.items||[]).map(it=>`
       <div class="row" style="padding:4px 0">
@@ -229,6 +257,12 @@ function renderOrders(q){
     const bell = (!o.ack && o.status==='pending')
       ? `<span class="bell new" data-act="ack" data-id="${o.id}" title="Nuovo">🔔</span>`
       : `<span class="bell" data-act="ack" data-id="${o.id}" title="Segna come letto">🔕</span>`;
+
+    // Azioni: se l'ordine è pending → Completa/Elimina; se completed o canceled → Ripristina
+    const actions = (o.status==='pending')
+      ? `<button class="btn ok" data-act="complete" data-id="${o.id}">✅ Completa</button>
+         <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>`
+      : `<button class="btn" data-act="restore" data-id="${o.id}">↩️ Ripristina</button>`;
 
     const el=document.createElement('div');
     el.className='order';
@@ -246,10 +280,7 @@ function renderOrders(q){
         <div></div>
         <div style="display:flex;gap:8px">
           <button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>
-          ${STATUS==='pending'
-            ? `<button class="btn ok" data-act="complete" data-id="${o.id}">✅ Completa</button>
-               <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>`
-            : `<button class="btn" data-act="restore" data-id="${o.id}">↩️ Ripristina</button>`}
+          ${actions}
         </div>
       </div>`;
     root.appendChild(el);
@@ -267,14 +298,17 @@ $('#orders').addEventListener('click', async ev=>{
   if(act==='ack') await fetch(`/api/orders/${id}/ack`,{method:'POST'});
   await fetchOrders();
 });
+
+// Cambio tab
 $$('.tab').forEach(t=>{
   t.addEventListener('click', async ()=>{
     $$('.tab').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
-    STATUS=t.dataset.status;
+    STATUS=t.dataset.status; // all | due | paid | canceled
     await fetchOrders();
   });
 });
+
 $('#btn-refresh').addEventListener('click', fetchOrders);
 $('#q').addEventListener('input', ()=>renderOrders($('#q').value.toLowerCase()));
 $('#clearQ').addEventListener('click', ()=>{ $('#q').value=''; renderOrders(''); });
@@ -290,13 +324,13 @@ function setAutoRefresh(){
 // Realtime ordini
 function attachRealtime(){
   if(typeof supabase.channel!=="function" || SUBS) return; SUBS=true;
-  const ch1=supabase.channel("rt:orders")
+  supabase.channel("rt:orders")
     .on("postgres_changes",{event:"*",schema:"public",table:"orders"},async()=>{
       if($('#chk-sound').checked) beep();
       await fetchOrders();
     }).subscribe();
 
-  const ch2=supabase.channel("rt:order_items")
+  supabase.channel("rt:order_items")
     .on("postgres_changes",{event:"*",schema:"public",table:"order_items"},async()=>{
       await fetchOrders();
     }).subscribe();
