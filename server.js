@@ -669,3 +669,120 @@ app.post("/api/reservations", async (req, res) => {
       .eq("id", table_id)
       .single();
     if (te || !t) throw te || new Error("table_not_found");
+        // se il tavolo è libero -> conferma subito e marca "reserved"
+    // altrimenti metti in WAITING senza toccare lo stato del tavolo
+    const initialStatus = (t.status === "free") ? "confirmed" : "waiting";
+
+    const { data: ins, error } = await supabase
+      .from("reservations")
+      .insert([{ table_id, customer_name, customer_phone, size, requested_for, status: initialStatus }])
+      .select()
+      .single();
+    if (error) throw error;
+
+    if (initialStatus === "confirmed"){
+      await supabase.from("restaurant_tables")
+        .update({ status:"reserved", current_reservation: ins.id })
+        .eq("id", table_id);
+    }
+
+    res.json({ ok:true, reservation:ins, queued: initialStatus === "waiting" });
+  } catch (e) {
+    console.error("reservation create error:", e);
+    res.status(500).json({ ok:false, error:"reservation_create_failed" });
+  }
+});
+
+app.get("/api/reservations", async (req, res) => {
+  try {
+    const q = supabase.from("reservations")
+      .select("id,table_id,customer_name,customer_phone,size,requested_for,status,created_at,seated_at,completed_at")
+      .order("created_at",{ascending:false});
+    const status = (req.query.status||"").toString();
+    const { data, error } = status ? await q.eq("status", status) : await q;
+    if (error) throw error;
+    res.json({ ok:true, reservations:data||[] });
+  } catch (e) {
+    console.error("reservations list error:", e);
+    res.status(500).json({ ok:false, error:"reservations_list_failed" });
+  }
+});
+
+app.post("/api/reservations/:id/seat", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { data: r0, error: e0 } = await supabase.from("reservations").select("id,table_id").eq("id", id).single();
+    if (e0 || !r0) throw e0||new Error("not_found");
+
+    const { error } = await supabase.from("reservations")
+      .update({ status:"seated", seated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
+
+    await supabase.from("restaurant_tables")
+      .update({ status:"occupied" })
+      .eq("id", r0.table_id);
+
+    res.json({ ok:true });
+  } catch (e) {
+    console.error("reservation seat error:", e);
+    res.status(500).json({ ok:false, error:"reservation_seat_failed" });
+  }
+});
+
+app.post("/api/reservations/:id/complete", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { data: r0, error: e0 } = await supabase.from("reservations").select("id,table_id").eq("id", id).single();
+    if (e0 || !r0) throw e0||new Error("not_found");
+
+    const { error } = await supabase.from("reservations")
+      .update({ status:"completed", completed_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
+
+    // libera e poi promuovi eventuale attesa
+    await supabase.from("restaurant_tables")
+      .update({ status:"free", current_reservation: null })
+      .eq("id", r0.table_id);
+
+    await promoteNextWaiter(r0.table_id);
+
+    res.json({ ok:true });
+  } catch (e) {
+    console.error("reservation complete error:", e);
+    res.status(500).json({ ok:false, error:"reservation_complete_failed" });
+  }
+});
+
+app.post("/api/reservations/:id/cancel", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { data: r0, error: e0 } = await supabase.from("reservations")
+      .select("id,table_id")
+      .eq("id", id).single();
+    if (e0 || !r0) throw e0||new Error("not_found");
+
+    const { error } = await supabase.from("reservations")
+      .update({ status:"cancelled" })
+      .eq("id", id);
+    if (error) throw error;
+
+    // libera tavolo (se era quello corrente) e promuovi eventuale attesa
+    await supabase.from("restaurant_tables")
+      .update({ status:"free", current_reservation: null })
+      .eq("id", r0.table_id);
+
+    await promoteNextWaiter(r0.table_id);
+
+    res.json({ ok:true });
+  } catch (e) {
+    console.error("reservation cancel error:", e);
+    res.status(500).json({ ok:false, error:"reservation_cancel_failed" });
+  }
+});
+
+// ---- Avvio (LO METTO ALLA FINE)
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Server avviato sulla porta ${PORT}`));
+    
