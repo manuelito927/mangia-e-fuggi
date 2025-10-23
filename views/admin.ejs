@@ -114,3 +114,293 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
           </div>
         </div>
       </section>
+
+      <!-- TAVOLI -->
+      <section id="sec-tables" class="card" style="display:none">
+        <div class="row" style="flex-wrap:wrap">
+          <h3 style="margin:0">Tavoli</h3>
+          <div class="muted">Segna manualmente se un tavolo è libero o occupato.</div>
+        </div>
+
+        <div class="tbl" style="margin-top:10px">
+          <table>
+            <thead>
+              <tr>
+                <th>Tavolo</th>
+                <th>Posti</th>
+                <th>Stato</th>
+                <th>Ultimo aggiornamento</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="tablesBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+const supabase = window.supabase.createClient("<%= SUPABASE_URL %>", "<%= SUPABASE_KEY %>");
+const $ = (s,root=document)=>root.querySelector(s);
+const $$= (s,root=document)=>Array.from(root.querySelectorAll(s));
+const euro = v => "€ " + Number(v||0).toFixed(2).replace(".", ",");
+
+// ====== NAV ======
+$$('[data-section]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    $$('[data-section]').forEach(x=>x.classList.remove('active'));
+    a.classList.add('active');
+    const sec=a.dataset.section;
+    $('#sec-orders').style.display = sec==='orders' ? 'block' : 'none';
+    $('#sec-stats').style.display  = sec==='stats'  ? 'block' : 'none';
+    $('#sec-tables').style.display = sec==='tables' ? 'block' : 'none';
+    if(sec==='tables') loadTables();
+  });
+});
+
+// ====== SETTINGS ======
+async function loadSettings(){
+  try{
+    const r=await fetch('/api/settings');
+    const j=await r.json();
+    if(j.ok){
+      $('#chk-sound').checked = !!j.sound_enabled || !!j.sound;
+      $('#chk-autorefresh').checked = !!j.autorefresh;
+    }
+  }catch{}
+}
+async function saveSettings(){
+  const payload = {
+    sound_enabled: $('#chk-sound').checked,
+    autorefresh: $('#chk-autorefresh').checked
+  };
+  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  setAutoRefresh();
+}
+$('#chk-sound').addEventListener('change', saveSettings);
+$('#chk-autorefresh').addEventListener('change', saveSettings);
+
+// ====== ORDINI ======
+let STATUS='pending', ORDERS=[], SUBS=false, refreshTimer=null;
+
+async function counters(){
+  try{
+    const [a,b,c] = await Promise.all([
+      fetch('/api/orders?status=pending').then(r=>r.json()),
+      fetch('/api/orders?status=completed').then(r=>r.json()),
+      fetch('/api/orders?status=canceled').then(r=>r.json())
+    ]);
+    $('#c-pend').textContent = a.ok ? a.orders.length : 0;
+    $('#c-comp').textContent = b.ok ? b.orders.length : 0;
+    $('#c-canc').textContent = c.ok ? c.orders.length : 0;
+  }catch(e){console.error(e);}
+}
+
+async function fetchOrders(){
+  const q=$('#q').value.toLowerCase();
+  const r=await fetch(`/api/orders?status=${STATUS}`);
+  const j=await r.json();
+  if(!j.ok) return;
+  ORDERS=j.orders||[];
+  renderOrders(q);
+  counters();
+}
+
+function renderOrders(q){
+  const root=$('#orders'); root.innerHTML="";
+  const list = q ? ORDERS.filter(o=>{
+    const text=(o.table_code||"-")+" "+(o.items||[]).map(i=>i.name).join(" ");
+    return text.toLowerCase().includes(q);
+  }) : ORDERS;
+
+  if(!list.length){ root.innerHTML='<div class="muted">Nessun ordine</div>'; return; }
+
+  for(const o of list){
+    const when=new Date(o.created_at).toLocaleString();
+    const rows=(o.items||[]).map(it=>`
+      <div class="row" style="padding:4px 0">
+        <div>${it.qty}× ${it.name} <span class="muted">(€ ${Number(it.price).toFixed(2)})</span></div>
+        <div><b>€ ${(Number(it.qty)*Number(it.price)).toFixed(2)}</b></div>
+      </div>`).join("");
+
+    const bell = (!o.ack && o.status==='pending')
+      ? `<span class="bell new" data-act="ack" data-id="${o.id}" title="Nuovo">🔔</span>`
+      : `<span class="bell" data-act="ack" data-id="${o.id}" title="Segna come letto">🔕</span>`;
+
+    const el=document.createElement('div');
+    el.className='order';
+    el.innerHTML=`
+      <div class="head">
+        <div>
+          <div class="muted">ID: ${o.id}</div>
+          <div class="muted">Tavolo: <b>${o.table_code||'-'}</b></div>
+          <div class="muted">Data: ${when}</div>
+        </div>
+        <div class="badge">${bell}<span class="pill">Totale: ${euro(o.total)}</span></div>
+      </div>
+      <div class="rows">${rows}</div>
+      <div class="row" style="margin-top:8px">
+        <div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>
+          ${STATUS==='pending'
+            ? `<button class="btn ok" data-act="complete" data-id="${o.id}">✅ Completa</button>
+               <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>`
+            : `<button class="btn" data-act="restore" data-id="${o.id}">↩️ Ripristina</button>`}
+        </div>
+      </div>`;
+    root.appendChild(el);
+  }
+}
+
+$('#orders').addEventListener('click', async ev=>{
+  const b=ev.target.closest('[data-act]');
+  if(!b) return;
+  const id=b.dataset.id, act=b.dataset.act;
+  if(act==='print'){ window.print(); await fetch(`/api/orders/${id}/printed`,{method:'POST'}); return; }
+  if(act==='complete') await fetch(`/api/orders/${id}/complete`,{method:'POST'});
+  if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await fetch(`/api/orders/${id}/cancel`,{method:'POST'}); }
+  if(act==='restore') await fetch(`/api/orders/${id}/restore`,{method:'POST'});
+  if(act==='ack') await fetch(`/api/orders/${id}/ack`,{method:'POST'});
+  await fetchOrders();
+});
+$$('.tab').forEach(t=>{
+  t.addEventListener('click', async ()=>{
+    $$('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    STATUS=t.dataset.status;
+    await fetchOrders();
+  });
+});
+$('#btn-refresh').addEventListener('click', fetchOrders);
+$('#q').addEventListener('input', ()=>renderOrders($('#q').value.toLowerCase()));
+$('#clearQ').addEventListener('click', ()=>{ $('#q').value=''; renderOrders(''); });
+
+// Auto-refresh
+function setAutoRefresh(){
+  if(refreshTimer) clearInterval(refreshTimer);
+  if($('#chk-autorefresh').checked){
+    refreshTimer = setInterval(fetchOrders, 8000);
+  }
+}
+
+// Realtime ordini
+function attachRealtime(){
+  if(typeof supabase.channel!=="function" || SUBS) return; SUBS=true;
+  const ch1=supabase.channel("rt:orders")
+    .on("postgres_changes",{event:"*",schema:"public",table:"orders"},async()=>{
+      if($('#chk-sound').checked) beep();
+      await fetchOrders();
+    }).subscribe();
+
+  const ch2=supabase.channel("rt:order_items")
+    .on("postgres_changes",{event:"*",schema:"public",table:"order_items"},async()=>{
+      await fetchOrders();
+    }).subscribe();
+}
+function beep(){
+  try{
+    const c=new (window.AudioContext||window.webkitAudioContext)();
+    const o=c.createOscillator(),g=c.createGain();
+    o.frequency.value=900;o.type="triangle";
+    o.connect(g);g.connect(c.destination);
+    g.gain.setValueAtTime(.001,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.2,c.currentTime+.01);
+    o.start();o.stop(c.currentTime+.14);
+  }catch{}
+}
+
+// ====== STATISTICHE ======
+let chartHour=null, chartTop=null;
+function setKPI(cnt,rev){ $('#k-count').textContent=cnt; $('#k-rev').textContent=euro(rev); $('#k-avg').textContent=euro(cnt?rev/cnt:0); }
+
+async function loadDay(){
+  const d=$('#day').value || new Date().toISOString().slice(0,10);
+  const r=await fetch(`/api/stats/day?date=${d}`);
+  const j=await r.json();
+  if(!j.ok) return;
+  setKPI(j.count, j.total);
+  const labels=j.perBucket.rows.map(b=>new Date(b.bucket).getHours());
+  const data=j.perBucket.rows.map(b=>b.revenue);
+  if(chartHour) chartHour.destroy();
+  chartHour=new Chart($('#chartHour'),{type:'bar',data:{labels,datasets:[{label:'Incasso €/ora',data}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'€ '+v}}}}});
+}
+
+async function loadRange(){
+  const f=$('#from').value,t=$('#to').value;
+  if(!f||!t) return;
+  const r=await fetch(`/api/stats/range?from=${f}&to=${t}`);
+  const j=await r.json();
+  if(!j.ok) return;
+  const top=j.top.list.slice(0,5);
+  const labels=top.map(x=>x.name), data=top.map(x=>x.qty);
+  if(chartTop) chartTop.destroy();
+  chartTop=new Chart($('#chartTop'),{type:'doughnut',data:{labels,datasets:[{data}]},options:{plugins:{legend:{position:'bottom'}}}});
+  $('#topTable').innerHTML=`<table><thead><tr><th>Prodotto</th><th>Qtà</th><th>Fatturato</th><th>% Qtà</th><th>% Fatt.</th></tr></thead><tbody>${
+    j.top.list.map(x=>`<tr><td>${x.name}</td><td>${x.qty}</td><td>${euro(x.revenue)}</td><td>${x.pctQty.toFixed(1)}%</td><td>${x.pctRev.toFixed(1)}%</td></tr>`).join('')
+  }</tbody></table>`;
+}
+
+// ====== TAVOLI ======
+async function loadTables(){
+  try{
+    const r=await fetch('/api/tables');
+    const j=await r.json();
+    if(!j.ok) return;
+    const tbody=$('#tablesBody');
+    tbody.innerHTML='';
+    j.tables.forEach(t=>{
+      const state = t.status==='reserved' ? '🟡 Prenotato' : (t.status==='occupied' ? '🔴 Occupato' : '🟢 Libero');
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td>${t.name||'Tavolo '+t.id}</td>
+        <td>${t.seats??'-'}</td>
+        <td>${state}</td>
+        <td>${t.updated_at?new Date(t.updated_at).toLocaleString():'-'}</td>
+        <td>
+          <button class="btn ok" onclick="setTable(${t.id},'free')">Libera</button>
+          <button class="btn danger" onclick="setTable(${t.id},'seat')">Siede</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){console.error("Errore tavoli:",e);}
+}
+
+async function setTable(id,action){
+  try{
+    await fetch(`/api/tables/${id}/${action}`,{method:'POST'});
+    await loadTables();
+  }catch(e){console.error(e);}
+}
+
+function attachRealtimeTables(){
+  if(typeof supabase.channel!=="function") return;
+  supabase.channel("rt:restaurant_tables")
+    .on("postgres_changes",{event:"*",schema:"public",table:"restaurant_tables"},async()=>{
+      await loadTables();
+    }).subscribe();
+}
+
+// ====== BOOT ======
+(async()=>{
+  const today=new Date();
+  $('#day').value=today.toISOString().slice(0,10);
+  const from=new Date(); from.setDate(today.getDate()-6);
+  $('#from').value=from.toISOString().slice(0,10);
+  $('#to').value=today.toISOString().slice(0,10);
+  await loadSettings();
+  await fetchOrders();
+  await loadDay();
+  await loadRange();
+  attachRealtime();
+  attachRealtimeTables();
+  setAutoRefresh();
+})();
+$('#btn-day').addEventListener('click',loadDay);
+$('#btn-range').addEventListener('click',loadRange);
+</script>
+</body>
+</html>
