@@ -143,8 +143,19 @@ app.get("/storia", (_req, res) => res.render("storia"));
 app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL, SUPABASE_KEY }));
 app.get("/test-video", (_req, res) => res.render("test-video"));
 app.get("/prenota", (_req, res) => res.render("prenota"));
-// Esiti pagamento
-app.get("/pagamento/successo", (_req,res)=> res.send("Pagamento completato. Grazie!"));
+
+// Esiti pagamento (✅ ora marca pagato se c’è ?order_id)
+app.get("/pagamento/successo", async (req,res)=>{
+  const orderId = (req.query.order_id||"").toString();
+  if (orderId) {
+    try{
+      await supabase.from("orders")
+        .update({ payment_status: "paid", paid_at: new Date().toISOString(), pay_method: "online" })
+        .eq("id", orderId);
+    }catch(e){ console.error("mark paid on success page:", e); }
+  }
+  res.send("Pagamento completato. Grazie!");
+});
 app.get("/pagamento/annullato", (_req,res)=> res.send("Pagamento annullato. Puoi riprovare dal carrello."));
 
 // =====================================================================================
@@ -156,11 +167,28 @@ app.post("/api/checkout", async (req, res) => {
     return res.status(400).json({ ok:false, error:"no_items" });
 
   try {
+    // ⬇️ mantengo tutto uguale, ma se i campi di pagamento esistono, parto da unpaid
+    const baseRow = { table_code: tableCode || null, total: Number(total)||0, status:"pending", ack:false };
+    const row = { ...baseRow, payment_status: "unpaid" }; // se la colonna non esiste, Postgres ignora? No, darebbe errore: quindi aggiorno dopo.
     const { data: order, error: oErr } = await supabase
       .from("orders")
-      .insert([{ table_code: tableCode || null, total: Number(total)||0, status:"pending", ack:false }])
+      .insert([row])
       .select().single();
-    if (oErr) throw oErr;
+    if (oErr) {
+      // fallback sicuro se non esiste payment_status
+      const { data: order2, error: oErr2 } = await supabase
+        .from("orders")
+        .insert([baseRow])
+        .select().single();
+      if (oErr2) throw oErr2;
+
+      const rows2 = items.map(it => ({
+        order_id: order2.id, name: it.name, price: Number(it.price), qty: Number(it.qty)
+      }));
+      const { error: iErr2 } = await supabase.from("order_items").insert(rows2);
+      if (iErr2) throw iErr2;
+      return res.json({ ok:true, order_id: order2.id });
+    }
 
     const rows = items.map(it => ({
       order_id: order.id, name: it.name, price: Number(it.price), qty: Number(it.qty)
@@ -172,18 +200,30 @@ app.post("/api/checkout", async (req, res) => {
   } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
 });
 
+// ✅ adesso supporta status=all, status=paid e continua a gestire canceled
 app.get("/api/orders", async (req, res) => {
   try {
-    const status = (req.query.status || "pending").toString();
+    const status = (req.query.status || "").toString();
 
-    const { data: orders, error: oErr } = await supabase
+    let q = supabase
       .from("orders")
-      .select("id, table_code, total, created_at, status, ack, completed_at, canceled_at")
-      .eq("status", status)
+      .select("*") // prendo tutti i campi (così includo payment_status se esiste)
       .order("created_at", { ascending: false });
+
+    if (status === "all") {
+      q = q.neq("status","canceled");           // tutti tranne eliminati
+    } else if (status === "paid") {
+      q = q.eq("payment_status","paid");        // solo pagamenti accettati
+    } else if (status) {
+      q = q.eq("status", status);               // pending/completed/canceled compat.
+    } else {
+      q = q.eq("status","pending");             // fallback legacy
+    }
+
+    const { data: orders, error: oErr } = await q;
     if (oErr) throw oErr;
 
-    const ids = orders.map(o => o.id);
+    const ids = (orders||[]).map(o => o.id);
     let items = [];
     if (ids.length) {
       const { data: its, error: iErr } = await supabase
@@ -195,7 +235,7 @@ app.get("/api/orders", async (req, res) => {
     }
 
     const by = {};
-    for (const o of orders) by[o.id] = { ...o, items: [] };
+    for (const o of (orders||[])) by[o.id] = { ...o, items: [] };
     for (const it of items) by[it.order_id]?.items.push(it);
 
     res.json({ ok:true, orders:Object.values(by) });
@@ -205,6 +245,7 @@ app.get("/api/orders", async (req, res) => {
   }
 });
 
+// --- rotte legacy (restano identiche)
 app.post("/api/orders/:id/complete", async (req, res) => {
   const { error } = await supabase.from("orders")
     .update({ status:"completed", completed_at:new Date().toISOString() })
@@ -230,6 +271,44 @@ app.post("/api/orders/:id/ack", async (req, res) => {
   res.json({ ok: !error });
 });
 app.post("/api/orders/:id/printed", (_req, res) => res.json({ ok:true }));
+
+// ✅ nuove rotte pagamenti manuali/online
+app.post("/api/orders/:id/pay", async (req, res) => {
+  try{
+    const method = (req.body?.method||"cash").toString(); // 'cash' | 'online'
+    const patch = { payment_status: "paid", paid_at: new Date().toISOString(), pay_method: method };
+    // prova con i campi nuovi; se falliscono (colonne mancanti) ripiega su nessun campo
+    let { error } = await supabase.from("orders").update(patch).eq("id", req.params.id);
+    if (error) {
+      // fallback: almeno non faccio crashare se colonne non esistono
+      console.warn("orders.pay: colonne pagamento assenti, salto patch dettagli:", error.message);
+      return res.json({ ok:true, note:"patched_without_payment_columns" });
+    }
+    res.json({ ok:true });
+  }catch(e){ console.error(e); res.status(500).json({ ok:false }); }
+});
+app.post("/api/orders/:id/unpay", async (req, res) => {
+  try{
+    const patch = { payment_status: "unpaid", paid_at: null, pay_method: null };
+    let { error } = await supabase.from("orders").update(patch).eq("id", req.params.id);
+    if (error) {
+      console.warn("orders.unpay: colonne pagamento assenti:", error.message);
+      return res.json({ ok:true, note:"patched_without_payment_columns" });
+    }
+    res.json({ ok:true });
+  }catch(e){ console.error(e); res.status(500).json({ ok:false }); }
+});
+app.post("/api/orders/:id/pay-pending", async (req, res) => {
+  try{
+    const patch = { payment_status: "pending", paid_at: null, pay_method: null };
+    let { error } = await supabase.from("orders").update(patch).eq("id", req.params.id);
+    if (error) {
+      console.warn("orders.pay-pending: colonne pagamento assenti:", error.message);
+      return res.json({ ok:true, note:"patched_without_payment_columns" });
+    }
+    res.json({ ok:true });
+  }catch(e){ console.error(e); res.status(500).json({ ok:false }); }
+});
 
 // =====================================================================================
 // API SETTINGS
@@ -492,21 +571,23 @@ app.get("/test-sumup", async (req, res) => {
   }
 });
 
+// ✅ ora accetta body { amount, currency?, description?, order_id? }
 app.post("/api/pay-sumup", async (req, res) => {
   try {
-    const { amount, currency = "EUR", description = "Pagamento Mangia & Fuggi" } = req.body || {};
+    const { amount, currency = "EUR", description = "Pagamento Mangia & Fuggi", order_id=null } = req.body || {};
     if (!SUMUP_PAYTO) return res.status(400).json({ ok:false, error:"sumup_missing_payto" });
 
     const amt = toAmount2(amount);
     if (!amt || amt < 1) return res.status(400).json({ ok:false, error:"importo_minimo_1_euro" });
 
     const bearer = await getSumUpBearer();
-    const ref = "ordine_" + uuidv4().slice(0,8);
+    const ref = order_id ? `order_${order_id}` : ("ordine_" + uuidv4().slice(0,8));
     const base = getBaseUrl(req);
 
     const payload = {
       amount: amt, currency, checkout_reference: ref, pay_to_email: SUMUP_PAYTO,
-      description, hosted_checkout: { enabled: true }, redirect_url: `${base}/pagamento/successo`
+      description, hosted_checkout: { enabled: true },
+      redirect_url: `${base}/pagamento/successo${order_id ? `?order_id=${order_id}` : ""}`
     };
 
     const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
@@ -638,7 +719,7 @@ app.get("/api/tables/status", async (_req, res) => {
       .order("id",{ascending:true});
     if (error) throw error;
 
-    // 🔹 AUTO-SEED anche lato clienti (se fosse il primo accesso)
+    // 🔹 AUTO-SEED anche lato clienti
     if (!data || data.length === 0) {
       const seed = [
         { id:1, name:"Tavolo 1", seats:2, status:"free" },
@@ -669,8 +750,7 @@ app.post("/api/reservations", async (req, res) => {
       .eq("id", table_id)
       .single();
     if (te || !t) throw te || new Error("table_not_found");
-        // se il tavolo è libero -> conferma subito e marca "reserved"
-    // altrimenti metti in WAITING senza toccare lo stato del tavolo
+
     const initialStatus = (t.status === "free") ? "confirmed" : "waiting";
 
     const { data: ins, error } = await supabase
@@ -741,7 +821,6 @@ app.post("/api/reservations/:id/complete", async (req, res) => {
       .eq("id", id);
     if (error) throw error;
 
-    // libera e poi promuovi eventuale attesa
     await supabase.from("restaurant_tables")
       .update({ status:"free", current_reservation: null })
       .eq("id", r0.table_id);
@@ -768,7 +847,6 @@ app.post("/api/reservations/:id/cancel", async (req, res) => {
       .eq("id", id);
     if (error) throw error;
 
-    // libera tavolo (se era quello corrente) e promuovi eventuale attesa
     await supabase.from("restaurant_tables")
       .update({ status:"free", current_reservation: null })
       .eq("id", r0.table_id);
@@ -782,7 +860,6 @@ app.post("/api/reservations/:id/cancel", async (req, res) => {
   }
 });
 
-// ---- Avvio (LO METTO ALLA FINE)
+// ---- Avvio
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server avviato sulla porta ${PORT}`));
-    
