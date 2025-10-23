@@ -33,7 +33,6 @@
     .btn.ghost{background:#00000007;color:var(--ink);border:1px solid var(--ring);box-shadow:none}
     .eta{font-weight:700}
 
-    /* LISTA TAVOLI */
     .table-card{
       border:2px solid var(--ring); border-radius:14px; padding:12px 14px; background:#fff;
       transition:box-shadow .15s ease, transform .08s ease, border-color .15s ease;
@@ -48,7 +47,6 @@
     .actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
     @media (min-width:560px){ .actions{flex-direction:row;align-items:center} }
 
-    /* Modal (inline per semplicità) */
     .backdrop{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:50}
     .modal{width:min(520px,94vw);background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
     .modal header{display:flex;gap:8px;align-items:center;border-bottom:1px solid #eee;padding:12px 14px}
@@ -62,22 +60,22 @@
   <header>
     <img class="logo" src="/img/LOGO.JPG" alt="Logo" onerror="this.src='/img/fallback.jpg'">
     <div class="title">Mangia &amp; Fuggi</div>
-    <div style="margin-left:auto"><a class="btn ghost" href="/">← Home</a></div>
+    <div style="margin-left:auto"><a id="link-home" class="btn ghost" href="/">← Home</a></div>
   </header>
 
   <div class="wrap">
     <main class="card">
-      <h2>🪑 Prenota un tavolo</h2>
-      <p class="muted">Vedi disponibilità in tempo reale e il tempo stimato di liberazione (ETA) calcolato sulle medie storiche.</p>
+      <h2 id="title-main">🪑 Prenota un tavolo</h2>
+      <p id="subtitle" class="muted">Vedi disponibilità in tempo reale e il tempo stimato di liberazione (ETA) calcolato sulle medie storiche.</p>
 
       <div id="list" class="grid"></div>
       <p id="error" class="pill bad" style="display:none"></p>
     </main>
 
     <aside class="card">
-      <h3>Legenda</h3>
-      <p><span class="pill ok">libero</span> <span class="pill pend">riservato</span> <span class="pill bad">occupato</span></p>
-      <p class="muted" style="font-size:13px">
+      <h3 id="legend">Legenda</h3>
+      <p><span class="pill ok" id="lab-free">libero</span> <span class="pill pend" id="lab-reserved">riservato</span> <span class="pill bad" id="lab-occupied">occupato</span></p>
+      <p id="legend-text" class="muted" style="font-size:13px">
         • Se un tavolo è occupato o riservato puoi comunque prenotare: verrai confermato automaticamente appena si libera.<br/>
         • Se è libero la prenotazione parte subito.
       </p>
@@ -95,28 +93,28 @@
         <form id="bk-form" onsubmit="return submitBooking(event)">
           <input type="hidden" id="f-table-id" />
           <div class="field">
-            <label for="f-name">Nome</label>
+            <label for="f-name" id="lab-name">Nome</label>
             <input id="f-name" required placeholder="Mario Rossi" />
           </div>
           <div class="field">
-            <label for="f-phone">Telefono (opzionale)</label>
+            <label for="f-phone" id="lab-phone">Telefono (opzionale)</label>
             <input id="f-phone" inputmode="tel" placeholder="333 1234567" />
           </div>
           <div class="field">
-            <label for="f-size">Persone</label>
+            <label for="f-size" id="lab-size">Persone</label>
             <select id="f-size">
               <option>2</option><option>3</option><option>4</option>
               <option>5</option><option>6</option><option>7</option>
             </select>
           </div>
           <div class="field">
-            <label for="f-when">Quando</label>
+            <label for="f-when" id="lab-when">Quando</label>
             <input id="f-when" type="datetime-local" />
-            <small class="muted">Lascia vuoto per “appena possibile” (subito se libero, in coda se riservato).</small>
+            <small id="note-when" class="muted">Lascia vuoto per “appena possibile” (subito se libero, in coda se riservato).</small>
           </div>
           <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px">
-            <button type="button" class="btn ghost" onclick="closeModal()">Annulla</button>
-            <button type="submit" class="btn">Conferma</button>
+            <button type="button" class="btn ghost" onclick="closeModal()" id="btn-cancel">Annulla</button>
+            <button type="submit" class="btn" id="btn-confirm">Conferma</button>
           </div>
           <p id="bk-msg" class="pill ok" style="display:none"></p>
           <p id="bk-err" class="pill bad" style="display:none"></p>
@@ -129,6 +127,69 @@
     const elList = document.getElementById('list');
     const elErr  = document.getElementById('error');
     let refreshTimer = null, loading = false;
+
+    // Traduzioni IT/EN
+    const LANG = {
+      it: {
+        titleMain: "🪑 Prenota un tavolo",
+        subtitle: "Vedi disponibilità in tempo reale e il tempo stimato di liberazione (ETA) calcolato sulle medie storiche.",
+        legend: "Legenda",
+        legendText: "• Se un tavolo è occupato o riservato puoi comunque prenotare: verrai confermato automaticamente appena si libera.\n• Se è libero la prenotazione parte subito.",
+        free: "libero", reserved: "riservato", occupied: "occupato",
+        modalTitle: "Prenota",
+        name: "Nome", phone: "Telefono (opzionale)", size: "Persone", when: "Quando",
+        noteWhen: "Lascia vuoto per “appena possibile” (subito se libero, in coda se riservato).",
+        cancel: "Annulla", confirm: "Conferma",
+        bookNow: "Prenota subito", bookLater: "Prenota per quando si libera", bookAfter: t=>`Prenota tra ${t}`,
+        msgWait: "Prenotazione registrata: sarà confermata appena il tavolo si libera.",
+        msgOk: "Prenotazione confermata! Grazie.",
+        msgErr: "Errore prenotazione. Riprova.",
+        back: "← Home"
+      },
+      en: {
+        titleMain: "🪑 Book a table",
+        subtitle: "See real-time availability and estimated free time (ETA) based on historical averages.",
+        legend: "Legend",
+        legendText: "• If a table is occupied or reserved, you can still book: it will confirm automatically when it becomes free.\n• If it's free, your booking starts immediately.",
+        free: "free", reserved: "reserved", occupied: "occupied",
+        modalTitle: "Book",
+        name: "Name", phone: "Phone (optional)", size: "People", when: "When",
+        noteWhen: "Leave empty for 'as soon as possible' (immediately if free, queued if reserved).",
+        cancel: "Cancel", confirm: "Confirm",
+        bookNow: "Book now", bookLater: "Book when available", bookAfter: t=>`Book in ${t}`,
+        msgWait: "Booking registered: it will be confirmed as soon as the table becomes free.",
+        msgOk: "Booking confirmed! Thank you.",
+        msgErr: "Booking error. Please try again.",
+        back: "← Home"
+      }
+    };
+
+    function getLang(){
+      const fromUrl = new URLSearchParams(location.search).get("lang");
+      if(fromUrl && LANG[fromUrl]) { localStorage.setItem("lang", fromUrl); return fromUrl; }
+      const stored = localStorage.getItem("lang");
+      return stored && LANG[stored] ? stored : "it";
+    }
+    const lang = getLang();
+    const T = LANG[lang];
+    document.documentElement.lang = lang;
+
+    // Applica testo statico
+    document.getElementById("title-main").textContent = T.titleMain;
+    document.getElementById("subtitle").textContent = T.subtitle;
+    document.getElementById("legend").textContent = T.legend;
+    document.getElementById("legend-text").textContent = T.legendText;
+    document.getElementById("lab-free").textContent = T.free;
+    document.getElementById("lab-reserved").textContent = T.reserved;
+    document.getElementById("lab-occupied").textContent = T.occupied;
+    document.getElementById("lab-name").textContent = T.name;
+    document.getElementById("lab-phone").textContent = T.phone;
+    document.getElementById("lab-size").textContent = T.size;
+    document.getElementById("lab-when").textContent = T.when;
+    document.getElementById("note-when").textContent = T.noteWhen;
+    document.getElementById("btn-cancel").textContent = T.cancel;
+    document.getElementById("btn-confirm").textContent = T.confirm;
+    document.getElementById("link-home").textContent = T.back;
 
     function badgeClass(status){
       if(status==='free') return 'ok';
@@ -156,10 +217,9 @@
           const eta = (t.eta_minutes!=null) ? `${t.eta_minutes} min` : (s==='free'?'—':'n.d.');
           const avg = (t.avg_minutes!=null) ? `${t.avg_minutes} min` : 'n.d.';
           const btnText =
-            s==='free'     ? 'Prenota subito' :
-            s==='occupied' ? `Prenota tra ${eta}` :
-                             'Prenota per quando si libera';
-          const btnDisabled = false; // ✅ non disattivare mai il pulsante
+            s==='free'     ? T.bookNow :
+            s==='occupied' ? T.bookAfter(eta) :
+                             T.bookLater;
 
           const card = document.createElement('div');
           card.className = `table-card ${cardClass(s)}`;
@@ -173,9 +233,8 @@
                 <div class="muted sub">Media sosta: <span class="eta">${avg}</span> · ETA: <span class="eta">${eta}</span></div>
               </div>
               <div class="actions">
-                <span class="pill ${badgeClass(s)}">${s}</span>
-                <button class="btn" ${btnDisabled?'disabled':''}
-                  onclick='openModal(${JSON.stringify({id:t.id,name:t.name || ("Tavolo "+t.id)}).replace(/'/g,"&#39;")})'>
+                <span class="pill ${badgeClass(s)}">${T[s]}</span>
+                <button class="btn" onclick='openModal(${JSON.stringify({id:t.id,name:t.name || ("Tavolo "+t.id)})})'>
                   ${btnText}
                 </button>
               </div>
@@ -185,7 +244,7 @@
         }
       }catch(e){
         console.error(e);
-        elErr.textContent = "Impossibile caricare i tavoli.";
+        elErr.textContent = T.msgErr;
         elErr.style.display = "inline-block";
       }finally{
         loading = false;
@@ -198,7 +257,7 @@
     }
 
     function openModal(t){
-      document.getElementById('bk-title').textContent = "Prenota · " + t.name;
+      document.getElementById('bk-title').textContent = T.modalTitle + " · " + t.name;
       document.getElementById('f-table-id').value = t.id;
       document.getElementById('bk-backdrop').style.display = 'flex';
       document.getElementById('bk-msg').style.display = 'none';
@@ -227,18 +286,13 @@
         const js = await r.json();
         if(!r.ok || !js.ok) throw new Error(js.error||"Errore");
 
-        if (js.reservation?.status === "waiting") {
-          msg.textContent = "Prenotazione registrata: sarà confermata appena il tavolo si libera.";
-        } else {
-          msg.textContent = "Prenotazione confermata! Grazie.";
-        }
-
+        msg.textContent = js.reservation?.status === "waiting" ? T.msgWait : T.msgOk;
         msg.style.display = "inline-block";
         await load();
         setTimeout(closeModal, 900);
       }catch(e){
         console.error(e);
-        err.textContent = "Errore prenotazione. Riprova.";
+        err.textContent = T.msgErr;
         err.style.display = "inline-block";
       }
       return false;
