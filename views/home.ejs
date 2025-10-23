@@ -204,6 +204,9 @@
         "menu.title": "🍕 Menu",
         "menu.desc": "Dai classici intramontabili alle pizze gourmet: scopri antipasti, bevande e dessert.",
         "menu.cta": "Vai al menu",
+        "booking.title": "🍽️ Prenota un tavolo",
+        "booking.desc": "Controlla i tavoli disponibili e prenota in pochi secondi.",
+        "booking.cta": "Prenota ora",
         "story.title": "📖 La nostra storia",
         "story.desc": "Nati nel cuore del Salento: farine selezionate, lievitazioni lente e materie prime italiane.",
         "story.cta": "Leggi la storia",
@@ -217,6 +220,9 @@
         "menu.title": "🍕 Menu",
         "menu.desc": "From timeless classics to gourmet pizzas: explore starters, drinks and desserts.",
         "menu.cta": "See the menu",
+        "booking.title": "🍽️ Book a table",
+        "booking.desc": "Check table availability and book in a few seconds.",
+        "booking.cta": "Book now",
         "story.title": "📖 Our story",
         "story.desc": "Born in the heart of Salento: selected flours, slow leavening and premium Italian ingredients.",
         "story.cta": "Read our story",
@@ -250,8 +256,10 @@
       const qs = `?lang=${lang}`;
       const linkMenu = document.getElementById('link-menu');
       const linkStoria = document.getElementById('link-storia');
-      if (linkMenu)  linkMenu.href  = '/menu'  + qs;
-      if (linkStoria)linkStoria.href= '/storia'+ qs;
+      const linkPrenota = document.getElementById('link-prenota'); // ✅ aggiunto
+      if (linkMenu) linkMenu.href = '/menu' + qs;
+      if (linkStoria) linkStoria.href = '/storia' + qs;
+      if (linkPrenota) linkPrenota.href = '/prenota' + qs; // ✅ aggiunto
       const url = new URL(location.href);
       url.searchParams.set('lang', lang);
       history.replaceState({}, '', url);
