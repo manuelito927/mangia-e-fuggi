@@ -401,7 +401,15 @@ async function loadTables() {
     });
   }catch(e){ console.error(e); }
 }
-
+// ===== Aggiornamento manuale tavoli: Libera / Siede =====
+async function setTable(id, action){
+  try{
+    await fetch(`/api/tables/${id}/${action}`, { method:"POST" });
+    await loadTables(); // aggiorna dopo il click
+  }catch(e){
+    console.error("Errore aggiornamento tavolo", e);
+  }
+}
 async function updateTable(code, free){
   try{
     await fetch('/api/tables/update', {
