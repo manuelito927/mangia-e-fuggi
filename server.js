@@ -714,9 +714,12 @@ app.post("/api/reservations/:id/complete", async (req, res) => {
       .eq("id", id);
     if (error) throw error;
 
+    // libera e poi promuovi eventuale attesa
     await supabase.from("restaurant_tables")
       .update({ status:"free", current_reservation: null })
       .eq("id", r0.table_id);
+
+    await promoteNextWaiter(r0.table_id);
 
     res.json({ ok:true });
   } catch (e) {
@@ -728,7 +731,9 @@ app.post("/api/reservations/:id/complete", async (req, res) => {
 app.post("/api/reservations/:id/cancel", async (req, res) => {
   try {
     const id = req.params.id;
-    const { data: r0, error: e0 } = await supabase.from("reservations").select("id,table_id").eq("id", id).single();
+    const { data: r0, error: e0 } = await supabase.from("reservations")
+      .select("id,table_id")
+      .eq("id", id).single();
     if (e0 || !r0) throw e0||new Error("not_found");
 
     const { error } = await supabase.from("reservations")
@@ -736,9 +741,12 @@ app.post("/api/reservations/:id/cancel", async (req, res) => {
       .eq("id", id);
     if (error) throw error;
 
+    // libera tavolo (se era quello corrente) e promuovi eventuale attesa
     await supabase.from("restaurant_tables")
       .update({ status:"free", current_reservation: null })
       .eq("id", r0.table_id);
+
+    await promoteNextWaiter(r0.table_id);
 
     res.json({ ok:true });
   } catch (e) {
