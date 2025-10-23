@@ -57,7 +57,7 @@
     .field{display:flex;flex-direction:column;gap:4px;margin:8px 0}
     input,select{padding:10px;border:1px solid #e6e2df;border-radius:10px}
 
-    /* 🔸 Nuovo stile pulsante Home (più definito e coerente col brand) */
+    /* 🔸 Pulsante Home nitido e brand-consistent */
     .top-home{ margin-left:auto; }
     .home-btn{
       display:inline-block;
@@ -69,10 +69,17 @@
       border-radius:999px;
       box-shadow:0 4px 14px rgba(155,92,46,.35);
       transition:transform .1s ease, box-shadow .1s ease;
+      /* anti-aliasing migliorato */
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
     .home-btn:hover{
       transform:translateY(-1px);
       box-shadow:0 6px 18px rgba(155,92,46,.45);
+    }
+    .home-btn:focus-visible{
+      outline:2px solid #cda07d;
+      outline-offset:2px;
     }
   </style>
 </head>
@@ -80,7 +87,6 @@
   <header>
     <img class="logo" src="/img/LOGO.JPG" alt="Logo" onerror="this.src='/img/fallback.jpg'">
     <div class="title">Mangia &amp; Fuggi</div>
-    <!-- 🔸 Sostituito il vecchio link con il nuovo pulsante Home -->
     <div class="top-home"><a id="link-home" class="home-btn" href="/">← Home</a></div>
   </header>
 
