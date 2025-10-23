@@ -19,7 +19,11 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
 .nav .item.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 .card{background:var(--panel);border:1px solid var(--ring);border-radius:16px;padding:14px;margin-bottom:16px}
 .row{display:flex;gap:10px;justify-content:space-between;align-items:center}
-.muted{color:var(--muted)} .pill{background:#f3e7e2;color:var(--brand);border-radius:999px;padding:6px 10px;font-weight:700}
+.muted{color:var(--muted)}
+.pill{background:#f3e7e2;color:var(--brand);border-radius:999px;padding:6px 10px;font-weight:700}
+.pill.ok{background:#e8f6ee;color:var(--ok)}
+.pill.warn{background:#fff5dc;color:#a36200}
+.pill.bad{background:#fdeaea;color:#b42318}
 .btn{border:1px solid var(--ring);background:#fff;padding:8px 12px;border-radius:10px;cursor:pointer}
 .btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}
 .btn.ok{background:#e8f6ee;border-color:#cde8d5;color:var(--ok)}
@@ -69,7 +73,6 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
         <div class="row" style="flex-wrap:wrap">
           <div class="kg">
             <span class="muted">Vista:</span>
-            <!-- 🔄 NUOVI TAB -->
             <button class="btn tab active" data-status="all">Tutti gli ordini <span id="c-all" class="pill" style="padding:2px 8px"></span></button>
             <button class="btn tab" data-status="due">Da incassare <span id="c-due" class="pill" style="padding:2px 8px"></span></button>
             <button class="btn tab" data-status="paid">Pagamenti accettati <span id="c-paid" class="pill" style="padding:2px 8px"></span></button>
@@ -149,6 +152,8 @@ const $ = (s,root=document)=>root.querySelector(s);
 const $$= (s,root=document)=>Array.from(root.querySelectorAll(s));
 const euro = v => "€ " + Number(v||0).toFixed(2).replace(".", ",");
 
+let TABLES_MAP = {}; // id/name -> status per bollini “Da incassare”
+
 // ====== NAV ======
 $$('[data-section]').forEach(a=>{
   a.addEventListener('click',e=>{
@@ -188,7 +193,6 @@ $('#chk-autorefresh').addEventListener('change', saveSettings);
 // ====== ORDINI ======
 let STATUS='all', ORDERS=[], SUBS=false, refreshTimer=null;
 
-// contatori per le viste
 async function counters(){
   try{
     const [pnd, cmp, cnc] = await Promise.all([
@@ -196,45 +200,67 @@ async function counters(){
       fetch('/api/orders?status=completed').then(r=>r.json()),
       fetch('/api/orders?status=canceled').then(r=>r.json())
     ]);
-    const nPending   = (pnd.ok ? pnd.orders.length : 0);
-    const nCompleted = (cmp.ok ? cmp.orders.length : 0);
-    const nCanceled  = (cnc.ok ? cnc.orders.length : 0);
+    const pend = (pnd.ok ? (pnd.orders||[]) : []);
+    const comp = (cmp.ok ? (cmp.orders||[]) : []);
+    const canc = (cnc.ok ? (cnc.orders||[]) : []);
 
-    $('#c-all').textContent  = nPending + nCompleted;
-    $('#c-due').textContent  = nPending;      // Da incassare = pending
-    $('#c-paid').textContent = nCompleted;    // Pagamenti accettati = completed
-    $('#c-canc').textContent = nCanceled;     // Eliminati = canceled
+    const nAll = pend.filter(o=>!o.ack).length + comp.length; // pending NON ancora “mandati in cassa” + completed
+    const nDue = pend.filter(o=> o.ack).length;                // pending “mandati in cassa”
+    $('#c-all').textContent  = nAll;
+    $('#c-due').textContent  = nDue;
+    $('#c-paid').textContent = comp.length;
+    $('#c-canc').textContent = canc.length;
   }catch(e){console.error(e);}
 }
 
 async function fetchOrders(){
+  // carico anche i tavoli per i bollini
+  try{
+    const t=await fetch('/api/tables').then(r=>r.json());
+    if(t.ok){
+      TABLES_MAP = {};
+      (t.tables||[]).forEach(tb=>{
+        TABLES_MAP[(tb.name||('Tavolo '+tb.id))] = tb.status;
+        TABLES_MAP[tb.id] = tb.status;
+      });
+    }
+  }catch{}
+
   const q=$('#q').value.toLowerCase();
-
   let list = [];
-  if(STATUS==='all'){
-    // unisce pending + completed (esclude canceled)
-    const [pnd, cmp] = await Promise.all([
-      fetch('/api/orders?status=pending').then(r=>r.json()),
-      fetch('/api/orders?status=completed').then(r=>r.json())
-    ]);
-    if(pnd.ok) list = list.concat(pnd.orders||[]);
-    if(cmp.ok) list = list.concat(cmp.orders||[]);
-    // ordina per data desc come in /api/orders
-    list.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
-  }else if(STATUS==='due'){
-    const r=await fetch('/api/orders?status=pending'); const j=await r.json();
-    if(j.ok) list=j.orders||[];
-  }else if(STATUS==='paid'){
-    const r=await fetch('/api/orders?status=completed'); const j=await r.json();
-    if(j.ok) list=j.orders||[];
-  }else if(STATUS==='canceled'){
-    const r=await fetch('/api/orders?status=canceled'); const j=await r.json();
-    if(j.ok) list=j.orders||[];
-  }
 
+  const [pnd, cmp, cnc] = await Promise.all([
+    fetch('/api/orders?status=pending').then(r=>r.json()),
+    fetch('/api/orders?status=completed').then(r=>r.json()),
+    fetch('/api/orders?status=canceled').then(r=>r.json())
+  ]);
+  const pend = (pnd.ok ? (pnd.orders||[]) : []);
+  const comp = (cmp.ok ? (cmp.orders||[]) : []);
+  const canc = (cnc.ok ? (cnc.orders||[]) : []);
+
+  if(STATUS==='all'){
+    list = pend.filter(o=>!o.ack).concat(comp);
+  }else if(STATUS==='due'){
+    list = pend.filter(o=>o.ack);
+  }else if(STATUS==='paid'){
+    list = comp;
+  }else if(STATUS==='canceled'){
+    list = canc;
+  }
+  // ordina per data desc
+  list.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
   ORDERS=list;
   renderOrders(q);
   counters();
+}
+
+function badgeForDue(order){
+  if(order.status==='completed') return '<span class="pill ok">pagato</span>';
+  // pending: decido col tavolo
+  const key = order.table_code || ('Tavolo ?');
+  const st  = TABLES_MAP[key];
+  if(st==='occupied') return '<span class="pill warn">in attesa</span>';
+  return '<span class="pill bad">non pagato</span>'; // libero o sconosciuto
 }
 
 function renderOrders(q){
@@ -258,11 +284,31 @@ function renderOrders(q){
       ? `<span class="bell new" data-act="ack" data-id="${o.id}" title="Nuovo">🔔</span>`
       : `<span class="bell" data-act="ack" data-id="${o.id}" title="Segna come letto">🔕</span>`;
 
-    // Azioni: se l'ordine è pending → Completa/Elimina; se completed o canceled → Ripristina
-    const actions = (o.status==='pending')
-      ? `<button class="btn ok" data-act="complete" data-id="${o.id}">✅ Completa</button>
-         <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>`
-      : `<button class="btn" data-act="restore" data-id="${o.id}">↩️ Ripristina</button>`;
+    // --- Azioni in base alla VISTA richiesta ---
+    let actions = '';
+    if(STATUS==='all'){
+      if(o.status==='pending' && !o.ack){
+        actions = `
+          <button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>
+          <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>
+          <button class="btn ok" data-act="mark_due" data-id="${o.id}">✅ Fatto</button>`;
+      }else{
+        // completed in “Tutti” → solo stampa
+        actions = `<button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>`;
+      }
+    }else if(STATUS==='due'){
+      // pending con ack=true
+      const badge = badgeForDue(o);
+      actions = `
+        ${badge}
+        <button class="btn ok" data-act="complete" data-id="${o.id}">💶 Pagato in cassa</button>
+        <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>`;
+    }else if(STATUS==='paid'){
+      // completed → solo stampa
+      actions = `<button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>`;
+    }else if(STATUS==='canceled'){
+      actions = `<button class="btn" data-act="restore" data-id="${o.id}">↩️ Ripristina</button>`;
+    }
 
     const el=document.createElement('div');
     el.className='order';
@@ -278,10 +324,7 @@ function renderOrders(q){
       <div class="rows">${rows}</div>
       <div class="row" style="margin-top:8px">
         <div></div>
-        <div style="display:flex;gap:8px">
-          <button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>
-          ${actions}
-        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${actions}</div>
       </div>`;
     root.appendChild(el);
   }
@@ -292,10 +335,17 @@ $('#orders').addEventListener('click', async ev=>{
   if(!b) return;
   const id=b.dataset.id, act=b.dataset.act;
   if(act==='print'){ window.print(); await fetch(`/api/orders/${id}/printed`,{method:'POST'}); return; }
-  if(act==='complete') await fetch(`/api/orders/${id}/complete`,{method:'POST'});
+  if(act==='complete'){ await fetch(`/api/orders/${id}/complete`,{method:'POST'}); }
   if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await fetch(`/api/orders/${id}/cancel`,{method:'POST'}); }
-  if(act==='restore') await fetch(`/api/orders/${id}/restore`,{method:'POST'});
-  if(act==='ack') await fetch(`/api/orders/${id}/ack`,{method:'POST'});
+  if(act==='restore'){ await fetch(`/api/orders/${id}/restore`,{method:'POST'}); }
+  if(act==='ack'){ await fetch(`/api/orders/${id}/ack`,{method:'POST'}); }
+  if(act==='mark_due'){ // “Fatto” → manda in cassa: set ack=true
+    await fetch(`/api/orders/${id}/ack`,{method:'POST'});
+    // passa automaticamente alla vista “Da incassare”
+    STATUS='due';
+    $$('.tab').forEach(x=>x.classList.remove('active'));
+    $$('[data-status="due"]')[0]?.classList.add('active');
+  }
   await fetchOrders();
 });
 
@@ -400,6 +450,13 @@ async function loadTables(){
         </td>`;
       tbody.appendChild(tr);
     });
+
+    // aggiorna cache anche per i bollini
+    TABLES_MAP = {};
+    (j.tables||[]).forEach(tb=>{
+      TABLES_MAP[(tb.name||('Tavolo '+tb.id))] = tb.status;
+      TABLES_MAP[tb.id] = tb.status;
+    });
   }catch(e){console.error("Errore tavoli:",e);}
 }
 
@@ -407,6 +464,8 @@ async function setTable(id,action){
   try{
     await fetch(`/api/tables/${id}/${action}`,{method:'POST'});
     await loadTables();
+    // rinfresca la vista “da incassare” per bollini aggiornati
+    await fetchOrders();
   }catch(e){console.error(e);}
 }
 
@@ -415,6 +474,7 @@ function attachRealtimeTables(){
   supabase.channel("rt:restaurant_tables")
     .on("postgres_changes",{event:"*",schema:"public",table:"restaurant_tables"},async()=>{
       await loadTables();
+      await fetchOrders();
     }).subscribe();
 }
 
