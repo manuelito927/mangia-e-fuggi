@@ -762,3 +762,45 @@ app.post("/api/reservations/:id/cancel", async (req, res) => {
 // ---- Avvio
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server avviato sulla porta ${PORT}`));
+// ===== API TAVOLI (Gestione Libera/Siede + Stato Clienti) =====
+
+// Lista completa tavoli per dashboard
+app.get("/api/tables", async (req, res) => {
+  const { data, error } = await supabase
+    .from("restaurant_tables")
+    .select("id, name, seats, status, updated_at")
+    .order("id", { ascending: true });
+  if (error) return res.status(500).json({ ok: false, error });
+  res.json({ ok: true, tables: data });
+});
+
+// Segna tavolo come LIBERO
+app.post("/api/tables/:id/free", async (req, res) => {
+  const { id } = req.params;
+  const { error } = await supabase
+    .from("restaurant_tables")
+    .update({ status: "free", updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return res.status(500).json({ ok: false, error });
+  res.json({ ok: true });
+});
+
+// Segna tavolo come OCCUPATO
+app.post("/api/tables/:id/seat", async (req, res) => {
+  const { id } = req.params;
+  const { error } = await supabase
+    .from("restaurant_tables")
+    .update({ status: "occupied", updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return res.status(500).json({ ok: false, error });
+  res.json({ ok: true });
+});
+
+// Stato tavoli per i CLIENTI (pagina prenota/menu)
+app.get("/api/tables/status", async (req, res) => {
+  const { data, error } = await supabase
+    .from("restaurant_tables")
+    .select("id, name, seats, status");
+  if (error) return res.status(500).json({ ok: false, error });
+  res.json({ ok: true, tables: data });
+});
