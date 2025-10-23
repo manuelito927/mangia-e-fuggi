@@ -582,13 +582,26 @@ app.get("/api/tables", async (_req, res) => {
 app.post("/api/tables/:id/free", async (req, res) => {
   try{
     const { id } = req.params;
-    const { error } = await supabase
+
+    // libera il tavolo…
+    const { error: e0 } = await supabase
       .from("restaurant_tables")
-      .update({ status:"free", updated_at:new Date().toISOString() })
+      .update({ status:"free", current_reservation: null, updated_at:new Date().toISOString() })
       .eq("id", id);
-    if (error) throw error;
-    res.json({ ok:true });
-  }catch(e){ console.error("table free error:", e); res.status(500).json({ ok:false }); }
+    if (e0) throw e0;
+
+    // …e prova a promuovere il primo in attesa
+    const promo = await promoteNextWaiter(id);
+    if (promo.promoted){
+      // se promosso, il tavolo torna subito "reserved"
+      return res.json({ ok:true, autoConfirmed: true, reservation_id: promo.reservation_id });
+    }
+
+    res.json({ ok:true, autoConfirmed: false });
+  }catch(e){ 
+    console.error("table free error:", e); 
+    res.status(500).json({ ok:false }); 
+  }
 });
 
 app.post("/api/tables/:id/seat", async (req, res) => {
