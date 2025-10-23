@@ -49,7 +49,6 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
       <div class="nav">
         <a href="#" class="item active" data-section="orders">📋 Ordini</a>
         <a href="#" class="item" data-section="stats">📊 Statistiche</a>
-        <!-- 👇 AGGIUNTA: voce Tavoli -->
         <a href="#" class="item" data-section="tables">🪑 Tavoli</a>
       </div>
       <div class="card">
@@ -115,7 +114,7 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
         </div>
       </section>
 
-      <!-- 👇 AGGIUNTA: sezione TAVOLI -->
+      <!-- TAVOLI -->
       <section id="sec-tables" class="card" style="display:none">
         <div class="row" style="flex-wrap:wrap">
           <h3 style="margin:0">Tavoli</h3>
@@ -137,7 +136,6 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
           </table>
         </div>
       </section>
-      <!-- 🔼 FINE AGGIUNTA -->
     </main>
   </div>
 </div>
@@ -155,8 +153,10 @@ $$('[data-section]').forEach(a=>{
     $$('[data-section]').forEach(x=>x.classList.remove('active'));
     a.classList.add('active');
     const sec=a.dataset.section;
-    $('#sec-orders').style.display = sec==='orders'?'block':'none';
-    $('#sec-stats').style.display  = sec==='stats' ?'block':'none';
+    $('#sec-orders').style.display = sec==='orders' ? 'block' : 'none';
+    $('#sec-stats').style.display  = sec==='stats'  ? 'block' : 'none';
+    $('#sec-tables').style.display = sec==='tables' ? 'block' : 'none';
+    if(sec==='tables') loadTables();
   });
 });
 
@@ -181,11 +181,10 @@ async function saveSettings(){
 $('#chk-sound').addEventListener('change', saveSettings);
 $('#chk-autorefresh').addEventListener('change', saveSettings);
 
-// ===== ORDERS =====
+// ===== ORDINI =====
 let STATUS='pending', ORDERS=[], SUBS=false, TMR=null;
 
 async function counters(){
-  // carica conteggi rapidi per i tab
   try{
     const a = await fetch('/api/orders?status=pending').then(r=>r.json());
     const b = await fetch('/api/orders?status=completed').then(r=>r.json());
@@ -285,7 +284,7 @@ function setAutoRefresh(){
 }
 $('#chk-autorefresh').addEventListener('change', setAutoRefresh);
 
-// Realtime: ricarica sia ordini che stats
+// Realtime ordini
 function attachRealtime(){
   if(typeof supabase.channel !== 'function' || SUBS) return; SUBS=true;
   supabase.channel("rt:orders")
@@ -335,46 +334,7 @@ async function loadRange(){
     </div>`;
 }
 
-// ===== BOOT =====
-(async ()=>{
-  const today=new Date(); $('#day').value=today.toISOString().slice(0,10);
-  const from=new Date(); from.setDate(today.getDate()-6);
-  $('#from').value=from.toISOString().slice(0,10);
-  $('#to').value=today.toISOString().slice(0,10);
-
-  await loadSettings();
-  await fetchOrders();
-  await loadDay();
-  await loadRange();
-  attachRealtime();
-  setAutoRefresh();
-})();
-$('#btn-day').addEventListener('click', loadDay);
-$('#btn-range').addEventListener('click', loadRange);
-
-/* ===================== AGGIUNTE: gestione Tavoli ===================== */
-
-/* 1) Click sulla voce "Tavoli" (non tocco il tuo handler esistente) */
-const linkTables = document.querySelector('.nav .item[data-section="tables"]');
-if (linkTables) {
-  linkTables.addEventListener('click', (e)=>{
-    e.preventDefault();
-    // attiva il tab cliccato
-    $$('[data-section]').forEach(x=>x.classList.remove('active'));
-    linkTables.classList.add('active');
-    // mostra solo la sezione tavoli
-    const orders = document.getElementById('sec-orders');
-    const stats  = document.getElementById('sec-stats');
-    const tables = document.getElementById('sec-tables');
-    if (orders) orders.style.display='none';
-    if (stats)  stats.style.display='none';
-    if (tables) tables.style.display='block';
-    // carica dati
-    loadTables();
-  });
-}
-
-/* 2) Funzioni per caricare e aggiornare tavoli (usa le API del server) */
+// ===== TAVOLI =====
 async function loadTables() {
   try{
     const r = await fetch('/api/tables');
@@ -386,58 +346,63 @@ async function loadTables() {
     tbody.innerHTML = '';
 
     j.tables.forEach(t => {
+      const isFree = (t.status === 'free');
+      const name = t.name || `Tavolo ${t.id}`;
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${t.table_code}</td>
+        <td>${name}</td>
         <td>${t.seats ?? '-'}</td>
-        <td>${t.is_free ? '🟢 Libero' : '🔴 Occupato'}</td>
+        <td>${isFree ? '🟢 Libero' : '🔴 Occupato'}</td>
         <td>${t.updated_at ? new Date(t.updated_at).toLocaleString() : '-'}</td>
         <td>
-          <button class="btn ok"     onclick="updateTable('${t.table_code}', true)">Libera</button>
-          <button class="btn danger" onclick="updateTable('${t.table_code}', false)">Siede</button>
+          <button class="btn ok"     onclick="setTable(${t.id}, 'free')">Libera</button>
+          <button class="btn danger" onclick="setTable(${t.id}, 'seat')">Siede</button>
         </td>
       `;
       tbody.appendChild(tr);
     });
   }catch(e){ console.error(e); }
 }
-// ===== Aggiornamento manuale tavoli: Libera / Siede =====
+
 async function setTable(id, action){
   try{
     await fetch(`/api/tables/${id}/${action}`, { method:"POST" });
-    await loadTables(); // aggiorna dopo il click
+    await loadTables();
   }catch(e){
     console.error("Errore aggiornamento tavolo", e);
   }
 }
-async function updateTable(code, free){
-  try{
-    await fetch('/api/tables/update', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ table_code: code, is_free: free })
-    });
-    loadTables();
-  }catch(e){ console.error(e); }
-}
 
-/* 3) Realtime per tavoli (se disponibile in Supabase) */
+// (facoltativo) realtime tabelle se attivi Realtime in Supabase
 function attachRealtimeTables(){
   try{
     if(typeof supabase.channel !== 'function') return;
-    supabase.channel("rt:tables")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tables" }, async () => {
+    supabase.channel("rt:restaurant_tables")
+      .on("postgres_changes", { event: "*", schema: "public", table: "restaurant_tables" }, async () => {
         await loadTables();
       })
       .subscribe();
   }catch(e){ console.error(e); }
 }
 
-/* 4) Boot aggiuntivo per tavoli (non tocco il tuo boot esistente) */
+// ===== BOOT =====
+let TMR=null;
 (async ()=>{
-  await loadTables();          // carica all’avvio (non fa nulla se la sezione è nascosta)
-  attachRealtimeTables();      // attiva realtime tavoli
+  const today=new Date(); $('#day').value=today.toISOString().slice(0,10);
+  const from=new Date(); from.setDate(today.getDate()-6);
+  $('#from').value=from.toISOString().slice(0,10);
+  $('#to').value=today.toISOString().slice(0,10);
+
+  await loadSettings();
+  await fetchOrders();
+  await loadDay();
+  await loadRange();
+  attachRealtime();
+  attachRealtimeTables();
+  setAutoRefresh();
 })();
+$('#btn-day').addEventListener('click', loadDay);
+$('#btn-range').addEventListener('click', loadRange);
 </script>
 </body>
 </html>
