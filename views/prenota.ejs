@@ -33,6 +33,7 @@
     .btn.ghost{background:#00000007;color:var(--ink);border:1px solid var(--ring);box-shadow:none}
     .eta{font-weight:700}
 
+    /* LISTA TAVOLI */
     .table-card{
       border:2px solid var(--ring); border-radius:14px; padding:12px 14px; background:#fff;
       transition:box-shadow .15s ease, transform .08s ease, border-color .15s ease;
@@ -47,6 +48,7 @@
     .actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
     @media (min-width:560px){ .actions{flex-direction:row;align-items:center} }
 
+    /* Modal */
     .backdrop{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:50}
     .modal{width:min(520px,94vw);background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
     .modal header{display:flex;gap:8px;align-items:center;border-bottom:1px solid #eee;padding:12px 14px}
@@ -54,13 +56,32 @@
     .close{margin-left:auto;font-size:22px;cursor:pointer}
     .field{display:flex;flex-direction:column;gap:4px;margin:8px 0}
     input,select{padding:10px;border:1px solid #e6e2df;border-radius:10px}
+
+    /* 🔸 Nuovo stile pulsante Home (più definito e coerente col brand) */
+    .top-home{ margin-left:auto; }
+    .home-btn{
+      display:inline-block;
+      background:var(--brand);
+      color:#fff;
+      text-decoration:none;
+      font-weight:700;
+      padding:8px 14px;
+      border-radius:999px;
+      box-shadow:0 4px 14px rgba(155,92,46,.35);
+      transition:transform .1s ease, box-shadow .1s ease;
+    }
+    .home-btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 6px 18px rgba(155,92,46,.45);
+    }
   </style>
 </head>
 <body>
   <header>
     <img class="logo" src="/img/LOGO.JPG" alt="Logo" onerror="this.src='/img/fallback.jpg'">
     <div class="title">Mangia &amp; Fuggi</div>
-    <div style="margin-left:auto"><a id="link-home" class="btn ghost" href="/">← Home</a></div>
+    <!-- 🔸 Sostituito il vecchio link con il nuovo pulsante Home -->
+    <div class="top-home"><a id="link-home" class="home-btn" href="/">← Home</a></div>
   </header>
 
   <div class="wrap">
