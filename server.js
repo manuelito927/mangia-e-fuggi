@@ -207,17 +207,24 @@ app.get("/api/orders", async (req, res) => {
 
     let q = supabase
       .from("orders")
-      .select("*") // prendo tutti i campi (così includo payment_status se esiste)
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (status === "all") {
-      q = q.neq("status","canceled");           // tutti tranne eliminati
+      // Tutti tranne eliminati
+      q = q.neq("status","canceled");
+    } else if (status === "due") {
+      // Da incassare (nuovo): pagamenti in attesa
+      q = q.eq("payment_status","pending");
     } else if (status === "paid") {
-      q = q.eq("payment_status","paid");        // solo pagamenti accettati
+      // Pagamenti accettati
+      q = q.eq("payment_status","paid");
     } else if (status) {
-      q = q.eq("status", status);               // pending/completed/canceled compat.
+      // Compatibilità: pending / completed / canceled
+      q = q.eq("status", status);
     } else {
-      q = q.eq("status","pending");             // fallback legacy
+      // Fallback legacy
+      q = q.eq("status","pending");
     }
 
     const { data: orders, error: oErr } = await q;
@@ -244,7 +251,6 @@ app.get("/api/orders", async (req, res) => {
     res.json({ ok:false, error:"orders_list_failed" });
   }
 });
-
 // --- rotte legacy (restano identiche)
 app.post("/api/orders/:id/complete", async (req, res) => {
   const { error } = await supabase.from("orders")
