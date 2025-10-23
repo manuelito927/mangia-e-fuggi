@@ -1,4 +1,4 @@
-// ===== MANGIA & FUGGI — SERVER (ordini + statistiche + impostazioni + SumUp) =====
+// ===== MANGIA & FUGGI — SERVER (ordini + statistiche + impostazioni + SumUp + tavoli) =====
 import express from "express";
 import path from "path";
 import bodyParser from "body-parser";
@@ -143,7 +143,7 @@ app.get("/storia", (_req, res) => res.render("storia"));
 app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL, SUPABASE_KEY }));
 app.get("/test-video", (_req, res) => res.render("test-video"));
 app.get("/prenota", (_req, res) => res.render("prenota"));
-// Esiti pagamento (pagine semplici)
+// Esiti pagamento
 app.get("/pagamento/successo", (_req,res)=> res.send("Pagamento completato. Grazie!"));
 app.get("/pagamento/annullato", (_req,res)=> res.send("Pagamento annullato. Puoi riprovare dal carrello."));
 
@@ -266,8 +266,6 @@ app.post("/api/settings", async (req, res) => {
 // =====================================================================================
 // API STATISTICHE — compatibili con dashboard (day + range top)
 // =====================================================================================
-
-// Riassunto semplice (resta per compatibilità)
 app.get("/api/stats", async (req, res) => {
   try {
     const day = (req.query.day || "").toString().slice(0,10);
@@ -300,8 +298,6 @@ app.get("/api/stats", async (req, res) => {
   }
 });
 
-// ---- /api/stats/day?date=YYYY-MM-DD
-// { ok, count, total, perBucket: { rows:[{bucket, count, revenue}] } }
 app.get("/api/stats/day", async (req, res) => {
   try {
     const day = (req.query.date || req.query.day || "").toString().slice(0,10);
@@ -317,11 +313,9 @@ app.get("/api/stats/day", async (req, res) => {
     const all = orders || [];
     const completed = all.filter(o => o.status === "completed");
 
-    // KPI: numero ordini totali, incasso dei soli 'completed'
     const countAll = all.length;
     const totalRev = completed.reduce((s,o)=>s+Number(o.total||0),0);
 
-    // 24 bucket orari locali
     const buckets = Array.from({length:24}, (_,h) => {
       const b = new Date(startLocal); b.setHours(h,0,0,0);
       return { key: h, bucket: b.toISOString(), count: 0, revenue: 0 };
@@ -329,29 +323,21 @@ app.get("/api/stats/day", async (req, res) => {
 
     for (const o of all) {
       const dt = new Date(o.created_at);
-      const h = dt.getHours(); // locale
+      const h = dt.getHours();
       const idx = (h>=0 && h<=23) ? h : 0;
       buckets[idx].count += 1;
       if (o.status === "completed") buckets[idx].revenue += Number(o.total||0);
     }
 
-    // arrotonda revenue
     for (const b of buckets) b.revenue = Number(b.revenue.toFixed(2));
 
-    res.json({
-      ok: true,
-      count: countAll,
-      total: Number(totalRev.toFixed(2)),
-      perBucket: { rows: buckets }
-    });
+    res.json({ ok: true, count: countAll, total: Number(totalRev.toFixed(2)), perBucket: { rows: buckets } });
   } catch (e) {
     console.error("stats day error:", e);
     res.status(500).json({ ok:false, error:"stats_day_failed" });
   }
 });
 
-// ---- /api/stats/range?from=YYYY-MM-DD&to=YYYY-MM-DD
-// aggiunge top prodotti: { top: { list: [{name, qty, revenue, pctQty, pctRev}] } }
 app.get("/api/stats/range", async (req, res) => {
   try {
     const fromStr = (req.query.from || "").toString().slice(0,10);
@@ -370,7 +356,6 @@ app.get("/api/stats/range", async (req, res) => {
 
     const all = orders || [];
 
-    // Serie per giorno (tot ordini e revenue completed)
     const byDay = {};
     for (const o of all) {
       const d = (o.created_at || "").slice(0,10);
@@ -389,13 +374,12 @@ app.get("/api/stats/range", async (req, res) => {
         revenue: Number(d.revenue.toFixed(2))
       }));
 
-    // ---- TOP PRODOTTI su ordini COMPLETED nel range
     const completedIds = all.filter(o=>o.status==="completed").map(o=>o.id);
     let top = { list: [] };
 
     if (completedIds.length) {
       const chunk = (arr, n)=>arr.length<=n?[arr]:Array.from({length:Math.ceil(arr.length/n)}, (_,i)=>arr.slice(i*n,(i+1)*n));
-      const idChunks = chunk(completedIds, 1000); // sicurezza
+      const idChunks = chunk(completedIds, 1000);
 
       const items = [];
       for (const ids of idChunks) {
@@ -435,7 +419,7 @@ app.get("/api/stats/range", async (req, res) => {
 });
 
 // =====================================================================================
-// PAGAMENTI SUMUP (Hosted Checkout + redirect_url)
+// PAGAMENTI SUMUP
 // =====================================================================================
 const SUMUP_CLIENT_ID     = getEnvAny("SUMUP_CLIENT_ID","Sumup_client_id");
 const SUMUP_CLIENT_SECRET = getEnvAny("SUMUP_CLIENT_SECRET","Sumup_client_secret");
@@ -469,21 +453,12 @@ async function getSumUpBearer(){
   return js.access_token;
 }
 
-// Stato per il frontend (con motivo se off)
 app.get("/api/pay-config", async (_req,res) => {
   const hasCreds = (SUMUP_ACCESS_TOKEN || SUMUP_SECRET_KEY || (SUMUP_CLIENT_ID && SUMUP_CLIENT_SECRET));
   const enabled = !!(SUMUP_PAYTO && hasCreds);
-  res.json({
-    ok:true,
-    enabled,
-    reason: enabled ? null : {
-      payto: !!SUMUP_PAYTO,
-      hasCreds: !!hasCreds
-    }
-  });
+  res.json({ ok:true, enabled, reason: enabled ? null : { payto: !!SUMUP_PAYTO, hasCreds: !!hasCreds } });
 });
 
-// TEST CHECKOUT (diagnostica) — Hosted Checkout + redirect_url
 app.get("/test-sumup", async (req, res) => {
   try {
     const amount = toAmount2(req.query.amount || 3.50);
@@ -494,38 +469,22 @@ app.get("/test-sumup", async (req, res) => {
 
     const base = getBaseUrl(req);
     const payload = {
-      amount,
-      currency,
-      checkout_reference: ref,
-      pay_to_email: SUMUP_PAYTO,
-      description,
-      hosted_checkout: { enabled: true },
-      redirect_url: `${base}/pagamento/successo`
+      amount, currency, checkout_reference: ref, pay_to_email: SUMUP_PAYTO,
+      description, hosted_checkout: { enabled: true }, redirect_url: `${base}/pagamento/successo`
     };
 
     const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${bearer}`,
-        "Content-Type": "application/json"
-      },
+      headers: { "Authorization": `Bearer ${bearer}`, "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
     const raw = await resp.text();
     let data; try { data = JSON.parse(raw); } catch { data = { raw }; }
 
-    if (!resp.ok) {
-      console.error("SumUp TEST error:", resp.status, raw);
-      return res.status(500).json({ ok:false, status: resp.status, data });
-    }
-
+    if (!resp.ok) return res.status(500).json({ ok:false, status: resp.status, data });
     let url = data.hosted_checkout_url || data.checkout_url || data.redirect_url || data.url;
-    if (!url && (data.id || data.checkout_id)) {
-      const id = data.id || data.checkout_id;
-      url = `https://pay.sumup.com/checkout/${id}`;
-    }
-
+    if (!url && (data.id || data.checkout_id)) url = `https://pay.sumup.com/checkout/${data.id || data.checkout_id}`;
     return res.json({ ok:true, url, data });
   } catch (e) {
     console.error("SumUp TEST exception:", e);
@@ -533,7 +492,6 @@ app.get("/test-sumup", async (req, res) => {
   }
 });
 
-// API checkout reale (intero importo o “quota”) — Hosted Checkout + redirect_url
 app.post("/api/pay-sumup", async (req, res) => {
   try {
     const { amount, currency = "EUR", description = "Pagamento Mangia & Fuggi" } = req.body || {};
@@ -547,38 +505,22 @@ app.post("/api/pay-sumup", async (req, res) => {
     const base = getBaseUrl(req);
 
     const payload = {
-      amount: amt,
-      currency,
-      checkout_reference: ref,
-      pay_to_email: SUMUP_PAYTO,
-      description,
-      hosted_checkout: { enabled: true },
-      redirect_url: `${base}/pagamento/successo`
+      amount: amt, currency, checkout_reference: ref, pay_to_email: SUMUP_PAYTO,
+      description, hosted_checkout: { enabled: true }, redirect_url: `${base}/pagamento/successo`
     };
 
     const resp = await fetch("https://api.sumup.com/v0.1/checkouts", {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${bearer}`,
-        "Content-Type": "application/json"
-      },
+      headers: { "Authorization": `Bearer ${bearer}`, "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
     const text = await resp.text();
     let data; try { data = JSON.parse(text); } catch { data = { raw: text }; }
-
-    if (!resp.ok) {
-      console.error("SumUp checkout error:", resp.status, text);
-      return res.status(500).json({ ok:false, error:"sumup_api_error", status: resp.status, data });
-    }
+    if (!resp.ok) return res.status(500).json({ ok:false, error:"sumup_api_error", status: resp.status, data });
 
     let url = data.hosted_checkout_url || data.checkout_url || data.redirect_url || data.url;
-    if (!url && (data.id || data.checkout_id)) {
-      const id = data.id || data.checkout_id;
-      url = `https://pay.sumup.com/checkout/${id}`;
-    }
-
+    if (!url && (data.id || data.checkout_id)) url = `https://pay.sumup.com/checkout/${data.id || data.checkout_id}`;
     if (!url) return res.status(500).json({ ok:false, error:"sumup_url_missing", data });
     res.json({ ok:true, url });
   } catch (e) {
@@ -591,64 +533,59 @@ app.post("/api/pay-sumup", async (req, res) => {
   }
 });
 
-
 // =====================================================================================
-// API TAVOLI & PRENOTAZIONI (NUOVE)  ✅
-//   - usa le tabelle/viste create in Supabase con lo SQL che ti ho dato
-//   - NON modifica nulla delle parti esistenti
+// TAVOLI & PRENOTAZIONI (UNICA VERSIONE, senza duplicati) ✅
 // =====================================================================================
 
-// Lista tavoli “grezza”
+// ---- TAVOLI (dashboard)
 app.get("/api/tables", async (_req, res) => {
-  try {
+  try{
     const { data, error } = await supabase
       .from("restaurant_tables")
-      .select("id,name,seats,status,current_reservation")
-      .order("id", { ascending: true });
+      .select("id,name,seats,status,updated_at")
+      .order("id",{ascending:true});
     if (error) throw error;
-    res.json({ ok:true, tables:data||[] });
-  } catch (e) {
-    console.error("tables list error:", e);
-    res.status(500).json({ ok:false, error:"tables_list_failed" });
-  }
+    res.json({ ok:true, tables:data || [] });
+  }catch(e){ console.error("tables list error:", e); res.status(500).json({ ok:false, error:"tables_list_failed" }); }
 });
 
-// Stato tavoli con media ed ETA (vista v_table_status)
-app.get("/api/tables/status", async (_req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from("v_table_status")
-      .select("*")
-      .order("id", { ascending: true });
-    if (error) throw error;
-    res.json({ ok:true, tables:data||[] });
-  } catch (e) {
-    console.error("tables status error:", e);
-    res.status(500).json({ ok:false, error:"tables_status_failed" });
-  }
-});
-
-// Aggiorna stato tabolo (free|reserved|occupied)
-app.post("/api/tables/:id/status", async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    const status = (req.body?.status||"").toString();
-    if (!["free","reserved","occupied"].includes(status))
-      return res.status(400).json({ ok:false, error:"bad_status" });
-
+app.post("/api/tables/:id/free", async (req, res) => {
+  try{
+    const { id } = req.params;
     const { error } = await supabase
       .from("restaurant_tables")
-      .update({ status })
+      .update({ status:"free", updated_at:new Date().toISOString() })
       .eq("id", id);
     if (error) throw error;
     res.json({ ok:true });
-  } catch (e) {
-    console.error("table status error:", e);
-    res.status(500).json({ ok:false, error:"table_status_failed" });
-  }
+  }catch(e){ console.error("table free error:", e); res.status(500).json({ ok:false }); }
 });
 
-// Crea prenotazione
+app.post("/api/tables/:id/seat", async (req, res) => {
+  try{
+    const { id } = req.params;
+    const { error } = await supabase
+      .from("restaurant_tables")
+      .update({ status:"occupied", updated_at:new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
+    res.json({ ok:true });
+  }catch(e){ console.error("table seat error:", e); res.status(500).json({ ok:false }); }
+});
+
+// ---- STATO per i clienti (prenota)
+app.get("/api/tables/status", async (_req, res) => {
+  try{
+    const { data, error } = await supabase
+      .from("restaurant_tables")
+      .select("id,name,seats,status")
+      .order("id",{ascending:true});
+    if (error) throw error;
+    res.json({ ok:true, tables:data || [] });
+  }catch(e){ console.error("tables status error:", e); res.status(500).json({ ok:false, error:"tables_status_failed" }); }
+});
+
+// ---- PRENOTAZIONI (opzionali: usale se ti servono)
 app.post("/api/reservations", async (req, res) => {
   try {
     const { table_id, customer_name, customer_phone, size=2, requested_for=null } = req.body || {};
@@ -661,7 +598,6 @@ app.post("/api/reservations", async (req, res) => {
       .single();
     if (error) throw error;
 
-    // segna tavolo come "reserved"
     await supabase.from("restaurant_tables")
       .update({ status:"reserved", current_reservation: ins.id })
       .eq("id", table_id);
@@ -673,7 +609,6 @@ app.post("/api/reservations", async (req, res) => {
   }
 });
 
-// Lista prenotazioni (facoltativo: ?status=confirmed)
 app.get("/api/reservations", async (req, res) => {
   try {
     const q = supabase.from("reservations")
@@ -689,7 +624,6 @@ app.get("/api/reservations", async (req, res) => {
   }
 });
 
-// Segna “seduti”
 app.post("/api/reservations/:id/seat", async (req, res) => {
   try {
     const id = req.params.id;
@@ -712,7 +646,6 @@ app.post("/api/reservations/:id/seat", async (req, res) => {
   }
 });
 
-// Completa (tavolo libero + media aggiornata via vista)
 app.post("/api/reservations/:id/complete", async (req, res) => {
   try {
     const id = req.params.id;
@@ -735,7 +668,6 @@ app.post("/api/reservations/:id/complete", async (req, res) => {
   }
 });
 
-// Annulla
 app.post("/api/reservations/:id/cancel", async (req, res) => {
   try {
     const id = req.params.id;
@@ -758,49 +690,6 @@ app.post("/api/reservations/:id/cancel", async (req, res) => {
   }
 });
 
-
-// ---- Avvio
+// ---- Avvio (LO METTO ALLA FINE)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server avviato sulla porta ${PORT}`));
-// ===== API TAVOLI (Gestione Libera/Siede + Stato Clienti) =====
-
-// Lista completa tavoli per dashboard
-app.get("/api/tables", async (req, res) => {
-  const { data, error } = await supabase
-    .from("restaurant_tables")
-    .select("id, name, seats, status, updated_at")
-    .order("id", { ascending: true });
-  if (error) return res.status(500).json({ ok: false, error });
-  res.json({ ok: true, tables: data });
-});
-
-// Segna tavolo come LIBERO
-app.post("/api/tables/:id/free", async (req, res) => {
-  const { id } = req.params;
-  const { error } = await supabase
-    .from("restaurant_tables")
-    .update({ status: "free", updated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) return res.status(500).json({ ok: false, error });
-  res.json({ ok: true });
-});
-
-// Segna tavolo come OCCUPATO
-app.post("/api/tables/:id/seat", async (req, res) => {
-  const { id } = req.params;
-  const { error } = await supabase
-    .from("restaurant_tables")
-    .update({ status: "occupied", updated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) return res.status(500).json({ ok: false, error });
-  res.json({ ok: true });
-});
-
-// Stato tavoli per i CLIENTI (pagina prenota/menu)
-app.get("/api/tables/status", async (req, res) => {
-  const { data, error } = await supabase
-    .from("restaurant_tables")
-    .select("id, name, seats, status");
-  if (error) return res.status(500).json({ ok: false, error });
-  res.json({ ok: true, tables: data });
-});
