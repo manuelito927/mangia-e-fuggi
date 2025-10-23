@@ -10,10 +10,18 @@
     header{max-width:1100px;margin:0 auto;display:flex;gap:12px;align-items:center;padding:12px 16px}
     .logo{width:40px;height:40px;border-radius:8px;object-fit:cover;border:2px solid #00000010}
     .title{font-weight:800;font-size:26px;color:#7b4b3a}
+
     .wrap{max-width:1100px;margin:10px auto 30px;padding:0 16px;display:grid;grid-template-columns:1fr 360px;gap:16px}
     @media (max-width:980px){.wrap{grid-template-columns:1fr}}
     .card{background:#fff;border:1px solid #eee;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:16px 18px}
     h2{margin:6px 0 12px;color:#7b4b3a}
+
+    /* Tabs */
+    .tabs{display:flex;gap:8px;margin:2px 0 12px}
+    .tab{border:1px solid #eee;background:#faf8f6;border-radius:999px;padding:8px 12px;font-weight:700;cursor:pointer}
+    .tab.active{background:#7b4b3a;color:#fff;border-color:#7b4b3a}
+
+    /* LISTA */
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     @media (max-width:720px){.grid{grid-template-columns:1fr}}
     .table{border:1px solid #eee;border-radius:12px;padding:12px}
@@ -28,6 +36,38 @@
     .btn.ghost{background:#00000007;color:#2b2622;border:1px solid #eee}
     .eta{font-weight:700}
     .help{font-size:13px;color:#6b6b6b;margin-top:6px}
+
+    /* MAPPA */
+    .mapWrap{position:relative;border:1px dashed #e9ddd5;border-radius:14px;background:
+      linear-gradient(180deg,#f6ede6,#f9f4ef 60%)}
+    .mapHdr{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px dashed #e9ddd5}
+    .legend{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #eee;border-radius:999px;padding:6px 10px;background:#fff;font-weight:700}
+    .dot{width:10px;height:10px;border-radius:50%}
+    .dot.free{background:#1e7a3a}
+    .dot.res{background:#b36800}
+    .dot.occ{background:#b42318}
+    .map{position:relative;height:520px;padding:14px}
+    /* elementi ambienti fittizi */
+    .block{position:absolute;border-radius:10px;background:#d1b49d55;border:1px solid #d8c1b1}
+    .block.bar{top:14px;left:14px;width:210px;height:60px}
+    .block.forno{bottom:14px;left:14px;width:140px;height:80px}
+    .block.cassa{top:14px;right:14px;width:140px;height:60px}
+
+    /* marker tavolo */
+    .tbl{position:absolute;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;user-select:none}
+    .tbl .shape{width:64px;height:64px;border-radius:12px;background:#fff;border:2px solid #e7d4c7;box-shadow:0 8px 22px #00000010;display:flex;align-items:center;justify-content:center;font-weight:800}
+    .tbl.small .shape{width:56px;height:56px}
+    .tbl.round .shape{border-radius:999px}
+    .tbl .tag{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid #eee;background:#fff}
+    .tbl.free .shape{border-color:#bfe6cb}
+    .tbl.reserved .shape{border-color:#f2d3b7}
+    .tbl.occupied .shape{border-color:#f3c1c1}
+    .tbl.free .tag{color:#1e7a3a;background:#eaf9ef;border-color:#bfe6cb}
+    .tbl.reserved .tag{color:#9a3412;background:#fff7ed;border-color:#f2d3b7}
+    .tbl.occupied .tag{color:#991b1b;background:#fef2f2;border-color:#f3caca}
+    .tbl:hover .shape{transform:translateY(-1px)}
+    .hint{position:absolute;bottom:8px;left:12px;color:#775; font-size:12.5px}
 
     /* Modal */
     .backdrop{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;z-index:50}
@@ -52,8 +92,39 @@
     <main class="card">
       <h2>🪑 Prenota un tavolo</h2>
       <p class="muted">Vedi disponibilità in tempo reale e il tempo stimato di liberazione (ETA) calcolato sulle medie storiche.</p>
-      <div id="list" class="grid"></div>
-      <p id="error" class="err" style="display:none"></p>
+
+      <!-- Toggle vista -->
+      <div class="tabs">
+        <button id="tab-list" class="tab active">📋 Lista</button>
+        <button id="tab-map"  class="tab">🗺️ Mappa</button>
+      </div>
+
+      <!-- LISTA -->
+      <div id="view-list">
+        <div id="list" class="grid"></div>
+        <p id="error" class="err" style="display:none"></p>
+      </div>
+
+      <!-- MAPPA -->
+      <div id="view-map" style="display:none">
+        <div class="mapWrap">
+          <div class="mapHdr">
+            <div class="legend">
+              <span class="chip"><span class="dot free"></span> libero</span>
+              <span class="chip"><span class="dot res"></span> riservato</span>
+              <span class="chip"><span class="dot occ"></span> occupato</span>
+            </div>
+            <div class="muted" id="map-info"></div>
+          </div>
+          <div class="map" id="map">
+            <!-- elementi d’arredo fittizi -->
+            <div class="block bar"   title="Bancone"></div>
+            <div class="block forno" title="Forno"></div>
+            <div class="block cassa" title="Cassa"></div>
+            <div class="hint">Suggerimento: tocca un tavolo per prenotare</div>
+          </div>
+        </div>
+      </div>
     </main>
 
     <aside class="card">
@@ -89,7 +160,7 @@
             <label for="f-size">Persone</label>
             <select id="f-size">
               <option>2</option><option>3</option><option>4</option>
-              <option>5</option><option>6</option>
+              <option>5</option><option>6</option><option>7</option>
             </select>
           </div>
           <div class="field">
@@ -109,19 +180,66 @@
   </div>
 
   <script>
+    // ------- Toggle Lista/Mappa
+    const tabList = document.getElementById('tab-list');
+    const tabMap  = document.getElementById('tab-map');
+    const vList   = document.getElementById('view-list');
+    const vMap    = document.getElementById('view-map');
+    tabList.addEventListener('click', ()=>{
+      tabList.classList.add('active'); tabMap.classList.remove('active');
+      vList.style.display='block'; vMap.style.display='none';
+    });
+    tabMap.addEventListener('click', ()=>{
+      tabMap.classList.add('active'); tabList.classList.remove('active');
+      vMap.style.display='block'; vList.style.display='none';
+    });
+
+    // ------- Vista Lista (quella che avevi)
     const elList = document.getElementById('list');
     const elErr  = document.getElementById('error');
 
+    // ------- Vista Mappa: layout fittizio (posizioni in %)
+    // puoi rinominare i tavoli su Supabase: qui mappiamo per "Tavolo X"
+    const MAP_LAYOUT = {
+      "Tavolo 1": { x:20,  y:22, seats:2,  round:true  },
+      "Tavolo 2": { x:36,  y:22, seats:2,  round:true  },
+      "Tavolo 3": { x:52,  y:22, seats:4,  round:false },
+      "Tavolo 4": { x:70,  y:22, seats:4,  round:false },
+      "Tavolo 5": { x:86,  y:22, seats:6,  round:false },
+
+      "Tavolo 6": { x:20,  y:48, seats:2,  round:true  },
+      "Tavolo 7": { x:36,  y:48, seats:5,  round:false },
+      "Tavolo 8": { x:56,  y:48, seats:7,  round:false },
+      "Tavolo 9": { x:76,  y:48, seats:4,  round:false },
+
+      "Tavolo 10":{ x:24,  y:74, seats:2,  round:true  },
+      "Tavolo 11":{ x:40,  y:74, seats:2,  round:true  },
+      "Tavolo 12":{ x:60,  y:74, seats:4,  round:false },
+      "Tavolo 13":{ x:80,  y:74, seats:4,  round:false },
+    };
+
+    function badgeClass(status){
+      return status==="free"?"b-free":(status==="reserved"?"b-reserved":"b-occupied");
+    }
+    function statusText(s){
+      if(s==="free") return "free";
+      if(s==="reserved") return "reserved";
+      return "occupied";
+    }
+
     async function load(){
+      // Lista
       elList.innerHTML = "";
       elErr.style.display = "none";
+      let tables=[];
       try{
         const r = await fetch("/api/tables/status");
         const js = await r.json();
         if(!js.ok) throw new Error("Errore caricamento tavoli");
-        for(const t of js.tables){
+        tables = js.tables || [];
+
+        for(const t of tables){
           const s = t.status;
-          const badge = s==="free"?"b-free":(s==="reserved"?"b-reserved":"b-occupied");
           const eta = (t.eta_minutes!=null) ? `${t.eta_minutes} min` : (s==="free"?"—":"n.d.");
           const btnDisabled = (s==="reserved");
           const div = document.createElement('div');
@@ -133,8 +251,9 @@
                 <div class="muted">Media sosta: <span class="eta">${t.avg_minutes ?? "n.d."}</span> min · ETA: <span class="eta">${eta}</span></div>
               </div>
               <div style="text-align:right">
-                <div class="badge ${badge}">${s}</div><br>
-                <button class="btn" ${btnDisabled?"disabled":""} onclick='openModal(${JSON.stringify({id:t.id,name:t.name}).replace(/'/g,"&#39;")})'>
+                <div class="badge ${badgeClass(s)}">${s}</div><br>
+                <button class="btn" ${btnDisabled?"disabled":""}
+                        onclick='openModal(${JSON.stringify({id:t.id,name:t.name}).replace(/'/g,"&#39;")})'>
                   Prenota
                 </button>
               </div>
@@ -146,9 +265,39 @@
         elErr.style.display = "block";
         console.error(e);
       }
+
+      // Mappa
+      renderMap(tables);
     }
 
-    // Modal
+    function renderMap(tables){
+      const map = document.getElementById('map');
+      const info = document.getElementById('map-info');
+      map.querySelectorAll('.tbl').forEach(n=>n.remove());
+      tables.forEach(t=>{
+        const conf = MAP_LAYOUT[t.name];
+        if(!conf) return; // se non mappato, non lo disegniamo
+        const el = document.createElement('div');
+        el.className = `tbl ${t.status} ${conf.round?'round':'rect'} ${conf.seats<=3?'small':''}`;
+        el.style.left = `calc(${conf.x}% - 32px)`;
+        el.style.top  = `calc(${conf.y}% - 32px)`;
+        el.innerHTML = `
+          <div class="shape" title="${t.name} • ${t.seats} posti">${conf.seats}</div>
+          <div class="tag">${t.name}</div>
+        `;
+        el.addEventListener('mouseenter', ()=>{
+          const eta = (t.eta_minutes!=null) ? `${t.eta_minutes} min` : (t.status==='free'?'—':'n.d.');
+          info.textContent = `${t.name}: ${statusText(t.status)} • ETA ${eta}`;
+        });
+        el.addEventListener('mouseleave', ()=>{ info.textContent=""; });
+        el.addEventListener('click', ()=>{
+          openModal({id:t.id, name:t.name});
+        });
+        map.appendChild(el);
+      });
+    }
+
+    // ------- Modal
     function openModal(t){
       document.getElementById('bk-title').textContent = "Prenota · " + t.name;
       document.getElementById('f-table-id').value = t.id;
@@ -180,7 +329,7 @@
         if(!r.ok || !js.ok) throw new Error(js.error||"Errore");
         msg.textContent = "Prenotazione confermata! Grazie.";
         msg.style.display = "block";
-        await load(); // aggiorna la lista
+        await load(); // aggiorna lista e mappa
         setTimeout(closeModal, 900);
       }catch(e){
         err.textContent = "Errore prenotazione. Riprova.";
