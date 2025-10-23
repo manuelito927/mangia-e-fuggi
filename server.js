@@ -634,18 +634,32 @@ app.post("/api/reservations", async (req, res) => {
     const { table_id, customer_name, customer_phone, size=2, requested_for=null } = req.body || {};
     if (!table_id || !customer_name) return res.status(400).json({ ok:false, error:"missing_params" });
 
+    // leggi lo stato attuale del tavolo
+    const { data: t, error: te } = await supabase
+      .from("restaurant_tables")
+      .select("id,status")
+      .eq("id", table_id)
+      .single();
+    if (te || !t) throw te || new Error("table_not_found");
+
+    // se il tavolo è libero -> conferma subito e marca "reserved"
+    // altrimenti metti in WAITING senza toccare lo stato del tavolo
+    const initialStatus = (t.status === "free") ? "confirmed" : "waiting";
+
     const { data: ins, error } = await supabase
       .from("reservations")
-      .insert([{ table_id, customer_name, customer_phone, size, requested_for, status:"confirmed" }])
+      .insert([{ table_id, customer_name, customer_phone, size, requested_for, status: initialStatus }])
       .select()
       .single();
     if (error) throw error;
 
-    await supabase.from("restaurant_tables")
-      .update({ status:"reserved", current_reservation: ins.id })
-      .eq("id", table_id);
+    if (initialStatus === "confirmed"){
+      await supabase.from("restaurant_tables")
+        .update({ status:"reserved", current_reservation: ins.id })
+        .eq("id", table_id);
+    }
 
-    res.json({ ok:true, reservation:ins });
+    res.json({ ok:true, reservation:ins, queued: initialStatus === "waiting" });
   } catch (e) {
     console.error("reservation create error:", e);
     res.status(500).json({ ok:false, error:"reservation_create_failed" });
