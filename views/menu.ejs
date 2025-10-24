@@ -384,69 +384,83 @@
 
   <script>
     // ======= Stato carrello / pagamenti =======
-    const cart = new Map();
-    let PAY_ENABLED = false;
+    <script>
+  // ======= Stato carrello / pagamenti (CON NOTE) =======
+  const cart = new Map();         // mappa: name -> { price, qty, note? }
+  let PAY_ENABLED = false;
 
-    (async () => {
-      try{
-        const r = await fetch("/api/pay-config");
-        const j = await r.json();
-        PAY_ENABLED = !!(j && j.enabled);
-      }catch{}
-      renderPayNote();
-      updateButtons();
-    })();
+  (async () => {
+    try{
+      const r = await fetch("/api/pay-config");
+      const j = await r.json();
+      PAY_ENABLED = !!(j && j.enabled);
+    }catch{}
+    renderPayNote();
+    updateButtons();
+  })();
 
-    function renderPayNote(){
-      const el = document.getElementById("pay-note");
-      if(!el) return;
-      el.innerHTML = PAY_ENABLED
-        ? t("pay_enabled_note")
-        : `<span class="warn">${t("pay_disabled_note")}</span>`;
-    }
+  function renderPayNote(){
+    const el = document.getElementById("pay-note");
+    if(!el) return;
+    el.innerHTML = PAY_ENABLED
+      ? t("pay_enabled_note")
+      : `<span class="warn">${t("pay_disabled_note")}</span>`;
+  }
 
-    // Utils
-function cssId(s){
-  return String(s).toLowerCase().replace(/[^a-z0-9]+/gi,'_');
-}
-function euro(n){
-  return "€ " + Number(n).toFixed(2).replace(".", ",");
-}
-function cartTotal(){
-  return Array.from(cart.values()).reduce((s, i) => s + i.qty * i.price, 0);
-}
+  // Utils
+  function cssId(s){
+    return String(s).toLowerCase().replace(/[^a-z0-9]+/gi,'_');
+  }
+  function euro(n){
+    return "€ " + Number(n).toFixed(2).replace(".", ",");
+  }
+  function cartTotal(){
+    return Array.from(cart.values()).reduce((s, i) => s + i.qty * i.price, 0);
+  }
+
+  // Sanitize nota utente (no HTML, max 120 char)
+  function cleanNote(v){
+    return String(v || "")
+      .replace(/[<>]/g, "")        // niente tag
+      .replace(/\s+/g, " ")        // spazi multipli -> 1 spazio
+      .trim()
+      .slice(0, 120);
+  }
+
+  // Salva/aggiorna la nota per un prodotto
+  function setNote(name, value){
+    const key = String(name);
+    const it = cart.get(key) || { price: 0, qty: 0, note: "" };
+    it.note = cleanNote(value);
+    cart.set(key, it);
+    renderCart();
+  }
 
   // === PATCH VISUAL Q.TÀ (mostra sempre il numerino accanto ai bottoni) ===
   function updateInlineQtyDisplay(btnEl, qty){
     if(!btnEl) return;
-
-    // prova a trovare lo span tra i bottoni +/- (prima del + o dopo il -)
-    let span = null;
-
-    // se ho cliccato il "+", di solito lo span è il fratello precedente
-    span = btnEl.previousElementSibling;
+    let span = btnEl.previousElementSibling;
     if(!(span instanceof HTMLElement) || span.tagName!=="SPAN"){
-      // se ho cliccato il "-", di solito lo span è il fratello successivo
       span = btnEl.nextElementSibling;
     }
-    // se ancora nulla, cerca qualcosa che sembri un contatore nella stessa riga
     if(!(span instanceof HTMLElement) || span.tagName!=="SPAN"){
       span = btnEl.parentElement?.querySelector('.qty, .q, [data-qty]');
     }
     if(span) span.textContent = qty;
   }
 
-  // Q.tà  (SOLO QUESTE DUE FUNZIONI SONO CAMBIATE)
+  // Q.tà (aggiornate per gestire anche il prezzo su item già esistenti con nota)
   function inc(name, price){
-    const it = cart.get(name) || { price, qty: 0 };
+    const key = String(name);
+    const it = cart.get(key) || { price, qty: 0, note: "" };
     it.qty++;
-    cart.set(name, it);
+    // se per qualche motivo l'item esisteva con price=0 (es. nota scritta prima), imposta il prezzo ora
+    if(!it.price && price) it.price = Number(price) || 0;
+    cart.set(key, it);
 
-    // 1) aggiorna se esiste l'id previsto
     const qEl = document.getElementById('q-'+cssId(name));
     if(qEl) qEl.textContent = it.qty;
 
-    // 2) in ogni caso prova ad aggiornare il numerino vicino al bottone cliccato
     const btn = window.event?.target?.closest('button');
     updateInlineQtyDisplay(btn, it.qty);
 
@@ -454,211 +468,232 @@ function cartTotal(){
   }
 
   function dec(name){
-    const it = cart.get(name) || { qty: 0, price: 0 };
+    const key = String(name);
+    const it = cart.get(key) || { qty: 0, price: 0, note: "" };
     it.qty = Math.max(0, it.qty - 1);
-    if(it.qty === 0) cart.delete(name); else cart.set(name, it);
+    if(it.qty === 0) cart.delete(key); else cart.set(key, it);
 
-    // 1) aggiorna se esiste l'id previsto
     const qEl = document.getElementById('q-'+cssId(name));
     if(qEl) qEl.textContent = it.qty || 0;
 
-    // 2) in ogni caso prova ad aggiornare il numerino vicino al bottone cliccato
     const btn = window.event?.target?.closest('button');
     updateInlineQtyDisplay(btn, it.qty || 0);
 
     renderCart();
   }
 
-  // ...tutto invariato sotto
-    function renderCart(){
-      const ul=document.getElementById('cart'); if(!ul) return;
-      ul.innerHTML="";
-      let tot=0;
-      for(const [n,it] of cart.entries()){
-        tot+=it.qty*it.price;
-        const li=document.createElement('li');
-        li.innerHTML=`<span>${it.qty} × ${n}</span><span>${euro(it.qty*it.price)}</span>`;
-        ul.appendChild(li);
-      }
-      const totEl = document.getElementById('total');
-      if(totEl) totEl.textContent=euro(tot);
-      updateButtons();
+  // Render carrello (mostra la nota sotto al nome se presente)
+  function renderCart(){
+    const ul = document.getElementById('cart'); if(!ul) return;
+    ul.innerHTML = "";
+    let tot = 0;
+    for(const [n,it] of cart.entries()){
+      if(!it.qty) continue;
+      tot += it.qty * it.price;
+      const li = document.createElement('li');
+
+      const noteHtml = it.note ? `<div class="muted" style="font-size:12px;margin-top:2px">• Nota: <em>${it.note}</em></div>` : "";
+      li.innerHTML = `
+        <div>
+          <strong>${it.qty} × ${n}</strong>
+          ${noteHtml}
+        </div>
+        <div>${euro(it.qty*it.price)}</div>
+      `;
+      li.style.display = "flex";
+      li.style.alignItems = "flex-start";
+      li.style.justifyContent = "space-between";
+      li.style.gap = "8px";
+      ul.appendChild(li);
+    }
+    const totEl = document.getElementById('total');
+    if(totEl) totEl.textContent = euro(tot);
+    updateButtons();
+  }
+
+  function updateButtons(){
+    const hasItems = cart.size > 0 && cartTotal() > 0;
+    const btnCash = document.getElementById('btn-pay-cashier');
+    const btnOnline = document.getElementById('btn-pay-online');
+    const btnSplit = document.getElementById('btn-split');
+    if(btnCash) btnCash.disabled = !hasItems;
+    if(btnOnline) btnOnline.disabled = !(hasItems && PAY_ENABLED);
+    if(btnSplit) btnSplit.disabled = !(hasItems && PAY_ENABLED);
+  }
+
+  // —— Core: salva ordine e ritorna order_id
+  async function createOrder(){
+    // Appendiamo la nota al nome, così il server non deve cambiare schema
+    const items = Array.from(cart.entries())
+      .filter(([_,it]) => it.qty > 0)
+      .map(([n,it])=>({
+        name: it.note ? `${n} — Note: ${it.note}` : n,
+        price: it.price,
+        qty: it.qty
+      }));
+
+    if(items.length===0){ alert(t("alert_add_item")); return null; }
+
+    const total = items.reduce((s,i)=>s+i.price*i.qty,0);
+    const r = await fetch("/api/checkout",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ tableCode:null, items, total })
+    });
+    const js = await r.json();
+    if(!js.ok){ alert(t("err_send_order")); return null; }
+    return { order_id: js.order_id, total };
+  }
+
+  // 💳 Ordina & paga online (intero)
+  async function orderAndPayOnline(){
+    if(!PAY_ENABLED){ alert(t("pay_not_available")); return; }
+    const saved = await createOrder();
+    if(!saved) return;
+
+    const ok = await payAmount(saved.total, `Mangia & Fuggi - Ordine #${saved.order_id}`);
+    if(ok){ cart.clear(); renderCart(); }
+  }
+
+  // 💵 Ordina & paga in cassa
+  async function orderPayAtCounter(){
+    const saved = await createOrder();
+    if(!saved) return;
+    alert(t("order_sent_counter"));
+    cart.clear(); renderCart();
+  }
+
+  // ======= DIVIDI & PAGA =======
+  let splitMode = 'equal'; // 'equal' | 'custom'
+  function openSplitModal(){
+    document.getElementById('split-total').textContent = euro(cartTotal());
+    document.getElementById('split-backdrop').style.display = 'flex';
+    renderEqual();
+    resetCustom();
+    applyI18n();
+  }
+  function closeSplitModal(){ document.getElementById('split-backdrop').style.display='none'; }
+
+  function setSplitMode(mode){
+    splitMode = mode;
+    document.getElementById('tab-equal').classList.toggle('active', mode==='equal');
+    document.getElementById('tab-custom').classList.toggle('active', mode==='custom');
+    document.getElementById('pane-equal').style.display = (mode==='equal')?'block':'none';
+    document.getElementById('pane-custom').style.display = (mode==='custom')?'block':'none';
+    (mode==='equal') ? renderEqual() : renderCustom();
+  }
+
+  // Alla romana
+  function renderEqual(){
+    const n = Math.max(2, Number(document.getElementById('equal-n').value || 2));
+    const tot = cartTotal();
+    const quota = Math.round((tot/n)*100)/100;
+    const list = document.getElementById('equal-quotas'); list.innerHTML = "";
+    for(let i=1;i<=n;i++){
+      const div = document.createElement('div');
+      div.className = "quota-item";
+      div.innerHTML = `
+        <div><strong>${t("person_n")(i)}</strong> — <span class="muted">${t("cart_total")}</span>:
+             <span class="pill">${euro(quota)}</span></div>
+        <button class="btn" type="button" onclick="payQuota(${quota.toFixed(2)})">${t("pay_share_n")(i)}</button>
+      `;
+      list.appendChild(div);
+    }
+  }
+
+  // Personalizzato
+  function resetCustom(){
+    document.getElementById('custom-rows').innerHTML = "";
+    document.getElementById('custom-quotas').innerHTML = "";
+    document.getElementById('custom-error').style.display = "none";
+    for(let i=1;i<=2;i++) addCustomRow();
+    document.querySelectorAll('#custom-rows input[type="text"]').forEach(i=>i.placeholder = t("placeholder_name"));
+    document.querySelectorAll('#custom-rows input[type="number"]').forEach(i=>i.placeholder = t("placeholder_amount"));
+  }
+  function addCustomRow(){
+    const wrap = document.getElementById('custom-rows');
+    const idx = wrap.children.length+1;
+    const row = document.createElement('div');
+    row.className="row";
+    row.innerHTML = `
+      <input type="text" placeholder="${t("placeholder_name")}" value="${t("person_n")(idx)}">
+      <input type="number" step="0.01" min="0" placeholder="${t("placeholder_amount")}" oninput="renderCustom()">
+    `;
+    wrap.appendChild(row);
+    renderCustom();
+  }
+  function renderCustom(){
+    const rows = [...document.querySelectorAll('#custom-rows .row')];
+    const quotas = [];
+    for(const r of rows){
+      const name = r.querySelector('input[type="text"]').value.trim() || t('person_generic');
+      const val = Number(r.querySelector('input[type="number"]').value || 0);
+      if(val>0) quotas.push({name, amount: Math.round(val*100)/100});
+    }
+    const sum = quotas.reduce((s,q)=>s+q.amount,0);
+    const tot = Math.round(cartTotal()*100)/100;
+
+    const err = document.getElementById('custom-error');
+    if(sum !== tot){
+      err.style.display = "block";
+      err.textContent = t("sum_must_equal")(euro(sum), euro(tot));
+    } else {
+      err.style.display = "none";
     }
 
-    function updateButtons(){
-      const hasItems = cart.size > 0 && cartTotal() > 0;
-      const btnCash = document.getElementById('btn-pay-cashier');
-      const btnOnline = document.getElementById('btn-pay-online');
-      const btnSplit = document.getElementById('btn-split');
-      if(btnCash) btnCash.disabled = !hasItems;
-      if(btnOnline) btnOnline.disabled = !(hasItems && PAY_ENABLED);
-      if(btnSplit) btnSplit.disabled = !(hasItems && PAY_ENABLED);
-    }
+    const list = document.getElementById('custom-quotas'); list.innerHTML="";
+    quotas.forEach((q, i)=>{
+      const div = document.createElement('div');
+      div.className = "quota-item";
+      div.innerHTML = `
+        <div><strong>${q.name}</strong> — <span class="muted">${t("cart_total")}</span>:
+             <span class="pill">${euro(q.amount)}</span></div>
+        <button class="btn" type="button" ${sum!==tot?'disabled':''}
+                onclick="payQuota(${q.amount.toFixed(2)})">${t("pay_share_n")(i+1)}</button>
+      `;
+      list.appendChild(div);
+    });
+  }
 
-    // —— Core: salva ordine e ritorna order_id
-    async function createOrder(){
-      const items=Array.from(cart.entries()).map(([n,it])=>({name:n,price:it.price,qty:it.qty}));
-      if(items.length===0){ alert(t("alert_add_item")); return null; }
-      const total=items.reduce((s,i)=>s+i.price*i.qty,0);
-      const r=await fetch("/api/checkout",{
+  // — Esegue un pagamento SumUp per un importo specifico
+  async function payQuota(amount){
+    if(!PAY_ENABLED){ alert(t("pay_not_available")); return; }
+    const saved = await createOrder(); // un ordine backend; quota pagata separatamente
+    if(!saved) return;
+    await payAmount(Number(amount), `Mangia & Fuggi - Quota ordine #${saved.order_id}`);
+  }
+
+  // — Chiamata generica a /api/pay-sumup (con diagnostica e redirect diretto)
+  async function payAmount(amount, description){
+    try{
+      const r = await fetch("/api/pay-sumup", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ tableCode:null, items, total })
+        body: JSON.stringify({
+          amount: Number(amount.toFixed(2)),
+          currency:"EUR",
+          description
+        })
       });
-      const js = await r.json();
-      if(!js.ok){ alert(t("err_send_order")); return null; }
-      return { order_id: js.order_id, total };
-    }
 
-    // 💳 Ordina & paga online (intero)
-    async function orderAndPayOnline(){
-      if(!PAY_ENABLED){ alert(t("pay_not_available")); return; }
-      const saved = await createOrder();
-      if(!saved) return;
+      const text = await r.text();
+      let js; try { js = JSON.parse(text); } catch { js = { ok:false, raw:text }; }
 
-      const ok = await payAmount(saved.total, `Mangia & Fuggi - Ordine #${saved.order_id}`);
-      if(ok){ cart.clear(); renderCart(); }
-    }
-
-    // 💵 Ordina & paga in cassa
-    async function orderPayAtCounter(){
-      const saved = await createOrder();
-      if(!saved) return;
-      alert(t("order_sent_counter"));
-      cart.clear(); renderCart();
-    }
-
-    // ======= DIVIDI & PAGA =======
-    let splitMode = 'equal'; // 'equal' | 'custom'
-    function openSplitModal(){
-      document.getElementById('split-total').textContent = euro(cartTotal());
-      document.getElementById('split-backdrop').style.display = 'flex';
-      renderEqual();
-      resetCustom();
-      applyI18n(); // aggiorna testi visibili
-    }
-    function closeSplitModal(){ document.getElementById('split-backdrop').style.display='none'; }
-
-    function setSplitMode(mode){
-      splitMode = mode;
-      document.getElementById('tab-equal').classList.toggle('active', mode==='equal');
-      document.getElementById('tab-custom').classList.toggle('active', mode==='custom');
-      document.getElementById('pane-equal').style.display = (mode==='equal')?'block':'none';
-      document.getElementById('pane-custom').style.display = (mode==='custom')?'block':'none';
-      (mode==='equal') ? renderEqual() : renderCustom();
-    }
-
-    // Alla romana
-    function renderEqual(){
-      const n = Math.max(2, Number(document.getElementById('equal-n').value || 2));
-      const tot = cartTotal();
-      const quota = Math.round((tot/n)*100)/100;
-      const list = document.getElementById('equal-quotas'); list.innerHTML = "";
-      for(let i=1;i<=n;i++){
-        const div = document.createElement('div');
-        div.className = "quota-item";
-        div.innerHTML = `
-          <div><strong>${t("person_n")(i)}</strong> — <span class="muted">${t("cart_total")}</span>:
-               <span class="pill">${euro(quota)}</span></div>
-          <button class="btn" type="button" onclick="payQuota(${quota.toFixed(2)})">${t("pay_share_n")(i)}</button>
-        `;
-        list.appendChild(div);
-      }
-    }
-
-    // Personalizzato
-    function resetCustom(){
-      document.getElementById('custom-rows').innerHTML = "";
-      document.getElementById('custom-quotas').innerHTML = "";
-      document.getElementById('custom-error').style.display = "none";
-      for(let i=1;i<=2;i++) addCustomRow();
-      document.querySelectorAll('#custom-rows input[type="text"]').forEach(i=>i.placeholder = t("placeholder_name"));
-      document.querySelectorAll('#custom-rows input[type="number"]').forEach(i=>i.placeholder = t("placeholder_amount"));
-    }
-    function addCustomRow(){
-      const wrap = document.getElementById('custom-rows');
-      const idx = wrap.children.length+1;
-      const row = document.createElement('div');
-      row.className="row";
-      row.innerHTML = `
-        <input type="text" placeholder="${t("placeholder_name")}" value="${t("person_n")(idx)}">
-        <input type="number" step="0.01" min="0" placeholder="${t("placeholder_amount")}" oninput="renderCustom()">
-      `;
-      wrap.appendChild(row);
-      renderCustom();
-    }
-    function renderCustom(){
-      const rows = [...document.querySelectorAll('#custom-rows .row')];
-      const quotas = [];
-      for(const r of rows){
-        const name = r.querySelector('input[type="text"]').value.trim() || t('person_generic');
-        const val = Number(r.querySelector('input[type="number"]').value || 0);
-        if(val>0) quotas.push({name, amount: Math.round(val*100)/100});
-      }
-      const sum = quotas.reduce((s,q)=>s+q.amount,0);
-      const tot = Math.round(cartTotal()*100)/100;
-
-      const err = document.getElementById('custom-error');
-      if(sum !== tot){
-        err.style.display = "block";
-        err.textContent = t("sum_must_equal")(euro(sum), euro(tot));
-      } else {
-        err.style.display = "none";
+      if (r.ok && js.ok && js.url){
+        location.href = js.url; // redirect diretto
+        return true;
       }
 
-      const list = document.getElementById('custom-quotas'); list.innerHTML="";
-      quotas.forEach((q, i)=>{
-        const div = document.createElement('div');
-        div.className = "quota-item";
-        div.innerHTML = `
-          <div><strong>${q.name}</strong> — <span class="muted">${t("cart_total")}</span>:
-               <span class="pill">${euro(q.amount)}</span></div>
-          <button class="btn" type="button" ${sum!==tot?'disabled':''}
-                  onclick="payQuota(${q.amount.toFixed(2)})">${t("pay_share_n")(i+1)}</button>
-        `;
-        list.appendChild(div);
-      });
+      const msg = js?.error || js?.data?.message || js?.raw || `HTTP ${r.status}`;
+      alert(t("pay_not_available") + "\nDettagli: " + msg);
+      console.error("pay-sumup error:", {status:r.status, js});
+      return false;
+    }catch(err){
+      alert(t("pay_not_available") + "\nNetwork error.");
+      console.error(err);
+      return false;
     }
-
-    // — Esegue un pagamento SumUp per un importo specifico
-    async function payQuota(amount){
-      if(!PAY_ENABLED){ alert(t("pay_not_available")); return; }
-      const saved = await createOrder(); // un ordine backend; quota pagata separatamente
-      if(!saved) return;
-      await payAmount(Number(amount), `Mangia & Fuggi - Quota ordine #${saved.order_id}`);
-    }
-
-    // — Chiamata generica a /api/pay-sumup (con diagnostica e redirect diretto)
-    async function payAmount(amount, description){
-      try{
-        const r = await fetch("/api/pay-sumup", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({
-            amount: Number(amount.toFixed(2)),
-            currency:"EUR",
-            description
-          })
-        });
-
-        const text = await r.text();
-        let js; try { js = JSON.parse(text); } catch { js = { ok:false, raw:text }; }
-
-        if (r.ok && js.ok && js.url){
-          location.href = js.url; // redirect diretto
-          return true;
-        }
-
-        const msg = js?.error || js?.data?.message || js?.raw || `HTTP ${r.status}`;
-        alert(t("pay_not_available") + "\nDettagli: " + msg);
-        console.error("pay-sumup error:", {status:r.status, js});
-        return false;
-      }catch(err){
-        alert(t("pay_not_available") + "\nNetwork error.");
-        console.error(err);
-        return false;
-      }
-    }
-  </script>
+  }
+</script>
 </body>
 </html>
