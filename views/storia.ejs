@@ -29,17 +29,11 @@
     .card h2{margin:0 0 10px 0;font-family:"Playfair Display", Georgia, "Times New Roman", serif;font-weight:800;letter-spacing:.2px;color:#3b2a1c}
     .card p{margin:10px 0;line-height:1.7;color:var(--ink)}
     .muted{color:var(--ink-soft)}
-    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center}
     @media (max-width:880px){.grid-2{grid-template-columns:1fr}}
-
-    .badge{display:inline-block;background:#fff5ec;color:#7c4621;border:1px solid #f1dfcf;font-weight:700;padding:6px 10px;border-radius:999px;font-size:.9rem;margin-right:8px}
-    .cta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
-    .btn{background:var(--brand);color:#fff;border:0;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 8px 20px #9b5c2e55}
-    .btn:hover{background:var(--brand-dark)}
-    .btn.ghost{background:#00000008;color:var(--ink);border:1px solid var(--line);box-shadow:none}
-    .quote{background:#fff8f1;border:1px solid #f0e2d6;border-radius:14px;padding:14px 16px;color:#5a4b40;font-style:italic}
-    .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
-    .chip{background:#f6ece1;border:1px solid #e7d6c7;padding:6px 10px;border-radius:999px;font-weight:600;color:#6b4a2f}
+    .card img{width:100%;border-radius:12px;object-fit:cover;max-height:340px}
+    .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    .chip{background:#fff5ec;border:1px solid #f1dfcf;border-radius:999px;padding:8px 16px;font-weight:700;color:#7c4621;font-size:0.9rem}
     footer{max-width:1000px;margin:6px auto 30px;padding:0 20px;color:#6a6158}
     footer a{color:#6a3d1f}
   </style>
@@ -73,22 +67,27 @@
         <h2 data-i18n="dough_title">L’impasto, il nostro segreto più semplice</h2>
         <p data-i18n="dough_text">Usiamo un blend di farine italiane con una piccola percentuale di integrale per dare profumo e carattere. Il nostro lievito madre vive con noi: lo rinfreschiamo ogni giorno e lo rispettiamo con una maturazione di 24–48 ore, così l’impasto risulta leggero, digeribile e naturalmente saporito.</p>
       </div>
+      <img src="/img/PIZZAIOLO.JPG.jpg" alt="Pizzaiolo all’opera" onerror="this.src='/img/fallback.jpg'">
+    </article>
+
+    <article class="card grid-2">
+      <img src="/img/OLIO.JPG.jpg" alt="Ingredienti di qualità" onerror="this.src='/img/fallback.jpg'">
       <div>
         <h2 data-i18n="ingredients_title">Ingredienti, filiera corta e buon senso</h2>
         <p data-i18n="ingredients_text">Crediamo nella stagionalità e nella trasparenza: pomodori corposi, fior di latte fresco, olio extravergine fruttato, salumi artigianali, verdure locali. Ogni ingrediente è scelto per equilibrio, non per stupire.</p>
       </div>
     </article>
 
-    <article class="card">
-      <h2 data-i18n="oven_title">Forno e cottura</h2>
-      <p data-i18n="oven_text">Cotto in forno tradizionale con curva di temperatura costante: base asciutta, cornicione dorato, ingredienti rispettati. Le pizze escono una alla volta perché il tempo del forno è il nostro ritmo.</p>
+    <article class="card grid-2">
+      <div>
+        <h2 data-i18n="oven_title">Forno e cottura</h2>
+        <p data-i18n="oven_text">Cotto in forno tradizionale con curva di temperatura costante: base asciutta, cornicione dorato, ingredienti rispettati. Le pizze escono una alla volta perché il tempo del forno è il nostro ritmo.</p>
+      </div>
+      <img src="/img/FORNO.JPG.jpg" alt="Forno tradizionale" onerror="this.src='/img/fallback.jpg'">
     </article>
 
     <article class="card grid-2">
-      <div>
-        <h2 data-i18n="sustain_title">Sostenibilità quotidiana</h2>
-        <p data-i18n="sustain_text">Usiamo imballi riciclabili, ottimizziamo gli ordini per ridurre gli sprechi e selezioniamo fornitori vicini a noi. Anche in laboratorio limitiamo i consumi: luci a LED, processi ragionati e detergenti certificati.</p>
-      </div>
+      <img src="/img/PIZZAIOLA.JPG.jpg" alt="La nostra squadra" onerror="this.src='/img/fallback.jpg'">
       <div>
         <h2 data-i18n="team_title">La nostra squadra</h2>
         <p data-i18n="team_text">Siamo una famiglia allargata: pizzaioli, fornaio, banco e sala. Cresciamo con formazione interna su impasti, cotture e servizio; condividiamo ricette e appunti, perché la qualità è un lavoro di squadra.</p>
@@ -98,6 +97,11 @@
     <article class="card">
       <h2 data-i18n="values_title">I nostri valori</h2>
       <p data-i18n="values_text">Vogliamo che ogni cliente si senta a casa. Se qualcosa non è come ti aspettavi, diccelo: troveremo insieme la soluzione migliore.</p>
+      <div class="chips">
+        <div class="chip">FIDUCIA</div>
+        <div class="chip">QUALITÀ</div>
+        <div class="chip">SOSTENIBILITÀ</div>
+      </div>
     </article>
   </main>
 
@@ -110,20 +114,11 @@
       en: {
         subtitle: "Our story: craftsmanship, sourdough and real ingredients.",
         who_title: "Who we are",
-        who_text1: "Mangia & Fuggi began as a small neighborhood workshop with a simple idea: to make honest pizzas, always good. Over the years, through carefully crafted doughs and selected ingredients, we have become a reference point for those seeking a pizza that smells like home — with a crispy bite and a soft heart.",
-        who_text2: "We don’t chase trends: we prefer repeated gestures, proper timing, hot ovens and Italian raw materials. Every pizza tells the story of our land, of small local producers, and of the daily care of our team.",
         dough_title: "The dough, our simplest secret",
-        dough_text: "We use a blend of Italian flours with a small percentage of whole grain for aroma and character. Our sourdough lives with us: we refresh it every day and respect it with a 24–48 hour maturation, making the dough light, digestible and naturally tasty.",
         ingredients_title: "Ingredients, short supply chain and good sense",
-        ingredients_text: "We believe in seasonality and transparency: rich tomatoes, fresh mozzarella, fruity extra virgin olive oil, artisanal cold cuts, local vegetables. Each ingredient is chosen for balance, not for show.",
         oven_title: "Oven and baking",
-        oven_text: "Baked in a traditional oven with a constant temperature curve: dry base, golden crust, respected ingredients. Pizzas come out one at a time, because the oven’s rhythm is our own.",
-        sustain_title: "Daily sustainability",
-        sustain_text: "We use recyclable packaging, optimize orders to reduce waste, and select suppliers close to us. Even in the workshop we limit consumption: LED lighting, thoughtful processes, and certified detergents.",
         team_title: "Our team",
-        team_text: "We’re an extended family: pizza makers, baker, counter and dining room. We grow through internal training on doughs, baking and service; we share recipes and notes because quality is a team effort.",
-        values_title: "Our values",
-        values_text: "We want every customer to feel at home. If something isn’t as you expected, tell us: we’ll find the best solution together."
+        values_title: "Our values"
       },
       it: {}
     };
