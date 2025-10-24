@@ -32,8 +32,8 @@ const safeNameJs  = rawName.replace(/'/g, "\\'");
 
     <!-- Descrizione + NOTA INLINE PICCOLA TRA PARENTESI -->
     <% if (desc) { %>
-      <div class="i-desc" data-i18n-desc="<%= desc %>">
-        <em><%= desc %></em>
+      <div class="i-desc">
+        <em class="i-desc-text" data-i18n-desc="<%= desc %>"><%= desc %></em>
         <span class="note-wrap" style="font-size:12px;color:#7b6d66;margin-left:6px;white-space:nowrap">
           ( <input
               id="note-<%= safeId %>"
@@ -74,13 +74,11 @@ const safeNameJs  = rawName.replace(/'/g, "\\'");
         aria-label="Aumenta <%= rawName %>"
         onclick="inc('<%= safeNameJs %>', <%= priceNum %>)">+</button>
     </div>
-
-    <!-- (RIMOSSO il vecchio campo nota grande) -->
   </div>
 </div>
 
 <script>
-  // Dizionario base (prima della logica che lo usa)
+  // Dizionario base (aggiungi altre voci se ti servono)
   const translations = {
     en: {
       "Bruschette": "Bruschetta",
@@ -93,11 +91,10 @@ const safeNameJs  = rawName.replace(/'/g, "\\'");
       "Melanzane, pomodoro, grana": "Eggplant, tomato, parmesan cheese",
       "Fritto misto": "Mixed fried starters",
       "Arancini, crocchè, panelle": "Rice balls, potato croquettes, chickpea fritters"
-      // continua con le altre voci se ti servono
     }
   };
 
-  // Traduzione dinamica di nome e descrizione se lingua = 'en'
+  // Traduzione dinamica se lingua = 'en'
   (function () {
     const currentLang = localStorage.getItem('lang') || 'it';
     if (currentLang !== 'en') return;
@@ -108,12 +105,11 @@ const safeNameJs  = rawName.replace(/'/g, "\\'");
       if (translations.en && translations.en[key]) el.textContent = translations.en[key];
     });
 
-    // Descrizioni: aggiorna SOLO il testo dell'<em> per non perdere la nota inline
-    document.querySelectorAll('[data-i18n-desc]').forEach(el => {
-      const key = el.getAttribute('data-i18n-desc');
+    // Descrizioni: aggiorna SOLO il testo dell'<em> per non cancellare l'input note
+    document.querySelectorAll('em[data-i18n-desc]').forEach(em => {
+      const key = em.getAttribute('data-i18n-desc');
       if (translations.en && translations.en[key]) {
-        const em = el.querySelector('em');
-        if (em) em.textContent = translations.en[key];
+        em.textContent = translations.en[key];
       }
     });
   })();
