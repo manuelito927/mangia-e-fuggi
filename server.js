@@ -146,19 +146,30 @@ app.get("/prenota", (_req, res) => res.render("prenota"));
 
 // Esiti pagamento (✅ marca pagato ma LASCIA lo status in pending per “Tutti gli ordini”)
 app.get("/pagamento/successo", async (req,res)=>{
-  const orderId = (req.query.order_id||"").toString();
+  // usa ?order_id=... se presente, altrimenti quello salvato in sessione
+  const orderId = (req.query.order_id || req.session?.last_order_id || "").toString();
+
   if (orderId) {
     try{
-      await supabase.from("orders")
+      // lo mettiamo direttamente come COMPLETED (così va in “Pagamenti accettati”)
+      const { error } = await supabase.from("orders")
         .update({
+          status: "completed",
+          completed_at: new Date().toISOString(),
           payment_status: "paid",
           paid_at: new Date().toISOString(),
-          pay_method: "online",
-          status: "pending" // resta visibile in “Tutti gli ordini” finché non clicchi “Fatto”
+          pay_method: "online"
         })
         .eq("id", orderId);
-    }catch(e){ console.error("mark paid on success page:", e); }
+
+      if (error) console.error("mark paid on success page:", error);
+    }catch(e){ 
+      console.error("mark paid on success page:", e); 
+    }
+  } else {
+    console.warn("Pagamento successo senza order_id e senza session.last_order_id");
   }
+
   res.send("Pagamento completato. Grazie!");
 });
 app.get("/pagamento/annullato", (_req,res)=> res.send("Pagamento annullato. Puoi riprovare dal carrello."));
