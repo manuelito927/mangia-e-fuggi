@@ -324,35 +324,21 @@
     }
 
     function translateItems(){
-      const lang = getLang();
-      // salva IT originale la prima volta
-      document.querySelectorAll('.i-left .i-name').forEach(el=>{
-        if(!el.dataset.it) el.dataset.it = el.textContent.trim();
-      });
-      document.querySelectorAll('.i-left .i-desc em, .i-left .i-desc').forEach(el=>{
-        if(!el.dataset.it) el.dataset.it = el.textContent.trim();
-      });
+  const lang = getLang();
 
-      if(lang === 'en'){
-        document.querySelectorAll('.i-left .i-name').forEach(el=>{
-          const it = el.dataset.it || el.textContent.trim();
-          el.textContent = ITEM_I18N[it] || it;
-        });
-        document.querySelectorAll('.i-left .i-desc em, .i-left .i-desc').forEach(el=>{
-          const it = el.dataset.it || el.textContent.trim();
-          const en = ITEM_I18N[it] || it;
-          el.textContent = en;
-        });
-      } else {
-        // ripristina Italiano
-        document.querySelectorAll('.i-left .i-name').forEach(el=>{
-          if(el.dataset.it) el.textContent = el.dataset.it;
-        });
-        document.querySelectorAll('.i-left .i-desc em, .i-left .i-desc').forEach(el=>{
-          if(el.dataset.it) el.textContent = el.dataset.it;
-        });
-      }
-    }
+  // Nomi: prendiamo SEMPRE la chiave IT da data-i18n-name
+  document.querySelectorAll('[data-i18n-name]').forEach(el=>{
+    const key = el.getAttribute('data-i18n-name');
+    el.textContent = (lang === 'en') ? (ITEM_I18N[key] || key) : key;
+  });
+
+  // Descrizioni: aggiorniamo SOLO l'<em> con data-i18n-desc
+  // (non tocchiamo il contenitore .i-desc, così l'input note resta cliccabile)
+  document.querySelectorAll('em[data-i18n-desc]').forEach(em=>{
+    const key = em.getAttribute('data-i18n-desc');
+    em.textContent = (lang === 'en') ? (ITEM_I18N[key] || key) : key;
+  });
+}
 
     function applyI18n(){
       // elementi con data-i18n (testo semplice)
