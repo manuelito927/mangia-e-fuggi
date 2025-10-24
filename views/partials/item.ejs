@@ -30,13 +30,28 @@ const safeNameJs  = rawName.replace(/'/g, "\\'");
     <!-- Nome prodotto -->
     <div class="i-name" data-i18n-name="<%= rawName %>"><%= rawName %></div>
 
-    <!-- Descrizione -->
+    <!-- Descrizione + NOTA INLINE PICCOLA TRA PARENTESI -->
     <% if (desc) { %>
-      <div class="i-desc" data-i18n-desc="<%= desc %>"><em><%= desc %></em></div>
+      <div class="i-desc" data-i18n-desc="<%= desc %>">
+        <em><%= desc %></em>
+        <span class="note-wrap" style="font-size:12px;color:#7b6d66;margin-left:6px;white-space:nowrap">
+          ( <input
+              id="note-<%= safeId %>"
+              class="note-inline"
+              type="text"
+              inputmode="text"
+              maxlength="120"
+              placeholder="nota"
+              aria-label="Nota per <%= rawName %>"
+              oninput="setNote('<%= safeNameJs %>', this.value)"
+              style="font-size:12px;background:transparent;color:#7b6d66;border:none;border-bottom:1px dashed #d8c8bf;outline:none;width:10ch"
+            /> )
+        </span>
+      </div>
     <% } %>
   </div>
 
-  <!-- PREZZO + QUANTITÀ + NOTA -->
+  <!-- PREZZO + QUANTITÀ -->
   <div class="i-right">
     <div class="i-price">€ <%= priceLabel %></div>
 
@@ -60,19 +75,7 @@ const safeNameJs  = rawName.replace(/'/g, "\\'");
         onclick="inc('<%= safeNameJs %>', <%= priceNum %>)">+</button>
     </div>
 
-    <!-- Nota personalizzazione -->
-    <div class="i-note" style="margin-top:6px">
-      <label for="note-<%= safeId %>" class="sr-only">Nota per <%= rawName %></label>
-      <input
-        id="note-<%= safeId %>"
-        type="text"
-        inputmode="text"
-        maxlength="120"
-        placeholder="Aggiungi note (es. poco sale)"
-        aria-label="Note per <%= rawName %>"
-        oninput="setNote('<%= safeNameJs %>', this.value)"
-        style="width:100%;padding:6px 8px;border:1px solid #e6e2df;border-radius:8px" />
-    </div>
+    <!-- (RIMOSSO il vecchio campo nota grande) -->
   </div>
 </div>
 
@@ -90,7 +93,7 @@ const safeNameJs  = rawName.replace(/'/g, "\\'");
       "Melanzane, pomodoro, grana": "Eggplant, tomato, parmesan cheese",
       "Fritto misto": "Mixed fried starters",
       "Arancini, crocchè, panelle": "Rice balls, potato croquettes, chickpea fritters"
-      // continuerai qui con tutte le voci da menu.ejs
+      // continua con le altre voci se ti servono
     }
   };
 
@@ -99,15 +102,18 @@ const safeNameJs  = rawName.replace(/'/g, "\\'");
     const currentLang = localStorage.getItem('lang') || 'it';
     if (currentLang !== 'en') return;
 
+    // Nomi
     document.querySelectorAll('[data-i18n-name]').forEach(el => {
       const key = el.getAttribute('data-i18n-name');
       if (translations.en && translations.en[key]) el.textContent = translations.en[key];
     });
 
+    // Descrizioni: aggiorna SOLO il testo dell'<em> per non perdere la nota inline
     document.querySelectorAll('[data-i18n-desc]').forEach(el => {
       const key = el.getAttribute('data-i18n-desc');
       if (translations.en && translations.en[key]) {
-        el.innerHTML = '<em>' + translations.en[key] + '</em>';
+        const em = el.querySelector('em');
+        if (em) em.textContent = translations.en[key];
       }
     });
   })();
