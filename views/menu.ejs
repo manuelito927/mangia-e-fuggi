@@ -393,18 +393,15 @@
     }
 
     // Utils
-    function cssId(s){ return s.replace(/[^a-z0-9]+/gi,'_'); }
-    function euro(n){ return "€ "+Number(n).toFixed(2).replace(".",","); }
-    function cartTotal(){ return Array.from(cart.values()).reduce((s,i)=>s+i.qty*i.price,0); }
-
-    // Q.tà
-    <script>
-  // ...tutto invariato sopra
-
-  // Utils
-  function cssId(s){ return s.replace(/[^a-z0-9]+/gi,'_'); }
-  function euro(n){ return "€ "+Number(n).toFixed(2).replace(".",","); }
-  function cartTotal(){ return Array.from(cart.values()).reduce((s,i)=>s+i.qty*i.price,0); }
+function cssId(s){
+  return String(s).toLowerCase().replace(/[^a-z0-9]+/gi,'_');
+}
+function euro(n){
+  return "€ " + Number(n).toFixed(2).replace(".", ",");
+}
+function cartTotal(){
+  return Array.from(cart.values()).reduce((s, i) => s + i.qty * i.price, 0);
+}
 
   // === PATCH VISUAL Q.TÀ (mostra sempre il numerino accanto ai bottoni) ===
   function updateInlineQtyDisplay(btnEl, qty){
