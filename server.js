@@ -144,13 +144,18 @@ app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL, SUPABASE_KE
 app.get("/test-video", (_req, res) => res.render("test-video"));
 app.get("/prenota", (_req, res) => res.render("prenota"));
 
-// Esiti pagamento (✅ ora marca pagato se c’è ?order_id)
+// Esiti pagamento (✅ marca pagato ma LASCIA lo status in pending per “Tutti gli ordini”)
 app.get("/pagamento/successo", async (req,res)=>{
   const orderId = (req.query.order_id||"").toString();
   if (orderId) {
     try{
       await supabase.from("orders")
-        .update({ payment_status: "paid", paid_at: new Date().toISOString(), pay_method: "online" })
+        .update({
+          payment_status: "paid",
+          paid_at: new Date().toISOString(),
+          pay_method: "online",
+          status: "pending" // resta visibile in “Tutti gli ordini” finché non clicchi “Fatto”
+        })
         .eq("id", orderId);
     }catch(e){ console.error("mark paid on success page:", e); }
   }
@@ -167,15 +172,13 @@ app.post("/api/checkout", async (req, res) => {
     return res.status(400).json({ ok:false, error:"no_items" });
 
   try {
-    // ⬇️ mantengo tutto uguale, ma se i campi di pagamento esistono, parto da unpaid
     const baseRow = { table_code: tableCode || null, total: Number(total)||0, status:"pending", ack:false };
-    const row = { ...baseRow, payment_status: "unpaid" }; // se la colonna non esiste, Postgres ignora? No, darebbe errore: quindi aggiorno dopo.
+    const row = { ...baseRow, payment_status: "unpaid" };
     const { data: order, error: oErr } = await supabase
       .from("orders")
       .insert([row])
       .select().single();
     if (oErr) {
-      // fallback sicuro se non esiste payment_status
       const { data: order2, error: oErr2 } = await supabase
         .from("orders")
         .insert([baseRow])
@@ -200,7 +203,7 @@ app.post("/api/checkout", async (req, res) => {
   } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
 });
 
-// ✅ adesso supporta status=all, status=paid e continua a gestire canceled
+// ✅ elenco ordini: “paid” ora mostra SOLO i completed (dopo “Fatto”)
 app.get("/api/orders", async (req, res) => {
   try {
     const status = (req.query.status || "").toString();
@@ -214,11 +217,11 @@ app.get("/api/orders", async (req, res) => {
       // Tutti tranne eliminati
       q = q.neq("status","canceled");
     } else if (status === "due") {
-      // Da incassare (nuovo): pagamenti in attesa
-      q = q.eq("payment_status","pending");
+      // Da incassare = ancora pending e NON pagati online
+      q = q.eq("status","pending").neq("payment_status","paid");
     } else if (status === "paid") {
-      // Pagamenti accettati
-      q = q.eq("payment_status","paid");
+      // Pagamenti accettati = ordini completati (dopo “Fatto”)
+      q = q.eq("status","completed");
     } else if (status) {
       // Compatibilità: pending / completed / canceled
       q = q.eq("status", status);
@@ -251,6 +254,7 @@ app.get("/api/orders", async (req, res) => {
     res.json({ ok:false, error:"orders_list_failed" });
   }
 });
+
 // --- rotte legacy (restano identiche)
 app.post("/api/orders/:id/complete", async (req, res) => {
   const { error } = await supabase.from("orders")
@@ -283,10 +287,8 @@ app.post("/api/orders/:id/pay", async (req, res) => {
   try{
     const method = (req.body?.method||"cash").toString(); // 'cash' | 'online'
     const patch = { payment_status: "paid", paid_at: new Date().toISOString(), pay_method: method };
-    // prova con i campi nuovi; se falliscono (colonne mancanti) ripiega su nessun campo
     let { error } = await supabase.from("orders").update(patch).eq("id", req.params.id);
     if (error) {
-      // fallback: almeno non faccio crashare se colonne non esistono
       console.warn("orders.pay: colonne pagamento assenti, salto patch dettagli:", error.message);
       return res.json({ ok:true, note:"patched_without_payment_columns" });
     }
@@ -509,7 +511,7 @@ app.get("/api/stats/range", async (req, res) => {
 const SUMUP_CLIENT_ID     = getEnvAny("SUMUP_CLIENT_ID","Sumup_client_id");
 const SUMUP_CLIENT_SECRET = getEnvAny("SUMUP_CLIENT_SECRET","Sumup_client_secret");
 const SUMUP_ACCESS_TOKEN  = getEnvAny("SUMUP_ACCESS_TOKEN","Sumup_access_token");
-const SUMUP_SECRET_KEY    = getEnvAny("SUMUP_SECRET_KEY","Sumup_secret_key");
+const SUMUP_SECRET KEY    = getEnvAny("SUMUP_SECRET_KEY","Sumup_secret_key");
 const SUMUP_PAYTO         = getEnvAny("SUMUP_PAY_TO_EMAIL","SUMUP_MERCHANT_EMAIL","Sumup_pay_to_email");
 
 async function getSumUpBearer(){
