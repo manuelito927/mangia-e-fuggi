@@ -6,10 +6,13 @@
   <title>Mangia & Fuggi – Menu</title>
 
   <link rel="stylesheet" href="/styles.css" />
-html, body { -webkit-text-size-adjust: 100%; }
-* { touch-action: manipulation; }
-.btn, .lang-select, input, select { font-size: 16px; }
+
   <style>
+    /* Fix iPhone zoom e tap */
+    html, body { -webkit-text-size-adjust: 100%; }
+    * { touch-action: manipulation; }
+    .btn, .lang-select, input, select { font-size: 16px; }
+
     .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 340px;gap:18px}
     .card{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
     h2{font-size:20px;margin:8px 0 12px;color:#7b4b3a}
@@ -23,6 +26,8 @@ html, body { -webkit-text-size-adjust: 100%; }
     .btn-row{display:flex;flex-direction:column;gap:10px}
     .btn[disabled]{opacity:.5;cursor:not-allowed}
     @media (max-width:900px){.container{grid-template-columns:1fr}}
+  </style>
+</head>
 
     /* —— Modal semplice per "Dividi & paga" */
     .modal-backdrop{
