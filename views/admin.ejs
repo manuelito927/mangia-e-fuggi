@@ -78,9 +78,15 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
             <button class="btn tab" data-status="paid">Pagamenti accettati <span id="c-paid" class="pill" style="padding:2px 8px"></span></button>
             <button class="btn tab" data-status="canceled">Eliminati <span id="c-canc" class="pill" style="padding:2px 8px"></span></button>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
+          <!-- 🆕 Barra strumenti con filtro giorno -->
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input id="q" class="input" placeholder="Cerca tavolo o piatto…" />
             <span id="clearQ" class="clearx">Elimina</span>
+
+            <!-- 🆕 Filtro per giorno ordini (default: oggi) -->
+            <label class="muted" for="dayOrders">Giorno ordini:</label>
+            <input id="dayOrders" type="date" class="input" />
+
             <button id="btn-refresh" class="btn brand">Aggiorna</button>
           </div>
         </div>
@@ -190,21 +196,35 @@ async function saveSettings(){
 $('#chk-sound').addEventListener('change', saveSettings);
 $('#chk-autorefresh').addEventListener('change', saveSettings);
 
+// ====== HELPER DATA (locale YYYY-MM-DD) ======
+function isoLocalDateStr(dOrIso){
+  const d = (dOrIso instanceof Date) ? dOrIso : new Date(dOrIso);
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+
 // ====== ORDINI ======
 let STATUS='all', ORDERS=[], SUBS=false, refreshTimer=null;
 
 async function counters(){
   try{
+    const daySel = $('#dayOrders').value || isoLocalDateStr(new Date());
     const [pnd, cmp, cnc] = await Promise.all([
       fetch('/api/orders?status=pending').then(r=>r.json()),
       fetch('/api/orders?status=completed').then(r=>r.json()),
       fetch('/api/orders?status=canceled').then(r=>r.json())
     ]);
-    const pend = (pnd.ok ? (pnd.orders||[]) : []);
-    const comp = (cmp.ok ? (cmp.orders||[]) : []);
-    const canc = (cnc.ok ? (cnc.orders||[]) : []);
+    const pendAll = (pnd.ok ? (pnd.orders||[]) : []);
+    const compAll = (cmp.ok ? (cmp.orders||[]) : []);
+    const cancAll = (cnc.ok ? (cnc.orders||[]) : []);
 
-    const nAll = pend.filter(o=>!o.ack).length + comp.length; // pending NON ancora “mandati in cassa” + completed
+    // filtro per giorno selezionato
+    const isDay = o => isoLocalDateStr(o.created_at) === daySel;
+    const pend = pendAll.filter(isDay);
+    const comp = compAll.filter(isDay);
+    const canc = cancAll.filter(isDay);
+
+    const nAll = pend.filter(o=>!o.ack).length + comp.length; // pending NON “mandati in cassa” + completed
     const nDue = pend.filter(o=> o.ack).length;                // pending “mandati in cassa”
     $('#c-all').textContent  = nAll;
     $('#c-due').textContent  = nDue;
@@ -227,6 +247,9 @@ async function fetchOrders(){
   }catch{}
 
   const q=$('#q').value.toLowerCase();
+  const daySel = $('#dayOrders').value || isoLocalDateStr(new Date());
+  const isDay = o => isoLocalDateStr(o.created_at) === daySel;
+
   let list = [];
 
   const [pnd, cmp, cnc] = await Promise.all([
@@ -234,9 +257,14 @@ async function fetchOrders(){
     fetch('/api/orders?status=completed').then(r=>r.json()),
     fetch('/api/orders?status=canceled').then(r=>r.json())
   ]);
-  const pend = (pnd.ok ? (pnd.orders||[]) : []);
-  const comp = (cmp.ok ? (cmp.orders||[]) : []);
-  const canc = (cnc.ok ? (cnc.orders||[]) : []);
+  const pendAll = (pnd.ok ? (pnd.orders||[]) : []);
+  const compAll = (cmp.ok ? (cmp.orders||[]) : []);
+  const cancAll = (cnc.ok ? (cnc.orders||[]) : []);
+
+  // applico filtro giorno
+  const pend = pendAll.filter(isDay);
+  const comp = compAll.filter(isDay);
+  const canc = cancAll.filter(isDay);
 
   if(STATUS==='all'){
     list = pend.filter(o=>!o.ack).concat(comp);
@@ -256,11 +284,10 @@ async function fetchOrders(){
 
 function badgeForDue(order){
   if(order.status==='completed') return '<span class="pill ok">pagato</span>';
-  // pending: decido col tavolo
   const key = order.table_code || ('Tavolo ?');
   const st  = TABLES_MAP[key];
   if(st==='occupied') return '<span class="pill warn">in attesa</span>';
-  return '<span class="pill bad">non pagato</span>'; // libero o sconosciuto
+  return '<span class="pill bad">non pagato</span>';
 }
 
 function renderOrders(q){
@@ -284,7 +311,6 @@ function renderOrders(q){
       ? `<span class="bell new" data-act="ack" data-id="${o.id}" title="Nuovo">🔔</span>`
       : `<span class="bell" data-act="ack" data-id="${o.id}" title="Segna come letto">🔕</span>`;
 
-    // --- Azioni in base alla VISTA richiesta ---
     let actions = '';
     if(STATUS==='all'){
       if(o.status==='pending' && !o.ack){
@@ -293,18 +319,15 @@ function renderOrders(q){
           <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>
           <button class="btn ok" data-act="mark_due" data-id="${o.id}">✅ Fatto</button>`;
       }else{
-        // completed in “Tutti” → solo stampa
         actions = `<button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>`;
       }
     }else if(STATUS==='due'){
-      // pending con ack=true
       const badge = badgeForDue(o);
       actions = `
         ${badge}
         <button class="btn ok" data-act="complete" data-id="${o.id}">💶 Pagato in cassa</button>
         <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>`;
     }else if(STATUS==='paid'){
-      // completed → solo stampa
       actions = `<button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>`;
     }else if(STATUS==='canceled'){
       actions = `<button class="btn" data-act="restore" data-id="${o.id}">↩️ Ripristina</button>`;
@@ -339,9 +362,8 @@ $('#orders').addEventListener('click', async ev=>{
   if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await fetch(`/api/orders/${id}/cancel`,{method:'POST'}); }
   if(act==='restore'){ await fetch(`/api/orders/${id}/restore`,{method:'POST'}); }
   if(act==='ack'){ await fetch(`/api/orders/${id}/ack`,{method:'POST'}); }
-  if(act==='mark_due'){ // “Fatto” → manda in cassa: set ack=true
+  if(act==='mark_due'){
     await fetch(`/api/orders/${id}/ack`,{method:'POST'});
-    // passa automaticamente alla vista “Da incassare”
     STATUS='due';
     $$('.tab').forEach(x=>x.classList.remove('active'));
     $$('[data-status="due"]')[0]?.classList.add('active');
@@ -362,6 +384,11 @@ $$('.tab').forEach(t=>{
 $('#btn-refresh').addEventListener('click', fetchOrders);
 $('#q').addEventListener('input', ()=>renderOrders($('#q').value.toLowerCase()));
 $('#clearQ').addEventListener('click', ()=>{ $('#q').value=''; renderOrders(''); });
+
+// 🆕 Cambi data ⇒ ricarica lista + contatori
+document.addEventListener('change', (e)=>{
+  if(e.target && e.target.id==='dayOrders') fetchOrders();
+});
 
 // Auto-refresh
 function setAutoRefresh(){
@@ -464,7 +491,6 @@ async function setTable(id,action){
   try{
     await fetch(`/api/tables/${id}/${action}`,{method:'POST'});
     await loadTables();
-    // rinfresca la vista “da incassare” per bollini aggiornati
     await fetchOrders();
   }catch(e){console.error(e);}
 }
@@ -481,10 +507,14 @@ function attachRealtimeTables(){
 // ====== BOOT ======
 (async()=>{
   const today=new Date();
-  $('#day').value=today.toISOString().slice(0,10);
+  // stats defaults
+  $('#day').value=isoLocalDateStr(today);
   const from=new Date(); from.setDate(today.getDate()-6);
-  $('#from').value=from.toISOString().slice(0,10);
-  $('#to').value=today.toISOString().slice(0,10);
+  $('#from').value=isoLocalDateStr(from);
+  $('#to').value=isoLocalDateStr(today);
+  // 🆕 ordini default: oggi
+  $('#dayOrders').value = isoLocalDateStr(today);
+
   await loadSettings();
   await fetchOrders();
   await loadDay();
