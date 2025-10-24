@@ -204,30 +204,34 @@ app.post("/api/checkout", async (req, res) => {
 });
 
 // ✅ elenco ordini: “paid” ora mostra SOLO i completed (dopo “Fatto”)
+// ✅ /api/orders ora supporta status=all/paid/pending/canceled + filtro ?day=YYYY-MM-DD
 app.get("/api/orders", async (req, res) => {
   try {
     const status = (req.query.status || "").toString();
+    const dayStr = (req.query.day || req.query.date || "").toString().slice(0,10);
 
     let q = supabase
       .from("orders")
       .select("*")
       .order("created_at", { ascending: false });
 
+    // Filtro per stato (come prima)
     if (status === "all") {
-      // Tutti tranne eliminati
       q = q.neq("status","canceled");
     } else if (status === "due") {
-      // Da incassare = ancora pending e NON pagati online
-      q = q.eq("status","pending").neq("payment_status","paid");
+      q = q.eq("payment_status","pending");
     } else if (status === "paid") {
-      // Pagamenti accettati = ordini completati (dopo “Fatto”)
-      q = q.eq("status","completed");
+      q = q.eq("payment_status","paid");
     } else if (status) {
-      // Compatibilità: pending / completed / canceled
       q = q.eq("status", status);
     } else {
-      // Fallback legacy
       q = q.eq("status","pending");
+    }
+
+    // 🆕 Filtro per giorno (opzionale)
+    if (dayStr) {
+      const { start, end } = localDayBounds(dayStr);
+      q = q.gte("created_at", start).lte("created_at", end);
     }
 
     const { data: orders, error: oErr } = await q;
