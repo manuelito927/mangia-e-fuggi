@@ -199,7 +199,9 @@ app.post("/api/checkout", async (req, res) => {
     const { error: iErr } = await supabase.from("order_items").insert(rows);
     if (iErr) throw iErr;
 
-    res.json({ ok:true, order_id: order.id });
+  req.session.last_order_id = order.id;
+req.session.save(()=>{});
+res.json({ ok:true, order_id: order.id });
   } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
 });
 
