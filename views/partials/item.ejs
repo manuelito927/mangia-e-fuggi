@@ -36,7 +36,7 @@ const safeNameJs  = rawName.replace(/'/g, "\\'");
     <% } %>
   </div>
 
-  <!-- PREZZO + QUANTITÀ -->
+  <!-- PREZZO + QUANTITÀ + NOTA -->
   <div class="i-right">
     <div class="i-price">€ <%= priceLabel %></div>
 
@@ -58,6 +58,20 @@ const safeNameJs  = rawName.replace(/'/g, "\\'");
         class="q"
         aria-label="Aumenta <%= rawName %>"
         onclick="inc('<%= safeNameJs %>', <%= priceNum %>)">+</button>
+    </div>
+
+    <!-- Nota personalizzazione -->
+    <div class="i-note" style="margin-top:6px">
+      <label for="note-<%= safeId %>" class="sr-only">Nota per <%= rawName %></label>
+      <input
+        id="note-<%= safeId %>"
+        type="text"
+        inputmode="text"
+        maxlength="120"
+        placeholder="Aggiungi note (es. poco sale)"
+        aria-label="Note per <%= rawName %>"
+        oninput="setNote('<%= safeNameJs %>', this.value)"
+        style="width:100%;padding:6px 8px;border:1px solid #e6e2df;border-radius:8px" />
     </div>
   </div>
 </div>
