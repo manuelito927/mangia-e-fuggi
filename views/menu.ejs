@@ -398,21 +398,69 @@
     function cartTotal(){ return Array.from(cart.values()).reduce((s,i)=>s+i.qty*i.price,0); }
 
     // Q.tà
-    function inc(name, price){
-      const it = cart.get(name)||{price,qty:0};
-      it.qty++; cart.set(name,it);
-      const qEl = document.getElementById('q-'+cssId(name));
-      if(qEl) qEl.textContent=it.qty;
-      renderCart();
+    <script>
+  // ...tutto invariato sopra
+
+  // Utils
+  function cssId(s){ return s.replace(/[^a-z0-9]+/gi,'_'); }
+  function euro(n){ return "€ "+Number(n).toFixed(2).replace(".",","); }
+  function cartTotal(){ return Array.from(cart.values()).reduce((s,i)=>s+i.qty*i.price,0); }
+
+  // === PATCH VISUAL Q.TÀ (mostra sempre il numerino accanto ai bottoni) ===
+  function updateInlineQtyDisplay(btnEl, qty){
+    if(!btnEl) return;
+
+    // prova a trovare lo span tra i bottoni +/- (prima del + o dopo il -)
+    let span = null;
+
+    // se ho cliccato il "+", di solito lo span è il fratello precedente
+    span = btnEl.previousElementSibling;
+    if(!(span instanceof HTMLElement) || span.tagName!=="SPAN"){
+      // se ho cliccato il "-", di solito lo span è il fratello successivo
+      span = btnEl.nextElementSibling;
     }
-    function dec(name){
-      const it = cart.get(name)||{qty:0,price:0};
-      it.qty=Math.max(0,it.qty-1);
-      if(it.qty===0) cart.delete(name); else cart.set(name,it);
-      const qEl = document.getElementById('q-'+cssId(name));
-      if(qEl) qEl.textContent=it.qty||0;
-      renderCart();
+    // se ancora nulla, cerca qualcosa che sembri un contatore nella stessa riga
+    if(!(span instanceof HTMLElement) || span.tagName!=="SPAN"){
+      span = btnEl.parentElement?.querySelector('.qty, .q, [data-qty]');
     }
+    if(span) span.textContent = qty;
+  }
+
+  // Q.tà  (SOLO QUESTE DUE FUNZIONI SONO CAMBIATE)
+  function inc(name, price){
+    const it = cart.get(name) || { price, qty: 0 };
+    it.qty++;
+    cart.set(name, it);
+
+    // 1) aggiorna se esiste l'id previsto
+    const qEl = document.getElementById('q-'+cssId(name));
+    if(qEl) qEl.textContent = it.qty;
+
+    // 2) in ogni caso prova ad aggiornare il numerino vicino al bottone cliccato
+    const btn = window.event?.target?.closest('button');
+    updateInlineQtyDisplay(btn, it.qty);
+
+    renderCart();
+  }
+
+  function dec(name){
+    const it = cart.get(name) || { qty: 0, price: 0 };
+    it.qty = Math.max(0, it.qty - 1);
+    if(it.qty === 0) cart.delete(name); else cart.set(name, it);
+
+    // 1) aggiorna se esiste l'id previsto
+    const qEl = document.getElementById('q-'+cssId(name));
+    if(qEl) qEl.textContent = it.qty || 0;
+
+    // 2) in ogni caso prova ad aggiornare il numerino vicino al bottone cliccato
+    const btn = window.event?.target?.closest('button');
+    updateInlineQtyDisplay(btn, it.qty || 0);
+
+    renderCart();
+  }
+
+  // ...tutto invariato sotto
+</script>
 
     function renderCart(){
       const ul=document.getElementById('cart'); if(!ul) return;
