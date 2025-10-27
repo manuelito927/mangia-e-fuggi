@@ -60,6 +60,24 @@
     .quota-list{display:flex; flex-direction:column; gap:8px; margin-top:6px}
     .quota-item{display:flex; gap:10px; align-items:center; justify-content:space-between;
       border:1px dashed #e6e2df; padding:10px; border-radius:10px}
+<style>
+  /* —— Layout quote più ordinato —— */
+  .quota-item{ align-items:flex-start; }                  /* allinea in alto a sx */
+  .quota-left{ display:flex; flex-direction:column; gap:2px; }
+  .quota-title{ font-weight:700; }
+  .small{ font-size:12px; color:#777; }
+
+  .amount{ margin-top:2px; }
+  .amount-line{ display:flex; align-items:baseline; gap:6px; }
+  .amount-line .euro{
+    background:#f3f1ef; padding:2px 6px; border-radius:8px; font-weight:700;
+  }
+  .amount-line .val{
+    font-weight:800; font-size:18px; line-height:1;
+  }
+
+  .quota-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+</style>
   </style>
 </head>
 <body>
