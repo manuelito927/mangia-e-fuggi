@@ -224,22 +224,17 @@ async function counters(){
   try{
     const daySel = $('#dayOrders').value || isoLocalDateStr(new Date());
     const [pnd, cmp, cnc] = await Promise.all([
-      fetch('/api/orders?status=pending').then(r=>r.json()),
-      fetch('/api/orders?status=completed').then(r=>r.json()),
-      fetch('/api/orders?status=canceled').then(r=>r.json())
+      fetch(`/api/orders?status=pending&day=${daySel}`).then(r=>r.json()),
+      fetch(`/api/orders?status=completed&day=${daySel}`).then(r=>r.json()),
+      fetch(`/api/orders?status=canceled&day=${daySel}`).then(r=>r.json())
     ]);
-    const pendAll = (pnd.ok ? (pnd.orders||[]) : []);
-    const compAll = (cmp.ok ? (cmp.orders||[]) : []);
-    const cancAll = (cnc.ok ? (cnc.orders||[]) : []);
+    const pend = (pnd.ok ? (pnd.orders||[]) : []);
+    const comp = (cmp.ok ? (cmp.orders||[]) : []);
+    const canc = (cnc.ok ? (cnc.orders||[]) : []);
 
-    // filtro per giorno selezionato
-    const isDay = o => isoLocalDateStr(o.created_at) === daySel;
-    const pend = pendAll.filter(isDay);
-    const comp = compAll.filter(isDay);
-    const canc = cancAll.filter(isDay);
+    const nAll = pend.filter(o=>!o.ack).length + comp.length;
+    const nDue = pend.filter(o=> o.ack).length;
 
-    const nAll = pend.filter(o=>!o.ack).length + comp.length; // pending NON “mandati in cassa” + completed
-    const nDue = pend.filter(o=> o.ack).length;                // pending “mandati in cassa”
     $('#c-all').textContent  = nAll;
     $('#c-due').textContent  = nDue;
     $('#c-paid').textContent = comp.length;
