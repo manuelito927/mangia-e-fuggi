@@ -495,6 +495,13 @@
     if(totEl) totEl.textContent = euro(tot);
     updateButtons();
   }
+// —— RESET delle quantità nel menu + pulizia note
+function resetMenuQuantities(){
+  // azzera i numeri tra i bottoni
+  document.querySelectorAll('.i-qty .qv').forEach(s => { s.textContent = '0'; });
+  // svuota eventuali note scritte negli item (i campi piccoli tra parentesi)
+  document.querySelectorAll('.note-inline').forEach(i => { i.value = ''; });
+}
 
   function updateButtons(){
     const hasItems = cart.size > 0 && cartTotal() > 0;
