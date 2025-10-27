@@ -304,7 +304,7 @@ function renderOrders(q){
   if(!filtered.length){ root.innerHTML='<div class="muted">Nessun ordine</div>'; return; }
 
   for(const o of filtered){
-    const when=new Date(o.created_at).toLocaleString();
+    const when = formatRome(o.created_at);
     const rows=(o.items||[]).map(it=>`
       <div class="row" style="padding:4px 0">
         <div>${it.qty}× ${it.name} <span class="muted">(€ ${Number(it.price).toFixed(2)})</span></div>
