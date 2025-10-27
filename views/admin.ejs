@@ -204,28 +204,17 @@ function isoLocalDateStr(dOrIso){
 }
 
 // === ORA ITALIANA (anche con ora legale) ===
-<!-- === ORA ITALIANA (robusto, unico) === -->
-<script>
 const ROME_TZ = 'Europe/Rome';
-
-function formatRome(iso) {
-  try {
-    let s = String(iso || '');
-
-    // Se arriva senza offset/Z (es. 2025-10-27T14:10:57), trattala come UTC
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(s)) {
-      s += 'Z';
-    }
-
-    const dt = new Date(s);
-    return new Intl.DateTimeFormat('it-IT', {
-      timeZone: ROME_TZ,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit'
-    }).format(dt);
-  } catch {
-    return iso || '';
-  }
+function formatRome(iso){
+  return new Date(iso).toLocaleString('it-IT', { timeZone: ROME_TZ });
+}
+function ymdRome(iso){
+  // ritorna 'YYYY-MM-DD' calcolato in fuso Italia
+  const d = new Date(new Date(iso).toLocaleString('en-GB', { timeZone: ROME_TZ }));
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd= String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
 }
 </script>
 
