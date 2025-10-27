@@ -203,6 +203,20 @@ function isoLocalDateStr(dOrIso){
   return `${y}-${m}-${dd}`;
 }
 
+// === ORA ITALIANA (anche con ora legale) ===
+const ROME_TZ = 'Europe/Rome';
+function formatRome(iso){
+  return new Date(iso).toLocaleString('it-IT', { timeZone: ROME_TZ });
+}
+function ymdRome(iso){
+  // ritorna 'YYYY-MM-DD' calcolato in fuso Italia
+  const d = new Date(new Date(iso).toLocaleString('en-GB', { timeZone: ROME_TZ }));
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd= String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+
 // ====== ORDINI ======
 let STATUS='all', ORDERS=[], SUBS=false, refreshTimer=null;
 
