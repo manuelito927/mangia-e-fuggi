@@ -605,26 +605,37 @@
 
     // Alla romana
     function renderEqual(){
-      const n = Math.max(2, Number(document.getElementById('equal-n').value || 2));
-      const tot = cartTotal();
-      const quota = Math.round((tot/n)*100)/100;
-      const list = document.getElementById('equal-quotas'); list.innerHTML = "";
-      for(let i=1;i<=n;i++){
-        const div = document.createElement('div');
-        div.className = "quota-item";
-        div.innerHTML = `
-          <div><strong>${t("person_n")(i)}</strong> — <span class="muted">${t("cart_total")}</span>:
-               <span class="pill">${euro(quota)}</span></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn" type="button" ${!PAY_ENABLED?'disabled':''}
-              onclick="payQuota(${quota.toFixed(2)})">${t("pay_share_online_n")(i)}</button>
-            <button class="btn btn-ghost" type="button"
-              onclick="payQuotaAtCounter(${quota.toFixed(2)})">${t("pay_share_counter_n")(i)}</button>
+  const n   = Math.max(2, Number(document.getElementById('equal-n').value || 2));
+  const tot = cartTotal();
+  const quota = Math.round((tot/n)*100)/100;
+  const list = document.getElementById('equal-quotas'); list.innerHTML = "";
+
+  const amountStr = euro(quota).replace('€ ','').trim();
+
+  for(let i=1;i<=n;i++){
+    const div = document.createElement('div');
+    div.className = "quota-item";
+    div.innerHTML = `
+      <div class="quota-left">
+        <div class="quota-title">${t("person_n")(i)}</div>
+        <div class="amount">
+          <div class="small">${t("cart_total")}</div>
+          <div class="amount-line">
+            <span class="euro">€</span>
+            <span class="val">${amountStr}</span>
           </div>
-        `;
-        list.appendChild(div);
-      }
-    }
+        </div>
+      </div>
+      <div class="quota-actions">
+        <button class="btn" type="button" ${!PAY_ENABLED?'disabled':''}
+          onclick="payQuota(${quota.toFixed(2)})">${t("pay_share_online_n")(i)}</button>
+        <button class="btn btn-ghost" type="button"
+          onclick="payQuotaAtCounter(${quota.toFixed(2)})">${t("pay_share_counter_n")(i)}</button>
+      </div>
+    `;
+    list.appendChild(div);
+  }
+}
 
     // Personalizzato
     function resetCustom(){
