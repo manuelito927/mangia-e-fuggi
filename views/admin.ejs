@@ -294,13 +294,6 @@ function badgeForDue(order){
   return '<span class="pill bad">non pagato</span>';
 }
 
-function formatRome(iso){
-  try{
-    const d = new Date(iso);
-    return d.toLocaleString("it-IT", { timeZone: "Europe/Rome" });
-  }catch{ return iso; }
-}
-
 function renderOrders(q){
   const root=$('#orders'); root.innerHTML="";
   const filtered = q ? ORDERS.filter(o=>{
