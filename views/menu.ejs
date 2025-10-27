@@ -205,6 +205,10 @@
         person_n: i => `Persona ${i}`,
         person_generic: "Persona",
         pay_share_n: i => `Paga quota #${i}`,
+        /* ▼▼▼ NUOVE ETICHETTE ▼▼▼ */
+        pay_share_online_n: i => `Paga quota #${i} online`,
+        pay_share_counter_n: i => `Paga in cassa #${i}`,
+        /* ▲▲▲ NUOVE ETICHETTE ▲▲▲ */
         placeholder_name: "Nome (opzionale)",
         placeholder_amount: "Importo es. 7.50",
         alert_add_item: "Aggiungi almeno un prodotto",
@@ -238,6 +242,10 @@
         person_n: i => `Person ${i}`,
         person_generic: "Person",
         pay_share_n: i => `Pay share #${i}`,
+        /* ▼▼▼ NEW LABELS ▼▼▼ */
+        pay_share_online_n: i => `Pay share #${i} online`,
+        pay_share_counter_n: i => `Pay at counter #${i}`,
+        /* ▲▲▲ NEW LABELS ▲▲▲ */
         placeholder_name: "Name (optional)",
         placeholder_amount: "Amount e.g. 7.50",
         alert_add_item: "Add at least one item",
@@ -496,9 +504,7 @@
 
     // —— RESET delle quantità nel menu + pulizia note
     function resetMenuQuantities(){
-      // azzera i numeri tra i bottoni
       document.querySelectorAll('.i-qty .qv').forEach(s => { s.textContent = '0'; });
-      // svuota eventuali note scritte negli item (i campi piccoli tra parentesi)
       document.querySelectorAll('.note-inline').forEach(i => { i.value = ''; });
     }
 
@@ -549,14 +555,14 @@
       }
     }
 
-    // 💵 Ordina & paga in cassa
+    // 💵 Ordina & paga in cassa (intero)
     async function orderPayAtCounter(){
       const saved = await createOrder();
       if(!saved) return;
       alert(t("order_sent_counter"));
       cart.clear();
       renderCart();
-      resetMenuQuantities(); // azzera menu e note (aggiunta)
+      resetMenuQuantities(); // azzera menu e note
     }
 
     // ======= DIVIDI & PAGA =======
@@ -591,7 +597,12 @@
         div.innerHTML = `
           <div><strong>${t("person_n")(i)}</strong> — <span class="muted">${t("cart_total")}</span>:
                <span class="pill">${euro(quota)}</span></div>
-          <button class="btn" type="button" onclick="payQuota(${quota.toFixed(2)})">${t("pay_share_n")(i)}</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" type="button" ${!PAY_ENABLED?'disabled':''}
+              onclick="payQuota(${quota.toFixed(2)})">${t("pay_share_online_n")(i)}</button>
+            <button class="btn btn-ghost" type="button"
+              onclick="payQuotaAtCounter(${quota.toFixed(2)})">${t("pay_share_counter_n")(i)}</button>
+          </div>
         `;
         list.appendChild(div);
       }
@@ -644,19 +655,31 @@
         div.innerHTML = `
           <div><strong>${q.name}</strong> — <span class="muted">${t("cart_total")}</span>:
                <span class="pill">${euro(q.amount)}</span></div>
-          <button class="btn" type="button" ${sum!==tot?'disabled':''}
-                  onclick="payQuota(${q.amount.toFixed(2)})">${t("pay_share_n")(i+1)}</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" type="button" ${(sum!==tot || !PAY_ENABLED)?'disabled':''}
+              onclick="payQuota(${q.amount.toFixed(2)})">${t("pay_share_online_n")(i+1)}</button>
+            <button class="btn btn-ghost" type="button" ${sum!==tot?'disabled':''}
+              onclick="payQuotaAtCounter(${q.amount.toFixed(2)})">${t("pay_share_counter_n")(i+1)}</button>
+          </div>
         `;
         list.appendChild(div);
       });
     }
 
-    // — Esegue un pagamento SumUp per un importo specifico
+    // — Esegue un pagamento SumUp per un importo specifico (quota)
     async function payQuota(amount){
       if(!PAY_ENABLED){ alert(t("pay_not_available")); return; }
       const saved = await createOrder(); // un ordine backend; quota pagata separatamente
       if(!saved) return;
       await payAmount(Number(amount), `Mangia & Fuggi - Quota ordine #${saved.order_id}`);
+    }
+
+    // — Quota pagata in cassa (nessun redirect, non svuota carrello)
+    async function payQuotaAtCounter(amount){
+      const saved = await createOrder(); // crea l'ordine con riepilogo
+      if(!saved) return;
+      alert(t("order_sent_counter")); // messaggio standard
+      // NON svuotiamo il carrello: altri devono ancora pagare
     }
 
     // — Chiamata generica a /api/pay-sumup (con diagnostica e redirect diretto)
