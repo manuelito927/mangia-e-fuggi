@@ -466,7 +466,7 @@ app.get("/api/stats/day", async (req, res) => {
       
     for (const b of buckets) b.revenue = Number(b.revenue.toFixed(2));
 
-    res.json({ ok: true, count: countAll, total: Number(totalRev.toFixed(2)), perBucket: { rows: buckets } });
+    res.json({ ok: true, count: countAccepted, total: Number(totalRev.toFixed(2)), perBucket: { rows: buckets } });
   } catch (e) {
     console.error("stats day error:", e);
     res.status(500).json({ ok:false, error:"stats_day_failed" });
