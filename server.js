@@ -35,10 +35,19 @@ function getBaseUrl(req){
   );
 }
 // helper limiti giorno in orario locale (Italia) → ISO UTC
+// fuso orario fisso Italia (gestisce automaticamente ora legale)
+const ROME_TZ = 'Europe/Rome';
+function toRome(dateLike){
+  // converte un timestamp in "ora di Roma"
+  return new Date(new Date(dateLike || Date.now()).toLocaleString('en-GB', { timeZone: ROME_TZ }));
+}
+
+// helper limiti giorno in orario Italia (DST ok) → ISO UTC
 function localDayBounds(dayStr) {
   const base = dayStr ? new Date(dayStr + "T00:00:00") : new Date();
-  const startLocal = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
-  const endLocal   = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59, 999);
+  const rome = toRome(base);
+  const startLocal = new Date(rome.getFullYear(), rome.getMonth(), rome.getDate(), 0, 0, 0, 0);
+  const endLocal   = new Date(rome.getFullYear(), rome.getMonth(), rome.getDate(), 23, 59, 59, 999);
   return { start: startLocal.toISOString(), end: endLocal.toISOString(), startLocal, endLocal };
 }
 
