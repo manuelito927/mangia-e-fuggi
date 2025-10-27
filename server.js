@@ -449,7 +449,7 @@ app.get("/api/stats/day", async (req, res) => {
     const all = orders || [];
     const completed = all.filter(o => o.status === "completed");
 
-    const countAll = all.length;
+    const countAccepted = completed.length;
     const totalRev = completed.reduce((s,o)=>s+Number(o.total||0),0);
 
     const buckets = Array.from({length:24}, (_,h) => {
