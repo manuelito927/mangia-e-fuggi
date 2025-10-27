@@ -544,7 +544,11 @@ function resetMenuQuantities(){
     if(!saved) return;
 
     const ok = await payAmount(saved.total, `Mangia & Fuggi - Ordine #${saved.order_id}`);
-    if(ok){ cart.clear(); renderCart(); }
+   if(ok){
+  cart.clear();
+  renderCart();
+  resetMenuQuantities(); // <— aggiunta
+}
   }
 
   // 💵 Ordina & paga in cassa
