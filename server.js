@@ -458,10 +458,15 @@ app.get("/api/stats/day", async (req, res) => {
     });
 
     for (const o of all) {
-  const h = toRome(o.created_at).getHours(); // <— usa ora di Roma
-  const idx = (h>=0 && h<=23) ? h : 0;
-  buckets[idx].count += 1;
-  if (o.status === "completed") buckets[idx].revenue += Number(o.total||0);
+  if (o.status === "completed") {              // ✅ solo ordini accettati
+    const b = new Date(o.created_at);
+    const h = b.getHours();
+    const idx = buckets.findIndex(x => x.key === h);
+    if (idx >= 0) {
+      buckets[idx].count += 1;                 // conta solo accepted
+      buckets[idx].revenue += Number(o.total||0);
+    }
+  }
 }
       
     for (const b of buckets) b.revenue = Number(b.revenue.toFixed(2));
