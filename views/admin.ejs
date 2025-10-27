@@ -257,23 +257,17 @@ async function fetchOrders(){
 
   const q=$('#q').value.toLowerCase();
   const daySel = $('#dayOrders').value || isoLocalDateStr(new Date());
-  const isDay = o => isoLocalDateStr(o.created_at) === daySel;
 
   let list = [];
 
   const [pnd, cmp, cnc] = await Promise.all([
-    fetch('/api/orders?status=pending').then(r=>r.json()),
-    fetch('/api/orders?status=completed').then(r=>r.json()),
-    fetch('/api/orders?status=canceled').then(r=>r.json())
+    fetch(`/api/orders?status=pending&day=${daySel}`).then(r=>r.json()),
+    fetch(`/api/orders?status=completed&day=${daySel}`).then(r=>r.json()),
+    fetch(`/api/orders?status=canceled&day=${daySel}`).then(r=>r.json())
   ]);
-  const pendAll = (pnd.ok ? (pnd.orders||[]) : []);
-  const compAll = (cmp.ok ? (cmp.orders||[]) : []);
-  const cancAll = (cnc.ok ? (cnc.orders||[]) : []);
-
-  // applico filtro giorno
-  const pend = pendAll.filter(isDay);
-  const comp = compAll.filter(isDay);
-  const canc = cancAll.filter(isDay);
+  const pend = (pnd.ok ? (pnd.orders||[]) : []);
+  const comp = (cmp.ok ? (cmp.orders||[]) : []);
+  const canc = (cnc.ok ? (cnc.orders||[]) : []);
 
   if(STATUS==='all'){
     list = pend.filter(o=>!o.ack).concat(comp);
@@ -284,6 +278,7 @@ async function fetchOrders(){
   }else if(STATUS==='canceled'){
     list = canc;
   }
+
   // ordina per data desc
   list.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
   ORDERS=list;
