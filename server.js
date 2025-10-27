@@ -43,12 +43,33 @@ function toRome(dateLike){
 }
 
 // helper limiti giorno in orario Italia (DST ok) → ISO UTC
+// helper limiti giorno in orario Italia (Europa/Roma)
 function localDayBounds(dayStr) {
-  const base = dayStr ? new Date(dayStr + "T00:00:00") : new Date();
-  const rome = toRome(base);
-  const startLocal = new Date(rome.getFullYear(), rome.getMonth(), rome.getDate(), 0, 0, 0, 0);
-  const endLocal   = new Date(rome.getFullYear(), rome.getMonth(), rome.getDate(), 23, 59, 59, 999);
-  return { start: startLocal.toISOString(), end: endLocal.toISOString(), startLocal, endLocal };
+  const tz = "Europe/Rome";
+
+  // Se non c'è una data passata, usa oggi
+  const d = (dayStr && dayStr.slice(0,10)) || new Date().toISOString().slice(0,10);
+
+  // Calcola in orario locale di Roma
+  const startWall = new Date(`${d}T00:00:00.000`);
+  const endWall   = new Date(`${d}T23:59:59.999`);
+
+  // Converte da ora locale (Roma) a UTC effettivo
+  const toUtc = (date) => {
+    const inTZ = new Date(date.toLocaleString("en-US", { timeZone: tz }));
+    const diff = date.getTime() - inTZ.getTime();
+    return new Date(date.getTime() - diff);
+  };
+
+  const startUtc = toUtc(startWall);
+  const endUtc   = toUtc(endWall);
+
+  return {
+    start: startUtc.toISOString(),
+    end: endUtc.toISOString(),
+    startLocal: startWall,
+    endLocal: endWall
+  };
 }
 
 // ---------- Supabase
