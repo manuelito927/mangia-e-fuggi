@@ -204,12 +204,20 @@ function isoLocalDateStr(dOrIso){
 }
 
 // === ORA ITALIANA (anche con ora legale) ===
-// === ORA ITALIANA (anche con ora legale) ===
+<!-- === ORA ITALIANA (robusto, unico) === -->
+<script>
 const ROME_TZ = 'Europe/Rome';
 
 function formatRome(iso) {
   try {
-    const dt = new Date(iso);
+    let s = String(iso || '');
+
+    // Se arriva senza offset/Z (es. 2025-10-27T14:10:57), trattala come UTC
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(s)) {
+      s += 'Z';
+    }
+
+    const dt = new Date(s);
     return new Intl.DateTimeFormat('it-IT', {
       timeZone: ROME_TZ,
       year: 'numeric', month: '2-digit', day: '2-digit',
@@ -219,6 +227,7 @@ function formatRome(iso) {
     return iso || '';
   }
 }
+</script>
 
 // ====== ORDINI ======
 let STATUS='all', ORDERS=[], SUBS=false, refreshTimer=null;
