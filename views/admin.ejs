@@ -367,6 +367,7 @@ $('#orders').addEventListener('click', async ev=>{
   if(act==='complete'){ await fetch(`/api/orders/${id}/complete`,{method:'POST'}); }
   if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await fetch(`/api/orders/${id}/cancel`,{method:'POST'}); }
   if(act==='restore'){ await fetch(`/api/orders/${id}/restore`,{method:'POST'}); }
+  if(act==='receipt'){ await emitReceipt(id); return; }
   if(act==='ack'){ await fetch(`/api/orders/${id}/ack`,{method:'POST'}); }
   if(act==='mark_due'){
     await fetch(`/api/orders/${id}/ack`,{method:'POST'});
