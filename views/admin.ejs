@@ -331,6 +331,7 @@ function renderOrders(q){
         ${badge}
         <button class="btn ok" data-act="complete" data-id="${o.id}">💶 Pagato in cassa</button>
         <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>`;
+<button class="receipt" onclick="emitReceipt('<%= order.id %>')">Emetti scontrino</button>
     }else if(STATUS==='paid'){
       actions = `<button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>`;
     }else if(STATUS==='canceled'){
