@@ -197,6 +197,33 @@ app.get("/pagamento/successo", async (req,res)=>{
     }catch(e){ 
       console.error("mark paid on success page:", e); 
     }
+    
+    // === TRIGGER FISCALE (MOCK ora, LIVE quando FISKALY_ENABLED=true) ===
+try {
+  // 1) prendo le righe dell'ordine
+  const { data: its } = await supabase
+    .from("order_items")
+    .select("name, qty, price")
+    .eq("order_id", orderId);
+
+  // 2) le trasformo nel formato atteso
+  const items = (its || []).map(r => ({
+    name: r.name,
+    qty: Number(r.qty || 1),
+    unitPrice: Number(r.price || 0),
+    vatRate: 10   // ristorazione tipicamente 10%
+  }));
+
+  // 3) chiamo la mia rotta fiscale (mock adesso)
+  fetch(`${getBaseUrl(req)}/api/fiscal/receipt`, {
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify({ orderId, table: null, items })
+  }).catch(()=>{});
+} catch (e) {
+  console.warn("post-pay fiscal trigger failed:", e?.message || e);
+}
+    
   } else {
     console.warn("Pagamento successo senza order_id e senza session.last_order_id");
   }
