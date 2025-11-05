@@ -715,6 +715,47 @@ app.post("/api/pay-sumup", async (req, res) => {
   }
 });
 
+// =====================================================================================
+// FISCALE (MOCK) — verrà sostituito da FISKALY SIGN IT quando attivo
+// =====================================================================================
+const FISKALY_ENABLED   = (process.env.FISKALY_ENABLED || "false").toLowerCase() === "true";
+const PRINT_SPOOL_DIR   = process.env.PRINT_SPOOL_DIR || "./spool";
+
+app.post("/api/fiscal/receipt", async (req, res) => {
+  try {
+    const { orderId, table=null, items=[] } = req.body || {};
+    if (!orderId) return res.status(400).json({ ok:false, error:"missing_orderId" });
+
+    // quando sarà attivo SIGN IT, qui chiameremo le API vere
+    if (!FISKALY_ENABLED) {
+      // MOCK: salviamo un file JSON nello spool come “simulazione” di scontrino
+      try {
+        if (!fs.existsSync(PRINT_SPOOL_DIR)) fs.mkdirSync(PRINT_SPOOL_DIR, { recursive:true });
+        const out = {
+          type: "MOCK_FISCAL_RECEIPT",
+          orderId,
+          table,
+          items,
+          totals: {
+            gross: items.reduce((s,it)=> s + Number(it.unitPrice||0)*Number(it.qty||1), 0)
+          },
+          timestamp: new Date().toISOString()
+        };
+        fs.writeFileSync(path.join(PRINT_SPOOL_DIR, `receipt-${orderId}.json`), JSON.stringify(out, null, 2));
+      } catch (e) {
+        console.warn("mock fiscal write failed:", e?.message || e);
+      }
+      return res.json({ ok:true, mock:true });
+    }
+
+    // TODO: qui andrà la chiamata reale a SIGN IT (quando avremo le credenziali)
+    return res.json({ ok:true, live:true });
+  } catch (e) {
+    console.error("fiscal/receipt error:", e);
+    res.status(500).json({ ok:false, error:"fiscal_failed" });
+  }
+});
+
 // --- Helpers prenotazioni/waitlist ---
 async function promoteNextWaiter(tableId){
   const { data: next, error: e1 } = await supabase
