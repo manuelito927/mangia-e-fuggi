@@ -12,6 +12,21 @@ import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import { createReceipt } from "./services/fiscal.js";
 
+function printToKitchen(order) {
+  const txt = [
+    `TAVOLO: ${order.table_code || '-'}`,
+    `DATA: ${order.created_at}`,
+    '',
+    ...order.items.map(i => `${i.qty}× ${i.name} (€${i.price})`),
+    '',
+    `Totale: €${order.total}`
+  ].join('\n');
+
+  // Per ora SALVA in ./spool/kitchen.txt
+  fs.writeFileSync(`./spool/kitchen_${order.id}.txt`, txt);
+  console.log("✅ Comanda salvata per la cucina:", order.id);
+}
+
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
