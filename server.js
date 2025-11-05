@@ -332,22 +332,7 @@ app.post("/api/checkout", async (req, res) => {
   }
 });
 
-// === API FISCALE (MOCK finché SIGN IT non è attivo) ===
-app.post("/api/fiscal/receipt", async (req, res) => {
-  console.log("📦 MOCK: richiesta ricevuta per /api/fiscal/receipt");
-  console.log("Ordine ricevuto:", req.body);
 
-  // simula un tempo di risposta (come se fossimo con RT digitale)
-  await new Promise(r => setTimeout(r, 800));
-
-  const fakeReceiptId = "FAKE-" + Math.random().toString(36).slice(2, 10).toUpperCase();
-
-  res.json({
-    ok: true,
-    receipt_id: fakeReceiptId,
-    message: "🧾 Scontrino fiscale simulato (in attesa di SIGN IT)"
-  });
-});
 
 // ✅ elenco ordini: “paid” ora mostra SOLO i completed (dopo “Fatto”)
 // ✅ /api/orders ora supporta status=all/paid/pending/canceled + filtro ?day=YYYY-MM-DD
