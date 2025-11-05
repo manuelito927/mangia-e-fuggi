@@ -249,6 +249,18 @@ res.json({ ok:true, order_id: order.id });
   } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
 });
 
+// === API FISCALE (MOCK finché SIGN IT non è attivo) ===
+app.post("/api/fiscal/receipt", async (req, res) => {
+  try {
+    // body atteso: { orderId, table, items:[{name,qty,unitPrice,vatRate}] }
+    const receipt = await createReceipt(req.body || {});
+    res.status(201).json({ ok:true, receipt });
+  } catch (e) {
+    console.error("FISCAL ERROR:", e?.message || e);
+    res.status(500).json({ ok:false, error:"fiscalization_failed" });
+  }
+});
+
 // ✅ elenco ordini: “paid” ora mostra SOLO i completed (dopo “Fatto”)
 // ✅ /api/orders ora supporta status=all/paid/pending/canceled + filtro ?day=YYYY-MM-DD
 app.get("/api/orders", async (req, res) => {
