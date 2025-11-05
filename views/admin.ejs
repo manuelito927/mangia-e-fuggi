@@ -376,6 +376,22 @@ $('#orders').addEventListener('click', async ev=>{
   await fetchOrders();
 });
 
+async function emitReceipt(orderId){
+  try{
+    const r = await fetch('/api/fiscal/receipt', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ orderId })
+    });
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error || 'errore');
+    alert('✅ Scontrino creato (MOCK). Con SIGN-IT sarà fiscale al 100%.');
+  }catch(e){
+    console.error(e);
+    alert('❌ Errore nella creazione dello scontrino.');
+  }
+}
+
 // Cambio tab
 $$('.tab').forEach(t=>{
   t.addEventListener('click', async ()=>{
