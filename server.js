@@ -265,43 +265,71 @@ app.get("/pagamento/annullato", (_req,res)=> res.send("Pagamento annullato. Puoi
 // =====================================================================================
 app.post("/api/checkout", async (req, res) => {
   const { tableCode, items, total } = req.body || {};
-  if (!Array.isArray(items) || !items.length)
+  if (!Array.isArray(items) || !items.length) {
     return res.status(400).json({ ok:false, error:"no_items" });
+  }
 
   try {
     const baseRow = { table_code: tableCode || null, total: Number(total)||0, status:"pending", ack:false };
     const row = { ...baseRow, payment_status: "unpaid" };
+
+    // 1) crea ordine
     const { data: order, error: oErr } = await supabase
       .from("orders")
       .insert([row])
-      .select().single();
-    if (oErr) {
+      .select()
+      .single();
+
+    let currentOrder = order;
+
+    if (oErr || !order) {
+      // fallback
       const { data: order2, error: oErr2 } = await supabase
         .from("orders")
         .insert([baseRow])
-        .select().single();
-      if (oErr2) throw oErr2;
+        .select()
+        .single();
+      if (oErr2 || !order2) throw oErr2 || new Error("order_insert_failed");
+      currentOrder = order2;
 
       const rows2 = items.map(it => ({
         order_id: order2.id, name: it.name, price: Number(it.price), qty: Number(it.qty)
       }));
       const { error: iErr2 } = await supabase.from("order_items").insert(rows2);
       if (iErr2) throw iErr2;
-     req.session.last_order_id = order2.id;
-req.session.save(()=>{});
-return res.json({ ok:true, order_id: order2.id });
+    } else {
+      // 2) inserisci items
+      const rows = items.map(it => ({
+        order_id: order.id, name: it.name, price: Number(it.price), qty: Number(it.qty)
+      }));
+      const { error: iErr } = await supabase.from("order_items").insert(rows);
+      if (iErr) throw iErr;
     }
 
-    const rows = items.map(it => ({
-      order_id: order.id, name: it.name, price: Number(it.price), qty: Number(it.qty)
-    }));
-    const { error: iErr } = await supabase.from("order_items").insert(rows);
-    if (iErr) throw iErr;
+    // 3) session
+    req.session.last_order_id = currentOrder.id;
+    req.session.save(()=>{});
 
-  req.session.last_order_id = order.id;
-req.session.save(()=>{});
-res.json({ ok:true, order_id: order.id });
-  } catch(e){ console.error(e); res.status(500).json({ ok:false }); }
+    // 4) STAMPA AUTOMATICA (se attiva)
+    if (String(process.env.AUTO_PRINT_KITCHEN).toLowerCase() === "true") {
+      const toPrint = {
+        ...currentOrder,
+        items: items.map(it => ({
+          name: it.name,
+          qty: Number(it.qty),
+          price: Number(it.price)
+        }))
+      };
+      printToKitchen(toPrint); // <-- usa la funzione che hai già incollato
+    }
+
+    // 5) risposta
+    return res.json({ ok:true, order_id: currentOrder.id });
+
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ ok:false, error:"checkout_failed" });
+  }
 });
 
 // === API FISCALE (MOCK finché SIGN IT non è attivo) ===
