@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
-import { createReceipt } from "./services/fiscal.js";
+import { createFiscalReceipt } from "./services/fiskaly.js";
 
 // === FUNZIONE STAMPA COMANDA (per ora salva su file) ===
 function printToKitchen(order) {
