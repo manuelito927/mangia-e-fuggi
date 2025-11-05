@@ -278,14 +278,19 @@ res.json({ ok:true, order_id: order.id });
 
 // === API FISCALE (MOCK finché SIGN IT non è attivo) ===
 app.post("/api/fiscal/receipt", async (req, res) => {
-  try {
-    // body atteso: { orderId, table, items:[{name,qty,unitPrice,vatRate}] }
-    const receipt = await createReceipt(req.body || {});
-    res.status(201).json({ ok:true, receipt });
-  } catch (e) {
-    console.error("FISCAL ERROR:", e?.message || e);
-    res.status(500).json({ ok:false, error:"fiscalization_failed" });
-  }
+  console.log("📦 MOCK: richiesta ricevuta per /api/fiscal/receipt");
+  console.log("Ordine ricevuto:", req.body);
+
+  // simula un tempo di risposta (come se fossimo con RT digitale)
+  await new Promise(r => setTimeout(r, 800));
+
+  const fakeReceiptId = "FAKE-" + Math.random().toString(36).slice(2, 10).toUpperCase();
+
+  res.json({
+    ok: true,
+    receipt_id: fakeReceiptId,
+    message: "🧾 Scontrino fiscale simulato (in attesa di SIGN IT)"
+  });
 });
 
 // ✅ elenco ordini: “paid” ora mostra SOLO i completed (dopo “Fatto”)
