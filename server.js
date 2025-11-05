@@ -12,19 +12,32 @@ import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import { createReceipt } from "./services/fiscal.js";
 
+// === FUNZIONE STAMPA COMANDA (per ora salva su file) ===
 function printToKitchen(order) {
-  const txt = [
-    `TAVOLO: ${order.table_code || '-'}`,
-    `DATA: ${order.created_at}`,
-    '',
-    ...order.items.map(i => `${i.qty}× ${i.name} (€${i.price})`),
-    '',
-    `Totale: €${order.total}`
-  ].join('\n');
+  try {
+    const lines = [
+      '=== COMANDA CUCINA ===',
+      `TAVOLO: ${order.table_code || '-'}`,
+      `DATA: ${order.created_at || new Date().toISOString()}`,
+      '',
+      ...(order.items || []).map(i => `${Number(i.qty)}× ${i.name} (€${Number(i.price).toFixed(2)})`),
+      '',
+      `Totale: €${Number(order.total || 0).toFixed(2)}`,
+      `ID: ${order.id}`
+    ];
+    const txt = lines.join('\n');
 
-  // Per ora SALVA in ./spool/kitchen.txt
-  fs.writeFileSync(`./spool/kitchen_${order.id}.txt`, txt);
-  console.log("✅ Comanda salvata per la cucina:", order.id);
+    // crea cartella spool se manca
+    if (!fs.existsSync('./spool')) fs.mkdirSync('./spool', { recursive: true });
+
+    // salva file comanda
+    const outPath = `./spool/kitchen_${order.id}.txt`;
+    fs.writeFileSync(outPath, txt, 'utf8');
+
+    console.log('✅ COMANDA salvata per cucina:', outPath);
+  } catch (e) {
+    console.error('❌ printToKitchen error:', e);
+  }
 }
 
 dotenv.config();
