@@ -768,29 +768,37 @@ const FISKALY_ENABLED   = (process.env.FISKALY_ENABLED || "false").toLowerCase()
 const PRINT_SPOOL_DIR   = process.env.PRINT_SPOOL_DIR || "./spool";
 
 app.post("/api/fiscal/receipt", async (req, res) => {
+  console.log("🧾 /api/fiscal/receipt CHIAMATA con body:", req.body); // 👈 LOG INIZIALE
+
   try {
-    const { orderId, table=null, items=[] } = req.body || {};
-    if (!orderId) return res.status(400).json({ ok:false, error:"missing_orderId" });
+    const { orderId, table = null, items = [] } = req.body || {};
+    if (!orderId) return res.status(400).json({ ok: false, error: "missing_orderId" });
 
     // Se FISKALY è spento → mock su file
     if (!FISKALY_ENABLED) {
       try {
-        if (!fs.existsSync(PRINT_SPOOL_DIR)) fs.mkdirSync(PRINT_SPOOL_DIR, { recursive:true });
+        if (!fs.existsSync(PRINT_SPOOL_DIR)) fs.mkdirSync(PRINT_SPOOL_DIR, { recursive: true });
         const out = {
           type: "MOCK_FISCAL_RECEIPT",
           orderId,
           table,
           items,
           totals: {
-            gross: (items || []).reduce((s,it)=> s + Number((it.unitPrice ?? it.price) || 0) * Number(it.qty || 1), 0)
+            gross: (items || []).reduce(
+              (s, it) => s + Number((it.unitPrice ?? it.price) || 0) * Number(it.qty || 1),
+              0
+            )
           },
           timestamp: new Date().toISOString()
         };
-        fs.writeFileSync(path.join(PRINT_SPOOL_DIR, `receipt-${orderId}.json`), JSON.stringify(out, null, 2));
+        const filePath = path.join(PRINT_SPOOL_DIR, `receipt-${orderId}.json`);
+        fs.writeFileSync(filePath, JSON.stringify(out, null, 2));
+
+        console.log("✅ MOCK scontrino salvato:", filePath); // 👈 LOG DI SUCCESSO
       } catch (e) {
         console.warn("mock fiscal write failed:", e?.message || e);
       }
-      return res.json({ ok:true, mock:true });
+      return res.json({ ok: true, mock: true });
     }
 
     // ----- LIVE (TEST/PROD) con Fiskaly -----
@@ -821,7 +829,7 @@ app.post("/api/fiscal/receipt", async (req, res) => {
     }));
 
     // 4) calcolo totale se manca
-    const calcTotal = normItems.reduce((s,i)=> s + i.price * i.qty, 0);
+    const calcTotal = normItems.reduce((s, i) => s + i.price * i.qty, 0);
     const total = Number((ord?.total ?? calcTotal).toFixed(2));
 
     // 5) costruisco l'oggetto ordine per fiskaly.js
@@ -838,18 +846,18 @@ app.post("/api/fiscal/receipt", async (req, res) => {
 
     // 7) salvo (se hai le colonne; se non ci sono, ignora l’errore)
     try {
-      await supabase.from("orders")
+      await supabase
+        .from("orders")
         .update({ fiscal_record_id: rec.record_id || null, fiscal_status: rec.status || null })
         .eq("id", orderId);
-    } catch(_) {}
+    } catch (_) {}
 
-    return res.json({ ok:true, rec });
+    return res.json({ ok: true, rec });
   } catch (e) {
-    console.error("fiscal/receipt error:", e);
-    res.status(500).json({ ok:false, error:"fiscal_failed" });
+    console.error("❌ fiscal/receipt error:", e);
+    res.status(500).json({ ok: false, error: "fiscal_failed" });
   }
 });
-
 // --- Helpers prenotazioni/waitlist ---
 async function promoteNextWaiter(tableId){
   const { data: next, error: e1 } = await supabase
