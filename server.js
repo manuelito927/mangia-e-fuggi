@@ -772,9 +772,8 @@ app.post("/api/fiscal/receipt", async (req, res) => {
     const { orderId, table=null, items=[] } = req.body || {};
     if (!orderId) return res.status(400).json({ ok:false, error:"missing_orderId" });
 
-    // quando sarà attivo SIGN IT, qui chiameremo le API vere
+    // Se FISKALY è spento → mock su file
     if (!FISKALY_ENABLED) {
-      // MOCK: salviamo un file JSON nello spool come “simulazione” di scontrino
       try {
         if (!fs.existsSync(PRINT_SPOOL_DIR)) fs.mkdirSync(PRINT_SPOOL_DIR, { recursive:true });
         const out = {
@@ -783,7 +782,7 @@ app.post("/api/fiscal/receipt", async (req, res) => {
           table,
           items,
           totals: {
-            gross: items.reduce((s,it)=> s + Number(it.unitPrice||0)*Number(it.qty||1), 0)
+            gross: (items || []).reduce((s,it)=> s + Number((it.unitPrice ?? it.price) || 0) * Number(it.qty || 1), 0)
           },
           timestamp: new Date().toISOString()
         };
@@ -794,8 +793,57 @@ app.post("/api/fiscal/receipt", async (req, res) => {
       return res.json({ ok:true, mock:true });
     }
 
-    // TODO: qui andrà la chiamata reale a SIGN IT (quando avremo le credenziali)
-    return res.json({ ok:true, live:true });
+    // ----- LIVE (TEST/PROD) con Fiskaly -----
+
+    // 1) prendo ordine
+    const { data: ord } = await supabase
+      .from("orders")
+      .select("id,total,pay_method,table_code")
+      .eq("id", orderId)
+      .single();
+
+    // 2) prendo righe se non sono state inviate
+    let lines = items;
+    if (!lines || !lines.length) {
+      const { data: its } = await supabase
+        .from("order_items")
+        .select("name, qty, price")
+        .eq("order_id", orderId);
+      lines = its || [];
+    }
+
+    // 3) normalizzo per fiskaly.js (usa 'price', non 'unitPrice')
+    const normItems = (lines || []).map(r => ({
+      name: r.name,
+      qty: Number(r.qty || 1),
+      price: Number(r.price ?? r.unitPrice ?? 0),
+      vatRate: Number(r.vatRate ?? 10)
+    }));
+
+    // 4) calcolo totale se manca
+    const calcTotal = normItems.reduce((s,i)=> s + i.price * i.qty, 0);
+    const total = Number((ord?.total ?? calcTotal).toFixed(2));
+
+    // 5) costruisco l'oggetto ordine per fiskaly.js
+    const order = {
+      id: orderId,
+      items: normItems,
+      total,
+      pay_method: ord?.pay_method || "cash",
+      table_code: table || ord?.table_code || null
+    };
+
+    // 6) invio a Fiskaly
+    const rec = await createFiscalReceipt(order);
+
+    // 7) salvo (se hai le colonne; se non ci sono, ignora l’errore)
+    try {
+      await supabase.from("orders")
+        .update({ fiscal_record_id: rec.record_id || null, fiscal_status: rec.status || null })
+        .eq("id", orderId);
+    } catch(_) {}
+
+    return res.json({ ok:true, rec });
   } catch (e) {
     console.error("fiscal/receipt error:", e);
     res.status(500).json({ ok:false, error:"fiscal_failed" });
