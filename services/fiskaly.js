@@ -1,21 +1,31 @@
 // services/fiskaly.js
-// Modalità TEST/SANDBOX (non invia nulla all’Agenzia, serve solo per sviluppo)
+// Client leggero per FISKALY SIGN-IT (sandbox). Compatibile col tuo server.js.
 
+// 🔧 Config (sandbox di default)
 const FISKALY_BASE_URL = process.env.FISKALY_BASE_URL || "https://sign-api.sandbox.fiskaly.com";
-const FISKALY_ENV      = (process.env.FISKALY_ENV || "TEST").toUpperCase();
+const FISKALY_ENV      = (process.env.FISKALY_ENV || "TEST").toUpperCase(); // TEST o PRODUCTION
 
-// 🔐 API KEY E SECRET DAL TUO ACCOUNT FISKALY
+// 🔐 Credenziali API (le metterai quando le hai)
 const API_KEY    = process.env.FISKALY_API_KEY || "";
 const API_SECRET = process.env.FISKALY_API_SECRET || "";
 
-// ✅ Quando vendi al primo ristorante, inserirai questi valori reali
-const BUSINESS_VAT_ID  = process.env.BUSINESS_VAT_ID  || "IT00000000000";
-const BUSINESS_NAME    = process.env.BUSINESS_NAME    || "Ristorante Demo";
-const BUSINESS_ADDRESS = process.env.BUSINESS_ADDRESS || "Via Prova 1, 73100 Lecce (LE)";
+// 🔹 Identificativi Business (demo finché non hai i veri dati)
+const BUSINESS_VAT_ID  = (process.env.BUSINESS_VAT_ID  || "IT00000000000").trim();
+const BUSINESS_NAME    = (process.env.BUSINESS_NAME    || "Ristorante Demo").trim();
+const BUSINESS_ADDRESS = (process.env.BUSINESS_ADDRESS || "Via Prova 1, 73100 Lecce (LE)").trim();
 
-let UNIT_CACHE = null;
+// 🔹 Se già possiedi una UNIT su Fiskaly, mettila qui per saltare la creazione
+const FISKALY_UNIT_ID  = (process.env.FISKALY_UNIT_ID || "").trim();
 
+let UNIT_CACHE = FISKALY_UNIT_ID ? { id: FISKALY_UNIT_ID } : null;
+
+// ------------------------------
+// HTTP helper
+// ------------------------------
 async function fiskalyRequest(path, method = "GET", body = null) {
+  if (!API_KEY || !API_SECRET) {
+    throw new Error("FISKALY_API_KEY / FISKALY_API_SECRET mancanti.");
+  }
   const headers = {
     "Content-Type": "application/json",
     "X-API-KEY": API_KEY,
@@ -28,51 +38,72 @@ async function fiskalyRequest(path, method = "GET", body = null) {
     body: body ? JSON.stringify(body) : null
   });
 
-  const txt = await res.text();
-  let data = null; try { data = JSON.parse(txt); } catch { data = { raw: txt }; }
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
-  if (!res.ok) throw new Error(data?.message || data?.error || txt);
+  if (!res.ok) {
+    const msg = data?.message || data?.error || text || `HTTP ${res.status}`;
+    throw new Error(`${method} ${path} → ${msg}`);
+  }
   return data;
 }
 
-// ✅ Crea (o recupera) l'identità fiscale dell’esercente
+// ------------------------------
+// UNIT helper
+// ------------------------------
+/**
+ * Crea (o recupera) l'UNIT (identità fiscale) in sandbox.
+ * Se hai già FISKALY_UNIT_ID, la usa e basta.
+ */
 export async function ensureUnit() {
   if (UNIT_CACHE?.id) return UNIT_CACHE;
 
   const payload = {
-    environment: FISKALY_ENV,
+    environment: FISKALY_ENV,   // TEST|PRODUCTION
     country: "IT",
     taxpayer: {
-      vat_id: BUSINESS_VAT_ID,
+      vat_id: BUSINESS_VAT_ID,  // es. IT12345678901
       name: BUSINESS_NAME,
       address: BUSINESS_ADDRESS
     }
   };
 
+  // L'endpoint sandbox consente un POST idempotente che restituisce la UNIT
   const unit = await fiskalyRequest(`/sign-it/units`, "POST", payload);
-  UNIT_CACHE = unit;
+  UNIT_CACHE = unit; // { id, ... }
   return unit;
 }
 
-// ✅ Crea lo scontrino (in TEST non è fiscale, ma è già lo stesso flusso reale)
+// ------------------------------
+// TRANSACTION (scontrino)
+// ------------------------------
+/**
+ * Crea lo scontrino su SIGN-IT (in sandbox non è fiscale reale, ma è lo stesso flusso).
+ * order: { id, items:[{name,qty,price,vatRate?}], total, pay_method?, table_code? }
+ * Ritorna: { ok, unit_id, record_id, number?, status }
+ */
 export async function createFiscalReceipt(order) {
   if (!order || !Array.isArray(order.items) || order.items.length === 0) {
-    throw new Error("Ordine non valido (items mancanti)");
+    throw new Error("Ordine non valido: items mancanti.");
   }
 
+  // Assicura UNIT
   const unit = await ensureUnit();
 
+  // Mappa le righe nel formato atteso
   const items = order.items.map(i => ({
     description: i.name,
     quantity: Number(i.qty || 1),
     unit_price: Number(i.price || 0),
-    vat_rate: Number(i.vatRate ?? 10)
+    vat_rate: Number(i.vatRate ?? 10)  // tipico 10% ristorazione
   }));
 
+  // Costruisci payload transazione
   const payload = {
-    environment: FISKALY_ENV,
-    unit_id: unit.id,
-    external_reference: `order_${order.id}`,
+    environment: FISKALY_ENV,        // TEST o PRODUCTION (quando andrai live)
+    unit_id: unit.id,                // UNIT creata o fornita da env
+    external_reference: `order_${order.id}`, // riferimento tuo
     receipt: {
       issue_date: new Date().toISOString(),
       items,
@@ -88,8 +119,10 @@ export async function createFiscalReceipt(order) {
     }
   };
 
+  // Invio a SIGN-IT (sandbox)
   const result = await fiskalyRequest(`/sign-it/transactions`, "POST", payload);
 
+  // Normalizza risposta per il tuo server.js
   return {
     ok: true,
     unit_id: unit.id,
