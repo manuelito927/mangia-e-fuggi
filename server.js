@@ -12,7 +12,13 @@ import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import { createFiscalReceipt } from "./services/fiskaly.js";
 
-// === FUNZIONE STAMPA COMANDA (per ora salva su file) ===
+// === STAMPA CUCINA + ESPOSIZIONE SPOOL + ROUTE /printed =====================
+// Sostituisci eventuali versioni precedenti di printToKitchen e della rotta /api/orders/:id/printed
+
+// Cartella di spool (usabile anche su Render; è effimera, ma OK per test/dev)
+const SPOOL_DIR = process.env.PRINT_SPOOL_DIR || path.join(__dirname, "spool");
+
+// Funzione che genera la COMANDA per la cucina come file di testo
 function printToKitchen(order) {
   try {
     const lines = [
@@ -27,18 +33,72 @@ function printToKitchen(order) {
     ];
     const txt = lines.join('\n');
 
-    // crea cartella spool se manca
-    if (!fs.existsSync('./spool')) fs.mkdirSync('./spool', { recursive: true });
+    if (!fs.existsSync(SPOOL_DIR)) fs.mkdirSync(SPOOL_DIR, { recursive: true });
 
-    // salva file comanda
-    const outPath = `./spool/kitchen_${order.id}.txt`;
+    const outPath = path.join(SPOOL_DIR, `kitchen_${order.id}.txt`);
     fs.writeFileSync(outPath, txt, 'utf8');
 
     console.log('✅ COMANDA salvata per cucina:', outPath);
+    return outPath;
   } catch (e) {
     console.error('❌ printToKitchen error:', e);
+    return null;
   }
 }
+
+// Espone via HTTP i file generati in /spool (solo lettura)
+app.use("/spool", express.static(SPOOL_DIR));
+
+/**
+ * Quando dal pannello premi "🖨️ Stampa", questa rotta:
+ * 1) Recupera ordine + righe da Supabase
+ * 2) Genera il file comanda in /spool
+ * 3) (opzionale) segna l'ordine come letto (ack:true)
+ * 4) Ritorna l'URL diretto del file, es. /spool/kitchen_<id>.txt
+ */
+app.post("/api/orders/:id/printed", async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    // 1) prendo l'ordine
+    const { data: ord, error: oErr } = await supabase
+      .from("orders")
+      .select("id, table_code, total, created_at")
+      .eq("id", id)
+      .single();
+    if (oErr || !ord) return res.json({ ok:false, error:"order_not_found" });
+
+    // 2) prendo le righe articolo
+    const { data: its, error: iErr } = await supabase
+      .from("order_items")
+      .select("name, qty, price")
+      .eq("order_id", id);
+    if (iErr) return res.json({ ok:false, error:"items_fetch_failed" });
+
+    const orderForPrint = {
+      ...ord,
+      items: (its || []).map(r => ({
+        name: r.name,
+        qty: Number(r.qty || 1),
+        price: Number(r.price || 0)
+      }))
+    };
+
+    // 3) genera file comanda
+    const filePath = printToKitchen(orderForPrint);
+
+    // 4) marca come letto (facoltativo)
+    await supabase.from("orders").update({ ack: true }).eq("id", id);
+
+    // 5) rispondo con URL scaricabile
+    const publicUrl = filePath ? `/spool/${path.basename(filePath)}` : null;
+    return res.json({ ok:true, file: publicUrl });
+  } catch (e) {
+    console.error("printed route error:", e);
+    return res.json({ ok:false, error:"printed_failed" });
+  }
+});
+// ============================================================================ 
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
