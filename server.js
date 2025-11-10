@@ -12,9 +12,21 @@ import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
 import { createFiscalReceipt } from "./services/fiskaly.js";
 
-// === STAMPA CUCINA + ESPOSIZIONE SPOOL + ROUTE /printed =====================
-// Sostituisci eventuali versioni precedenti di printToKitchen e della rotta /api/orders/:id/printed
+// === Inizializza SUBITO variabili base e app ===
+dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
+const app = express();
 
+// --- Supabase PRIMA di usare le rotte che lo richiedono ---
+const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.Supabase_url || process.env.supabase_url || "").trim();
+const SUPABASE_KEY = (process.env.SUPABASE_KEY || process.env.Supabase_key || process.env.supabase_key || process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.warn("⚠️ Mancano SUPABASE_URL/SUPABASE_KEY");
+}
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// === STAMPA CUCINA + ESPOSIZIONE SPOOL + ROUTE /printed =====================
 // Cartella di spool (usabile anche su Render; è effimera, ma OK per test/dev)
 const SPOOL_DIR = process.env.PRINT_SPOOL_DIR || path.join(__dirname, "spool");
 
@@ -98,11 +110,6 @@ app.post("/api/orders/:id/printed", async (req, res) => {
     return res.json({ ok:false, error:"printed_failed" });
   }
 });
-// ============================================================================ 
-
-dotenv.config();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname  = path.dirname(__filename);
 
 // ---------- utils
 function getEnvAny(...keys){
