@@ -240,6 +240,21 @@ app.use(session({
   saveUninitialized: false
 }));
 
+// ===== Middleware API Admin (Bearer token) =====
+const ADMIN_API_TOKEN = (process.env.ADMIN_API_TOKEN || "").trim();
+
+function requireAdminApi(req, res, next) {
+  // es: Authorization: Bearer <ADMIN_API_TOKEN>
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!ADMIN_API_TOKEN) {
+    console.warn("⚠️ ADMIN_API_TOKEN non impostato: API admin non protette");
+    return res.status(500).json({ ok:false, error:"admin_token_missing" });
+  }
+  if (token === ADMIN_API_TOKEN) return next();
+  return res.status(403).json({ ok:false, error:"admin_only" });
+}
+
 // ---------- Basic Auth su /admin (usa ADMIN_PASSWORD)
 app.use("/admin", (req, res, next) => {
   const required = (process.env.ADMIN_PASSWORD || "").trim();
