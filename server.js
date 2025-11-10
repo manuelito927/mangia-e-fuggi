@@ -411,7 +411,7 @@ app.post("/api/checkout", async (req, res) => {
 
 // ✅ elenco ordini: “paid” ora mostra SOLO i completed (dopo “Fatto”)
 // ✅ /api/orders ora supporta status=all/paid/pending/canceled + filtro ?day=YYYY-MM-DD
-app.get("/api/orders", async (req, res) => {
+app.get("/api/orders", requireAdminApi, async (req, res) => {
   try {
     const status = (req.query.status || "").toString();
     const dayStr = (req.query.day || req.query.date || "").toString().slice(0,10);
@@ -466,34 +466,34 @@ app.get("/api/orders", async (req, res) => {
 });
 
 // --- rotte legacy (restano identiche)
-app.post("/api/orders/:id/complete", async (req, res) => {
+app.post("/api/orders/:id/complete", requireAdminApi, async (req, res) => {
   const { error } = await supabase.from("orders")
     .update({ status:"completed", completed_at:new Date().toISOString() })
     .eq("id", req.params.id);
   res.json({ ok: !error });
 });
-app.post("/api/orders/:id/cancel", async (req, res) => {
+app.post("/api/orders/:id/cancel", requireAdminApi, async (req, res) => {
   const { error } = await supabase.from("orders")
     .update({ status:"canceled", canceled_at:new Date().toISOString() })
     .eq("id", req.params.id);
   res.json({ ok: !error });
 });
-app.post("/api/orders/:id/restore", async (req, res) => {
+app.post("/api/orders/:id/restore", requireAdminApi, async (req, res) => {
   const { error } = await supabase.from("orders")
     .update({ status:"pending", completed_at:null, canceled_at:null })
     .eq("id", req.params.id);
   res.json({ ok: !error });
 });
-app.post("/api/orders/:id/ack", async (req, res) => {
+app.post("/api/orders/:id/ack", requireAdminApi, async (req, res) => {
   const { error } = await supabase.from("orders")
     .update({ ack:true })
     .eq("id", req.params.id);
   res.json({ ok: !error });
 });
-app.post("/api/orders/:id/printed", (_req, res) => res.json({ ok:true }));
+app.post("/api/orders/:id/printed", requireAdminApi, (_req, res) => res.json({ ok:true }));
 
 // ✅ nuove rotte pagamenti manuali/online
-app.post("/api/orders/:id/pay", async (req, res) => {
+app.post("/api/orders/:id/pay", requireAdminApi, async (req, res) => {
   try{
     const method = (req.body?.method||"cash").toString(); // 'cash' | 'online'
     const patch = { payment_status: "paid", paid_at: new Date().toISOString(), pay_method: method };
@@ -505,7 +505,7 @@ app.post("/api/orders/:id/pay", async (req, res) => {
     res.json({ ok:true });
   }catch(e){ console.error(e); res.status(500).json({ ok:false }); }
 });
-app.post("/api/orders/:id/unpay", async (req, res) => {
+app.post("/api/orders/:id/unpay", requireAdminApi, async (req, res) => {
   try{
     const patch = { payment_status: "unpaid", paid_at: null, pay_method: null };
     let { error } = await supabase.from("orders").update(patch).eq("id", req.params.id);
@@ -516,7 +516,7 @@ app.post("/api/orders/:id/unpay", async (req, res) => {
     res.json({ ok:true });
   }catch(e){ console.error(e); res.status(500).json({ ok:false }); }
 });
-app.post("/api/orders/:id/pay-pending", async (req, res) => {
+app.post("/api/orders/:id/pay-pending", requireAdminApi, async (req, res) => {
   try{
     const patch = { payment_status: "pending", paid_at: null, pay_method: null };
     let { error } = await supabase.from("orders").update(patch).eq("id", req.params.id);
@@ -531,7 +531,7 @@ app.post("/api/orders/:id/pay-pending", async (req, res) => {
 // =====================================================================================
 // API SETTINGS
 // =====================================================================================
-app.get("/api/settings", async (_req, res) => {
+app.get("/api/settings", requireAdminApi, async (_req, res) => {
   try {
     const keys = ["sound_enabled","autorefresh"];
     const { data, error } = await supabase
@@ -547,7 +547,7 @@ app.get("/api/settings", async (_req, res) => {
   } catch(e){ console.error(e); res.json({ ok:false }); }
 });
 
-app.post("/api/settings", async (req, res) => {
+app.post("/api/settings", requireAdminApi, async (req, res) => {
   try {
     const { sound_enabled=false, autorefresh=false } = req.body || {};
     const rows = [
@@ -563,7 +563,7 @@ app.post("/api/settings", async (req, res) => {
 // =====================================================================================
 // API STATISTICHE — compatibili con dashboard (day + range top)
 // =====================================================================================
-app.get("/api/stats", async (req, res) => {
+app.get("/api/stats", requireAdminApi, async (req, res) => {
   try {
     const day = (req.query.day || "").toString().slice(0,10);
     const { start, end } = localDayBounds(day);
@@ -595,7 +595,7 @@ app.get("/api/stats", async (req, res) => {
   }
 });
 
-app.get("/api/stats/day", async (req, res) => {
+app.get("/api/stats/day", requireAdminApi, async (req, res) => {
   try {
     const day = (req.query.date || req.query.day || "").toString().slice(0,10);
     const { start, end, startLocal } = localDayBounds(day);
@@ -639,7 +639,7 @@ app.get("/api/stats/day", async (req, res) => {
   }
 });
 
-app.get("/api/stats/range", async (req, res) => {
+app.get("/api/stats/range", requireAdminApi, async (req, res) => {
   try {
     const fromStr = (req.query.from || "").toString().slice(0,10);
     const toStr   = (req.query.to   || "").toString().slice(0,10);
@@ -968,7 +968,7 @@ async function promoteNextWaiter(tableId){
 // =====================================================================================
 
 // ---- TAVOLI (dashboard)
-app.get("/api/tables", async (_req, res) => {
+app.get("/api/tables", requireAdminApi, async (_req, res) => {
   try{
     let { data, error } = await supabase
       .from("restaurant_tables")
@@ -995,7 +995,7 @@ app.get("/api/tables", async (_req, res) => {
   }catch(e){ console.error("tables list error:", e); res.status(500).json({ ok:false, error:"tables_list_failed" }); }
 });
 
-app.post("/api/tables/:id/free", async (req, res) => {
+app.post("/api/tables/:id/free", requireAdminApi, async (req, res) => {
   try{
     const { id } = req.params;
 
@@ -1017,7 +1017,7 @@ app.post("/api/tables/:id/free", async (req, res) => {
   }
 });
 
-app.post("/api/tables/:id/seat", async (req, res) => {
+app.post("/api/tables/:id/seat", requireAdminApi, async (req, res) => {
   try{
     const { id } = req.params;
     const { error } = await supabase
@@ -1092,7 +1092,7 @@ app.post("/api/reservations", async (req, res) => {
   }
 });
 
-app.get("/api/reservations", async (req, res) => {
+app.get("/api/reservations", requireAdminApi, async (req, res) => {
   try {
     const q = supabase.from("reservations")
       .select("id,table_id,customer_name,customer_phone,size,requested_for,status,created_at,seated_at,completed_at")
@@ -1107,7 +1107,7 @@ app.get("/api/reservations", async (req, res) => {
   }
 });
 
-app.post("/api/reservations/:id/seat", async (req, res) => {
+app.post("/api/reservations/:id/seat", requireAdminApi, async (req, res) => {
   try {
     const id = req.params.id;
     const { data: r0, error: e0 } = await supabase.from("reservations").select("id,table_id").eq("id", id).single();
@@ -1129,7 +1129,7 @@ app.post("/api/reservations/:id/seat", async (req, res) => {
   }
 });
 
-app.post("/api/reservations/:id/complete", async (req, res) => {
+app.post("/api/reservations/:id/complete", requireAdminApi, async (req, res) => {
   try {
     const id = req.params.id;
     const { data: r0, error: e0 } = await supabase.from("reservations").select("id,table_id").eq("id", id).single();
@@ -1153,7 +1153,7 @@ app.post("/api/reservations/:id/complete", async (req, res) => {
   }
 });
 
-app.post("/api/reservations/:id/cancel", async (req, res) => {
+app.post("/api/reservations/:id/cancel", requireAdminApi, async (req, res) => {
   try {
     const id = req.params.id;
     const { data: r0, error: e0 } = await supabase.from("reservations")
