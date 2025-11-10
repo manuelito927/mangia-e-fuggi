@@ -171,7 +171,7 @@ function localDayBounds(dayStr) {
 // ---------- Supabase
 
 if(!SUPABASE_URL || !SUPABASE_KEY) console.warn("⚠️ Mancano SUPABASE_URL/SUPABASE_KEY");
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 
 // ---------- App
 const app = express();
