@@ -169,8 +169,7 @@ function localDayBounds(dayStr) {
 }
 
 // ---------- Supabase
-const SUPABASE_URL = getEnvAny("SUPABASE_URL","Supabase_url","supabase_url");
-const SUPABASE_KEY = getEnvAny("SUPABASE_KEY","Supabase_key","supabase_key","SUPABASE_SERVICE_ROLE_KEY");
+
 if(!SUPABASE_URL || !SUPABASE_KEY) console.warn("⚠️ Mancano SUPABASE_URL/SUPABASE_KEY");
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
