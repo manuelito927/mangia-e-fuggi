@@ -43,11 +43,13 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
 .kg{display:flex;gap:8px;flex-wrap:wrap}
 .kg .k{background:#fff;border:1px solid var(--ring);padding:8px 10px;border-radius:10px}
 .tab.active{background:#f1d9d1}
+.errorbar{background:#fdeaea;border:1px solid #f3caca;color:#7a2e2e;border-radius:12px;padding:10px;margin-bottom:12px;display:none}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Mangia & Fuggi — Dashboard</h1>
+  <div id="err" class="errorbar"></div>
   <div class="layout">
     <!-- Sidebar -->
     <aside class="side">
@@ -73,20 +75,16 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
         <div class="row" style="flex-wrap:wrap">
           <div class="kg">
             <span class="muted">Vista:</span>
-            <button class="btn tab active" data-status="all">Tutti gli ordini <span id="c-all" class="pill" style="padding:2px 8px"></span></button>
+            <button class="btn tab active" data-status="all">Tutti <span id="c-all" class="pill" style="padding:2px 8px"></span></button>
             <button class="btn tab" data-status="due">Da incassare <span id="c-due" class="pill" style="padding:2px 8px"></span></button>
-            <button class="btn tab" data-status="paid">Pagamenti accettati <span id="c-paid" class="pill" style="padding:2px 8px"></span></button>
+            <button class="btn tab" data-status="paid">Accettati <span id="c-paid" class="pill" style="padding:2px 8px"></span></button>
             <button class="btn tab" data-status="canceled">Eliminati <span id="c-canc" class="pill" style="padding:2px 8px"></span></button>
           </div>
-          <!-- 🆕 Barra strumenti con filtro giorno -->
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input id="q" class="input" placeholder="Cerca tavolo o piatto…" />
             <span id="clearQ" class="clearx">Elimina</span>
-
-            <!-- 🆕 Filtro per giorno ordini (default: oggi) -->
-            <label class="muted" for="dayOrders">Giorno ordini:</label>
+            <label class="muted" for="dayOrders">Giorno:</label>
             <input id="dayOrders" type="date" class="input" />
-
             <button id="btn-refresh" class="btn brand">Aggiorna</button>
           </div>
         </div>
@@ -153,14 +151,25 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
 </div>
 
 <script>
+/* ========= CONFIG ========= */
 const supabase = window.supabase.createClient("<%= SUPABASE_URL %>", "<%= SUPABASE_KEY %>");
-const $ = (s,root=document)=>root.querySelector(s);
-const $$= (s,root=document)=>Array.from(root.querySelectorAll(s));
+const $  = (s,root=document)=>root.querySelector(s);
+const $$ = (s,root=document)=>Array.from(root.querySelectorAll(s));
 const euro = v => "€ " + Number(v||0).toFixed(2).replace(".", ",");
 
-let TABLES_MAP = {}; // id/name -> status per bollini “Da incassare”
+/* ========= FETCH CON COOKIE (SESSIONE ADMIN) ========= */
+const F = (url, opts={}) => fetch(url, { credentials: 'include', ...opts });
 
-// ====== NAV ======
+/* ========= ERROR BAR ========= */
+function showErr(msg){
+  const bar = $('#err');
+  if(!bar) return;
+  bar.textContent = msg;
+  bar.style.display = 'block';
+  setTimeout(()=>{ bar.style.display='none'; }, 6000);
+}
+
+/* ========= NAV ========= */
 $$('[data-section]').forEach(a=>{
   a.addEventListener('click',e=>{
     e.preventDefault();
@@ -174,59 +183,51 @@ $$('[data-section]').forEach(a=>{
   });
 });
 
-// ====== SETTINGS ======
+/* ========= SETTINGS ========= */
 async function loadSettings(){
   try{
-    const r=await fetch('/api/settings');
+    const r=await F('/api/settings');
     const j=await r.json();
     if(j.ok){
       $('#chk-sound').checked = !!j.sound_enabled || !!j.sound;
       $('#chk-autorefresh').checked = !!j.autorefresh;
+    } else if(j.error === 'auth_required'){
+      showErr('Sessione non autenticata. Ricarica la pagina e reinserisci la password.');
     }
-  }catch{}
+  }catch(e){ showErr('Impossibile caricare impostazioni.'); }
 }
 async function saveSettings(){
-  const payload = {
-    sound_enabled: $('#chk-sound').checked,
-    autorefresh: $('#chk-autorefresh').checked
-  };
-  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  setAutoRefresh();
+  try{
+    const payload = { sound_enabled: $('#chk-sound').checked, autorefresh: $('#chk-autorefresh').checked };
+    await F('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    setAutoRefresh();
+  }catch(e){ showErr('Salvataggio impostazioni fallito.'); }
 }
 $('#chk-sound').addEventListener('change', saveSettings);
 $('#chk-autorefresh').addEventListener('change', saveSettings);
 
-// ====== HELPER DATA (locale YYYY-MM-DD) ======
+/* ========= DATE/FORMATO ORARIO ========= */
 function isoLocalDateStr(dOrIso){
   const d = (dOrIso instanceof Date) ? dOrIso : new Date(dOrIso);
   const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${dd}`;
 }
-
-// === ORA ITALIANA (anche con ora legale) ===
 const ROME_TZ = 'Europe/Rome';
 function formatRome(iso){
   return new Date(iso).toLocaleString('it-IT', { timeZone: ROME_TZ });
 }
-function ymdRome(iso){
-  // ritorna 'YYYY-MM-DD' calcolato in fuso Italia
-  const d = new Date(new Date(iso).toLocaleString('en-GB', { timeZone: ROME_TZ }));
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const dd= String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${dd}`;
-}
 
-// ====== ORDINI ======
+/* ========= ORDINI ========= */
 let STATUS='all', ORDERS=[], SUBS=false, refreshTimer=null;
+let TABLES_MAP = {};
 
 async function counters(){
   try{
     const daySel = $('#dayOrders').value || isoLocalDateStr(new Date());
     const [pnd, cmp, cnc] = await Promise.all([
-      fetch(`/api/orders?status=pending&day=${daySel}`).then(r=>r.json()),
-      fetch(`/api/orders?status=completed&day=${daySel}`).then(r=>r.json()),
-      fetch(`/api/orders?status=canceled&day=${daySel}`).then(r=>r.json())
+      F(`/api/orders?status=pending&day=${daySel}`).then(r=>r.json()),
+      F(`/api/orders?status=completed&day=${daySel}`).then(r=>r.json()),
+      F(`/api/orders?status=canceled&day=${daySel}`).then(r=>r.json())
     ]);
     const pend = (pnd.ok ? (pnd.orders||[]) : []);
     const comp = (cmp.ok ? (cmp.orders||[]) : []);
@@ -239,13 +240,13 @@ async function counters(){
     $('#c-due').textContent  = nDue;
     $('#c-paid').textContent = comp.length;
     $('#c-canc').textContent = canc.length;
-  }catch(e){console.error(e);}
+  }catch(e){ /* soft */ }
 }
 
 async function fetchOrders(){
-  // carico anche i tavoli per i bollini
   try{
-    const t=await fetch('/api/tables').then(r=>r.json());
+    // map tavoli per bollini
+    const t=await F('/api/tables').then(r=>r.json());
     if(t.ok){
       TABLES_MAP = {};
       (t.tables||[]).forEach(tb=>{
@@ -253,37 +254,32 @@ async function fetchOrders(){
         TABLES_MAP[tb.id] = tb.status;
       });
     }
-  }catch{}
 
-  const q=$('#q').value.toLowerCase();
-  const daySel = $('#dayOrders').value || isoLocalDateStr(new Date());
+    const q=$('#q').value.toLowerCase();
+    const daySel = $('#dayOrders').value || isoLocalDateStr(new Date());
 
-  let list = [];
+    let list = [];
+    const [pnd, cmp, cnc] = await Promise.all([
+      F(`/api/orders?status=pending&day=${daySel}`).then(r=>r.json()),
+      F(`/api/orders?status=completed&day=${daySel}`).then(r=>r.json()),
+      F(`/api/orders?status=canceled&day=${daySel}`).then(r=>r.json())
+    ]);
+    const pend = (pnd.ok ? (pnd.orders||[]) : []);
+    const comp = (cmp.ok ? (cmp.orders||[]) : []);
+    const canc = (cnc.ok ? (cnc.orders||[]) : []);
 
-  const [pnd, cmp, cnc] = await Promise.all([
-    fetch(`/api/orders?status=pending&day=${daySel}`).then(r=>r.json()),
-    fetch(`/api/orders?status=completed&day=${daySel}`).then(r=>r.json()),
-    fetch(`/api/orders?status=canceled&day=${daySel}`).then(r=>r.json())
-  ]);
-  const pend = (pnd.ok ? (pnd.orders||[]) : []);
-  const comp = (cmp.ok ? (cmp.orders||[]) : []);
-  const canc = (cnc.ok ? (cnc.orders||[]) : []);
+    if(STATUS==='all'){ list = pend.filter(o=>!o.ack).concat(comp); }
+    else if(STATUS==='due'){ list = pend.filter(o=>o.ack); }
+    else if(STATUS==='paid'){ list = comp; }
+    else if(STATUS==='canceled'){ list = canc; }
 
-  if(STATUS==='all'){
-    list = pend.filter(o=>!o.ack).concat(comp);
-  }else if(STATUS==='due'){
-    list = pend.filter(o=>o.ack);
-  }else if(STATUS==='paid'){
-    list = comp;
-  }else if(STATUS==='canceled'){
-    list = canc;
+    list.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+    ORDERS=list;
+    renderOrders(q);
+    counters();
+  }catch(e){
+    showErr('Errore nel caricamento ordini. Se richiesto, reinserisci la password della dashboard.');
   }
-
-  // ordina per data desc
-  list.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
-  ORDERS=list;
-  renderOrders(q);
-  counters();
 }
 
 function badgeForDue(order){
@@ -325,14 +321,13 @@ function renderOrders(q){
       }else{
         actions = `<button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>`;
       }
-   }else if(STATUS==='due'){
-  const badge = badgeForDue(o);
-  actions = `
-    ${badge}
-    <button class="btn brand" data-act="receipt" data-id="${o.id}">🧾 Scontrino</button>
-    <button class="btn ok" data-act="complete" data-id="${o.id}">💶 Pagato in cassa</button>
-    <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>`;
-
+    }else if(STATUS==='due'){
+      const badge = badgeForDue(o);
+      actions = `
+        ${badge}
+        <button class="btn brand" data-act="receipt" data-id="${o.id}">🧾 Scontrino</button>
+        <button class="btn ok" data-act="complete" data-id="${o.id}">💶 Pagato in cassa</button>
+        <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>`;
     }else if(STATUS==='paid'){
       actions = `<button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>`;
     }else if(STATUS==='canceled'){
@@ -363,24 +358,26 @@ $('#orders').addEventListener('click', async ev=>{
   const b=ev.target.closest('[data-act]');
   if(!b) return;
   const id=b.dataset.id, act=b.dataset.act;
-  if(act==='print'){ window.print(); await fetch(`/api/orders/${id}/printed`,{method:'POST'}); return; }
-  if(act==='complete'){ await fetch(`/api/orders/${id}/complete`,{method:'POST'}); }
-  if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await fetch(`/api/orders/${id}/cancel`,{method:'POST'}); }
-  if(act==='restore'){ await fetch(`/api/orders/${id}/restore`,{method:'POST'}); }
-  if(act==='receipt'){ await emitReceipt(id); return; }
-  if(act==='ack'){ await fetch(`/api/orders/${id}/ack`,{method:'POST'}); }
-  if(act==='mark_due'){
-    await fetch(`/api/orders/${id}/ack`,{method:'POST'});
-    STATUS='due';
-    $$('.tab').forEach(x=>x.classList.remove('active'));
-    $$('[data-status="due"]')[0]?.classList.add('active');
-  }
+  try{
+    if(act==='print'){ window.print(); await F(`/api/orders/${id}/printed`,{method:'POST'}); return; }
+    if(act==='complete'){ await F(`/api/orders/${id}/complete`,{method:'POST'}); }
+    if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await F(`/api/orders/${id}/cancel`,{method:'POST'}); }
+    if(act==='restore'){ await F(`/api/orders/${id}/restore`,{method:'POST'}); }
+    if(act==='receipt'){ await emitReceipt(id); return; }
+    if(act==='ack'){ await F(`/api/orders/${id}/ack`,{method:'POST'}); }
+    if(act==='mark_due'){
+      await F(`/api/orders/${id}/ack`,{method:'POST'});
+      STATUS='due';
+      $$('.tab').forEach(x=>x.classList.remove('active'));
+      $$('[data-status="due"]')[0]?.classList.add('active');
+    }
+  }catch(e){ showErr('Azione fallita: verifica la sessione.'); }
   await fetchOrders();
 });
 
 async function emitReceipt(orderId){
   try{
-    const r = await fetch('/api/fiscal/receipt', {
+    const r = await F('/api/fiscal/receipt', {
       method: 'POST',
       headers: { 'Content-Type':'application/json' },
       body: JSON.stringify({ orderId })
@@ -390,11 +387,11 @@ async function emitReceipt(orderId){
     alert('✅ Scontrino creato (MOCK). Con SIGN-IT sarà fiscale al 100%.');
   }catch(e){
     console.error(e);
-    alert('❌ Errore nella creazione dello scontrino.');
+    showErr('Errore nella creazione dello scontrino.');
   }
 }
 
-// Cambio tab
+/* ========= TABS / RICERCA ========= */
 $$('.tab').forEach(t=>{
   t.addEventListener('click', async ()=>{
     $$('.tab').forEach(x=>x.classList.remove('active'));
@@ -403,17 +400,12 @@ $$('.tab').forEach(t=>{
     await fetchOrders();
   });
 });
-
 $('#btn-refresh').addEventListener('click', fetchOrders);
 $('#q').addEventListener('input', ()=>renderOrders($('#q').value.toLowerCase()));
 $('#clearQ').addEventListener('click', ()=>{ $('#q').value=''; renderOrders(''); });
+document.addEventListener('change', (e)=>{ if(e.target && e.target.id==='dayOrders') fetchOrders(); });
 
-// 🆕 Cambi data ⇒ ricarica lista + contatori
-document.addEventListener('change', (e)=>{
-  if(e.target && e.target.id==='dayOrders') fetchOrders();
-});
-
-// Auto-refresh
+/* ========= AUTO-REFRESH ========= */
 function setAutoRefresh(){
   if(refreshTimer) clearInterval(refreshTimer);
   if($('#chk-autorefresh').checked){
@@ -421,7 +413,7 @@ function setAutoRefresh(){
   }
 }
 
-// Realtime ordini
+/* ========= REALTIME ========= */
 function attachRealtime(){
   if(typeof supabase.channel!=="function" || SUBS) return; SUBS=true;
   supabase.channel("rt:orders")
@@ -432,6 +424,14 @@ function attachRealtime(){
 
   supabase.channel("rt:order_items")
     .on("postgres_changes",{event:"*",schema:"public",table:"order_items"},async()=>{
+      await fetchOrders();
+    }).subscribe();
+}
+function attachRealtimeTables(){
+  if(typeof supabase.channel!=="function") return;
+  supabase.channel("rt:restaurant_tables")
+    .on("postgres_changes",{event:"*",schema:"public",table:"restaurant_tables"},async()=>{
+      await loadTables();
       await fetchOrders();
     }).subscribe();
 }
@@ -447,41 +447,45 @@ function beep(){
   }catch{}
 }
 
-// ====== STATISTICHE ======
+/* ========= STATISTICHE ========= */
 let chartHour=null, chartTop=null;
 function setKPI(cnt,rev){ $('#k-count').textContent=cnt; $('#k-rev').textContent=euro(rev); $('#k-avg').textContent=euro(cnt?rev/cnt:0); }
 
 async function loadDay(){
-  const d=$('#day').value || new Date().toISOString().slice(0,10);
-  const r=await fetch(`/api/stats/day?date=${d}`);
-  const j=await r.json();
-  if(!j.ok) return;
-  setKPI(j.count, j.total);
-  const labels=j.perBucket.rows.map(b=>new Date(b.bucket).getHours());
-  const data=j.perBucket.rows.map(b=>b.revenue);
-  if(chartHour) chartHour.destroy();
-  chartHour=new Chart($('#chartHour'),{type:'bar',data:{labels,datasets:[{label:'Incasso €/ora',data}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'€ '+v}}}}});
+  try{
+    const d=$('#day').value || new Date().toISOString().slice(0,10);
+    const r=await F(`/api/stats/day?date=${d}`);
+    const j=await r.json();
+    if(!j.ok) return;
+    setKPI(j.count, j.total);
+    const labels=j.perBucket.rows.map(b=>new Date(b.bucket).getHours());
+    const data=j.perBucket.rows.map(b=>b.revenue);
+    if(chartHour) chartHour.destroy();
+    chartHour=new Chart($('#chartHour'),{type:'bar',data:{labels,datasets:[{label:'Incasso €/ora',data}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'€ '+v}}}}});
+  }catch(e){ showErr('Errore caricamento statistiche giorno.'); }
 }
 
 async function loadRange(){
-  const f=$('#from').value,t=$('#to').value;
-  if(!f||!t) return;
-  const r=await fetch(`/api/stats/range?from=${f}&to=${t}`);
-  const j=await r.json();
-  if(!j.ok) return;
-  const top=j.top.list.slice(0,5);
-  const labels=top.map(x=>x.name), data=top.map(x=>x.qty);
-  if(chartTop) chartTop.destroy();
-  chartTop=new Chart($('#chartTop'),{type:'doughnut',data:{labels,datasets:[{data}]},options:{plugins:{legend:{position:'bottom'}}}});
-  $('#topTable').innerHTML=`<table><thead><tr><th>Prodotto</th><th>Qtà</th><th>Fatturato</th><th>% Qtà</th><th>% Fatt.</th></tr></thead><tbody>${
-    j.top.list.map(x=>`<tr><td>${x.name}</td><td>${x.qty}</td><td>${euro(x.revenue)}</td><td>${x.pctQty.toFixed(1)}%</td><td>${x.pctRev.toFixed(1)}%</td></tr>`).join('')
-  }</tbody></table>`;
+  try{
+    const f=$('#from').value,t=$('#to').value;
+    if(!f||!t) return;
+    const r=await F(`/api/stats/range?from=${f}&to=${t}`);
+    const j=await r.json();
+    if(!j.ok) return;
+    const top=j.top.list.slice(0,5);
+    const labels=top.map(x=>x.name), data=top.map(x=>x.qty);
+    if(chartTop) chartTop.destroy();
+    chartTop=new Chart($('#chartTop'),{type:'doughnut',data:{labels,datasets:[{data}]},options:{plugins:{legend:{position:'bottom'}}}});
+    $('#topTable').innerHTML=`<table><thead><tr><th>Prodotto</th><th>Qtà</th><th>Fatturato</th><th>% Qtà</th><th>% Fatt.</th></tr></thead><tbody>${
+      j.top.list.map(x=>`<tr><td>${x.name}</td><td>${x.qty}</td><td>${euro(x.revenue)}</td><td>${x.pctQty.toFixed(1)}%</td><td>${x.pctRev.toFixed(1)}%</td></tr>`).join('')
+    }</tbody></table>`;
+  }catch(e){ showErr('Errore caricamento statistiche intervallo.'); }
 }
 
-// ====== TAVOLI ======
+/* ========= TAVOLI ========= */
 async function loadTables(){
   try{
-    const r=await fetch('/api/tables');
+    const r=await F('/api/tables');
     const j=await r.json();
     if(!j.ok) return;
     const tbody=$('#tablesBody');
@@ -501,41 +505,30 @@ async function loadTables(){
       tbody.appendChild(tr);
     });
 
-    // aggiorna cache anche per i bollini
+    // aggiorna cache per bollini
     TABLES_MAP = {};
     (j.tables||[]).forEach(tb=>{
       TABLES_MAP[(tb.name||('Tavolo '+tb.id))] = tb.status;
       TABLES_MAP[tb.id] = tb.status;
     });
-  }catch(e){console.error("Errore tavoli:",e);}
+  }catch(e){ showErr('Errore caricamento tavoli.'); }
 }
 
 async function setTable(id,action){
   try{
-    await fetch(`/api/tables/${id}/${action}`,{method:'POST'});
+    await F(`/api/tables/${id}/${action}`,{method:'POST'});
     await loadTables();
     await fetchOrders();
-  }catch(e){console.error(e);}
+  }catch(e){ showErr('Aggiornamento tavolo fallito.'); }
 }
 
-function attachRealtimeTables(){
-  if(typeof supabase.channel!=="function") return;
-  supabase.channel("rt:restaurant_tables")
-    .on("postgres_changes",{event:"*",schema:"public",table:"restaurant_tables"},async()=>{
-      await loadTables();
-      await fetchOrders();
-    }).subscribe();
-}
-
-// ====== BOOT ======
+/* ========= BOOT ========= */
 (async()=>{
   const today=new Date();
-  // stats defaults
   $('#day').value=isoLocalDateStr(today);
   const from=new Date(); from.setDate(today.getDate()-6);
   $('#from').value=isoLocalDateStr(from);
   $('#to').value=isoLocalDateStr(today);
-  // 🆕 ordini default: oggi
   $('#dayOrders').value = isoLocalDateStr(today);
 
   await loadSettings();
@@ -546,6 +539,7 @@ function attachRealtimeTables(){
   attachRealtimeTables();
   setAutoRefresh();
 })();
+
 $('#btn-day').addEventListener('click',loadDay);
 $('#btn-range').addEventListener('click',loadRange);
 </script>
