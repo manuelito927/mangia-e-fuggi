@@ -18,100 +18,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 const app = express();
 
-// --- Supabase PRIMA di usare le rotte che lo richiedono ---
-const SUPABASE_URL = (process.env.SUPABASE_URL || process.env.Supabase_url || process.env.supabase_url || "").trim();
-const SUPABASE_KEY = (process.env.SUPABASE_KEY || process.env.Supabase_key || process.env.supabase_key || process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.warn("⚠️ Mancano SUPABASE_URL/SUPABASE_KEY");
-}
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// === STAMPA CUCINA + ESPOSIZIONE SPOOL + ROUTE /printed =====================
-// Cartella di spool (usabile anche su Render; è effimera, ma OK per test/dev)
-const SPOOL_DIR = process.env.PRINT_SPOOL_DIR || path.join(__dirname, "spool");
-
-// Funzione che genera la COMANDA per la cucina come file di testo
-function printToKitchen(order) {
-  try {
-    const lines = [
-      '=== COMANDA CUCINA ===',
-      `TAVOLO: ${order.table_code || '-'}`,
-      `DATA: ${order.created_at || new Date().toISOString()}`,
-      '',
-      ...(order.items || []).map(i => `${Number(i.qty)}× ${i.name} (€${Number(i.price).toFixed(2)})`),
-      '',
-      `Totale: €${Number(order.total || 0).toFixed(2)}`,
-      `ID: ${order.id}`
-    ];
-    const txt = lines.join('\n');
-
-    if (!fs.existsSync(SPOOL_DIR)) fs.mkdirSync(SPOOL_DIR, { recursive: true });
-
-    const outPath = path.join(SPOOL_DIR, `kitchen_${order.id}.txt`);
-    fs.writeFileSync(outPath, txt, 'utf8');
-
-    console.log('✅ COMANDA salvata per cucina:', outPath);
-    return outPath;
-  } catch (e) {
-    console.error('❌ printToKitchen error:', e);
-    return null;
-  }
-}
-
-// Espone via HTTP i file generati in /spool (solo lettura)
-app.use("/spool", express.static(SPOOL_DIR));
-
-/**
- * Quando dal pannello premi "🖨️ Stampa", questa rotta:
- * 1) Recupera ordine + righe da Supabase
- * 2) Genera il file comanda in /spool
- * 3) (opzionale) segna l'ordine come letto (ack:true)
- * 4) Ritorna l'URL diretto del file, es. /spool/kitchen_<id>.txt
- */
-app.post("/api/orders/:id/printed", async (req, res) => {
-  try {
-    const id = req.params.id;
-
-    // 1) prendo l'ordine
-    const { data: ord, error: oErr } = await supabase
-      .from("orders")
-      .select("id, table_code, total, created_at")
-      .eq("id", id)
-      .single();
-    if (oErr || !ord) return res.json({ ok:false, error:"order_not_found" });
-
-    // 2) prendo le righe articolo
-    const { data: its, error: iErr } = await supabase
-      .from("order_items")
-      .select("name, qty, price")
-      .eq("order_id", id);
-    if (iErr) return res.json({ ok:false, error:"items_fetch_failed" });
-
-    const orderForPrint = {
-      ...ord,
-      items: (its || []).map(r => ({
-        name: r.name,
-        qty: Number(r.qty || 1),
-        price: Number(r.price || 0)
-      }))
-    };
-
-    // 3) genera file comanda
-    const filePath = printToKitchen(orderForPrint);
-
-    // 4) marca come letto (facoltativo)
-    await supabase.from("orders").update({ ack: true }).eq("id", id);
-
-    // 5) rispondo con URL scaricabile
-    const publicUrl = filePath ? `/spool/${path.basename(filePath)}` : null;
-    return res.json({ ok:true, file: publicUrl });
-  } catch (e) {
-    console.error("printed route error:", e);
-    return res.json({ ok:false, error:"printed_failed" });
-  }
-});
-
-// ---------- utils
+// ---------- Utils env
 function getEnvAny(...keys){
   for (const k of keys) {
     const v = process.env[k];
@@ -119,61 +26,18 @@ function getEnvAny(...keys){
   }
   return "";
 }
-const euroString = v => Number(v || 0).toFixed(2);
-function toAmount2(n){
-  const cents = Math.round(Number(n || 0) * 100);
-  return Number((cents/100).toFixed(2));
+
+// --- Supabase PRIMA di usare le rotte che lo richiedono ---
+// Usa la SERVICE ROLE sul server per evitare RLS che blocca le select/insert
+const SUPABASE_URL = getEnvAny("SUPABASE_URL","Supabase_url","supabase_url");
+const SUPABASE_KEY = getEnvAny("SUPABASE_SERVICE_ROLE_KEY","SUPABASE_KEY","Supabase_key","supabase_key");
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.warn("⚠️ Mancano SUPABASE_URL/SUPABASE_(SERVICE_ROLE_)KEY — il server non potrà leggere/scrivere i dati.");
 }
-function getBaseUrl(req){
-  return (
-    getEnvAny("BASE_URL","Base_url") ||
-    (req?.headers?.["x-forwarded-proto"] ? `${req.headers["x-forwarded-proto"]}://${req.headers.host}` : `${req.protocol}://${req.get("host")}`)
-  );
-}
-// helper limiti giorno in orario locale (Italia) → ISO UTC
-// fuso orario fisso Italia (gestisce automaticamente ora legale)
-const ROME_TZ = 'Europe/Rome';
-function toRome(dateLike){
-  // converte un timestamp in "ora di Roma"
-  return new Date(new Date(dateLike || Date.now()).toLocaleString('en-GB', { timeZone: ROME_TZ }));
-}
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// helper limiti giorno in orario Italia (DST ok) → ISO UTC
-// helper limiti giorno in orario Italia (Europa/Roma)
-function localDayBounds(dayStr) {
-  const tz = "Europe/Rome";
-
-  // Se non c'è una data passata, usa oggi
-  const d = (dayStr && dayStr.slice(0,10)) || new Date().toISOString().slice(0,10);
-
-  // Calcola in orario locale di Roma
-  const startWall = new Date(`${d}T00:00:00.000`);
-  const endWall   = new Date(`${d}T23:59:59.999`);
-
-  // Converte da ora locale (Roma) a UTC effettivo
-  const toUtc = (date) => {
-    const inTZ = new Date(date.toLocaleString("en-US", { timeZone: tz }));
-    const diff = date.getTime() - inTZ.getTime();
-    return new Date(date.getTime() - diff);
-  };
-
-  const startUtc = toUtc(startWall);
-  const endUtc   = toUtc(endWall);
-
-  return {
-    start: startUtc.toISOString(),
-    end: endUtc.toISOString(),
-    startLocal: startWall,
-    endLocal: endWall
-  };
-}
-
-// ---------- Supabase
-
-if(!SUPABASE_URL || !SUPABASE_KEY) console.warn("⚠️ Mancano SUPABASE_URL/SUPABASE_KEY");
-
-
-// ---------- App
+// ---------- App base
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.set("trust proxy", 1); // Render/Proxy
@@ -201,11 +65,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// ---------- Statici
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/video", express.static(path.join(__dirname, "public", "video"), {
   setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
 }));
+
 app.get("/pizza.mp4", (req, res) => {
   const filePath = path.join(__dirname, "public", "pizza.mp4");
   res.sendFile(filePath, (err) => {
@@ -215,6 +79,40 @@ app.get("/pizza.mp4", (req, res) => {
     }
   });
 });
+
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(cookieParser());
+app.use(session({
+  secret: process.env.SESSION_SECRET || "dev",
+  resave: false,
+  saveUninitialized: false
+}));
+
+// ---------- Helpers generali
+const euroString = v => Number(v || 0).toFixed(2);
+function toAmount2(n){ const cents = Math.round(Number(n || 0) * 100); return Number((cents/100).toFixed(2)); }
+function getBaseUrl(req){
+  const direct = getEnvAny("BASE_URL","Base_url");
+  if (direct) return direct;
+  return (req?.headers?.["x-forwarded-proto"] ? `${req.headers["x-forwarded-proto"]}://${req.headers.host}` : `${req.protocol}://${req.get("host")}`);
+}
+// Limiti giorno in orario Italia → ISO UTC
+function localDayBounds(dayStr) {
+  const tz = "Europe/Rome";
+  const d = (dayStr && dayStr.slice(0,10)) || new Date().toISOString().slice(0,10);
+  const startWall = new Date(`${d}T00:00:00.000`);
+  const endWall   = new Date(`${d}T23:59:59.999`);
+  const toUtc = (date) => {
+    const inTZ = new Date(date.toLocaleString("en-US", { timeZone: tz }));
+    const diff = date.getTime() - inTZ.getTime();
+    return new Date(date.getTime() - diff);
+  };
+  const startUtc = toUtc(startWall);
+  const endUtc   = toUtc(endWall);
+  return { start: startUtc.toISOString(), end: endUtc.toISOString(), startLocal: startWall, endLocal: endWall };
+}
 
 // ---------- SEO helper (robots.txt / sitemap.xml)
 app.get("/robots.txt", (req, res) => {
@@ -234,22 +132,9 @@ app.get("/sitemap.xml", (req, res) => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
 });
 
-// ---------- Sicurezza & sessioni
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(cookieParser());
-app.use(session({
-  secret: process.env.SESSION_SECRET || "dev",
-  resave: false,
-  saveUninitialized: false
-}));
-
 // ===== Middleware API Admin (Bearer token) =====
-const ADMIN_API_TOKEN = (process.env.ADMIN_API_TOKEN || "").trim();
-
+const ADMIN_API_TOKEN = getEnvAny("ADMIN_API_TOKEN");
 function requireAdminApi(req, res, next) {
-  // es: Authorization: Bearer <ADMIN_API_TOKEN>
   const auth = req.headers.authorization || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   if (!ADMIN_API_TOKEN) {
@@ -260,7 +145,7 @@ function requireAdminApi(req, res, next) {
   return res.status(403).json({ ok:false, error:"admin_only" });
 }
 
-// ---------- Basic Auth su /admin (usa ADMIN_PASSWORD)
+// ---------- Basic Auth su /admin (usa ADMIN_PASSWORD) — solo password, no key
 app.use("/admin", (req, res, next) => {
   const required = (process.env.ADMIN_PASSWORD || "").trim();
   if (!required) return next();
@@ -275,22 +160,88 @@ app.use("/admin", (req, res, next) => {
   next();
 });
 
-// ---------- Pagine
+// ---------- Pagine (NON passo più la key al client)
 app.get("/", (_req, res) => res.render("home"));
 app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/storia", (_req, res) => res.render("storia"));
-app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL, SUPABASE_KEY }));
+app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL })); // ← niente SUPABASE_KEY
 app.get("/test-video", (_req, res) => res.render("test-video"));
 app.get("/prenota", (_req, res) => res.render("prenota"));
 
-// Esiti pagamento (✅ marca pagato ma LASCIA lo status in pending per “Tutti gli ordini”)
+// ---------- Stampa cucina (SPOOL)
+const SPOOL_DIR = process.env.PRINT_SPOOL_DIR || path.join(__dirname, "spool");
+app.use("/spool", express.static(SPOOL_DIR));
+
+function printToKitchen(order) {
+  try {
+    const lines = [
+      '=== COMANDA CUCINA ===',
+      `TAVOLO: ${order.table_code || '-'}`,
+      `DATA: ${order.created_at || new Date().toISOString()}`,
+      '',
+      ...(order.items || []).map(i => `${Number(i.qty)}× ${i.name} (€${Number(i.price).toFixed(2)})`),
+      '',
+      `Totale: €${Number(order.total || 0).toFixed(2)}`,
+      `ID: ${order.id}`
+    ];
+    if (!fs.existsSync(SPOOL_DIR)) fs.mkdirSync(SPOOL_DIR, { recursive: true });
+    const outPath = path.join(SPOOL_DIR, `kitchen_${order.id}.txt`);
+    fs.writeFileSync(outPath, lines.join('\n'), 'utf8');
+    console.log('✅ COMANDA salvata per cucina:', outPath);
+    return outPath;
+  } catch (e) {
+    console.error('❌ printToKitchen error:', e);
+    return null;
+  }
+}
+
+/**
+ * Quando dal pannello premi "🖨️ Stampa":
+ * 1) Recupero ordine + righe
+ * 2) Genero file comanda in /spool
+ * 3) Segno ack:true
+ * 4) Ritorno URL file
+ */
+app.post("/api/orders/:id/printed", requireAdminApi, async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const { data: ord, error: oErr } = await supabase
+      .from("orders")
+      .select("id, table_code, total, created_at")
+      .eq("id", id)
+      .single();
+    if (oErr || !ord) return res.json({ ok:false, error:"order_not_found" });
+
+    const { data: its, error: iErr } = await supabase
+      .from("order_items")
+      .select("name, qty, price")
+      .eq("order_id", id);
+    if (iErr) return res.json({ ok:false, error:"items_fetch_failed" });
+
+    const orderForPrint = {
+      ...ord,
+      items: (its || []).map(r => ({ name: r.name, qty: Number(r.qty||1), price: Number(r.price||0) }))
+    };
+
+    const filePath = printToKitchen(orderForPrint);
+
+    await supabase.from("orders").update({ ack: true }).eq("id", id);
+
+    const publicUrl = filePath ? `/spool/${path.basename(filePath)}` : null;
+    return res.json({ ok:true, file: publicUrl });
+  } catch (e) {
+    console.error("printed route error:", e);
+    return res.json({ ok:false, error:"printed_failed" });
+  }
+});
+
+// ---------- Pagamenti: esiti (fa anche trigger fiscale MOCK)
 app.get("/pagamento/successo", async (req,res)=>{
-  // usa ?order_id=... se presente, altrimenti quello salvato in sessione
   const orderId = (req.query.order_id || req.session?.last_order_id || "").toString();
 
   if (orderId) {
     try{
-      // lo mettiamo direttamente come COMPLETED (così va in “Pagamenti accettati”)
       const { error } = await supabase.from("orders")
         .update({
           status: "completed",
@@ -300,38 +251,30 @@ app.get("/pagamento/successo", async (req,res)=>{
           pay_method: "online"
         })
         .eq("id", orderId);
-
       if (error) console.error("mark paid on success page:", error);
-    }catch(e){ 
-      console.error("mark paid on success page:", e); 
+    }catch(e){ console.error("mark paid on success page:", e); }
+
+    try {
+      const { data: its } = await supabase
+        .from("order_items")
+        .select("name, qty, price")
+        .eq("order_id", orderId);
+
+      const items = (its || []).map(r => ({
+        name: r.name,
+        qty: Number(r.qty || 1),
+        unitPrice: Number(r.price || 0),
+        vatRate: 10
+      }));
+
+      fetch(`${getBaseUrl(req)}/api/fiscal/receipt`, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({ orderId, table: null, items })
+      }).catch(()=>{});
+    } catch (e) {
+      console.warn("post-pay fiscal trigger failed:", e?.message || e);
     }
-    
-    // === TRIGGER FISCALE (MOCK ora, LIVE quando FISKALY_ENABLED=true) ===
-try {
-  // 1) prendo le righe dell'ordine
-  const { data: its } = await supabase
-    .from("order_items")
-    .select("name, qty, price")
-    .eq("order_id", orderId);
-
-  // 2) le trasformo nel formato atteso
-  const items = (its || []).map(r => ({
-    name: r.name,
-    qty: Number(r.qty || 1),
-    unitPrice: Number(r.price || 0),
-    vatRate: 10   // ristorazione tipicamente 10%
-  }));
-
-  // 3) chiamo la mia rotta fiscale (mock adesso)
-  fetch(`${getBaseUrl(req)}/api/fiscal/receipt`, {
-    method: "POST",
-    headers: { "Content-Type":"application/json" },
-    body: JSON.stringify({ orderId, table: null, items })
-  }).catch(()=>{});
-} catch (e) {
-  console.warn("post-pay fiscal trigger failed:", e?.message || e);
-}
-    
   } else {
     console.warn("Pagamento successo senza order_id e senza session.last_order_id");
   }
@@ -341,105 +284,56 @@ try {
 app.get("/pagamento/annullato", (_req,res)=> res.send("Pagamento annullato. Puoi riprovare dal carrello."));
 
 // =====================================================================================
-// API ORDINI
+// API ORDINI (cliente + admin)
 // =====================================================================================
 app.post("/api/checkout", async (req, res) => {
   const { tableCode, items, total } = req.body || {};
   if (!Array.isArray(items) || !items.length) {
     return res.status(400).json({ ok:false, error:"no_items" });
   }
-
   try {
-    const baseRow = { table_code: tableCode || null, total: Number(total)||0, status:"pending", ack:false };
-    const row = { ...baseRow, payment_status: "unpaid" };
+    const baseRow = { table_code: tableCode || null, total: Number(total)||0, status:"pending", ack:false, payment_status:"unpaid" };
 
-    // 1) crea ordine
-    const { data: order, error: oErr } = await supabase
-      .from("orders")
-      .insert([row])
-      .select()
-      .single();
+    const { data: order, error: oErr } = await supabase.from("orders").insert([baseRow]).select().single();
+    if (oErr || !order) throw oErr || new Error("order_insert_failed");
 
-    let currentOrder = order;
+    const rows = items.map(it => ({
+      order_id: order.id, name: it.name, price: Number(it.price), qty: Number(it.qty)
+    }));
+    const { error: iErr } = await supabase.from("order_items").insert(rows);
+    if (iErr) throw iErr;
 
-    if (oErr || !order) {
-      // fallback
-      const { data: order2, error: oErr2 } = await supabase
-        .from("orders")
-        .insert([baseRow])
-        .select()
-        .single();
-      if (oErr2 || !order2) throw oErr2 || new Error("order_insert_failed");
-      currentOrder = order2;
-
-      const rows2 = items.map(it => ({
-        order_id: order2.id, name: it.name, price: Number(it.price), qty: Number(it.qty)
-      }));
-      const { error: iErr2 } = await supabase.from("order_items").insert(rows2);
-      if (iErr2) throw iErr2;
-    } else {
-      // 2) inserisci items
-      const rows = items.map(it => ({
-        order_id: order.id, name: it.name, price: Number(it.price), qty: Number(it.qty)
-      }));
-      const { error: iErr } = await supabase.from("order_items").insert(rows);
-      if (iErr) throw iErr;
-    }
-
-    // 3) session
-    req.session.last_order_id = currentOrder.id;
+    req.session.last_order_id = order.id;
     req.session.save(()=>{});
 
-    // 4) STAMPA AUTOMATICA (se attiva)
+    // Stampa automatica se attiva
     if (String(process.env.AUTO_PRINT_KITCHEN).toLowerCase() === "true") {
-      const toPrint = {
-        ...currentOrder,
-        items: items.map(it => ({
-          name: it.name,
-          qty: Number(it.qty),
-          price: Number(it.price)
-        }))
-      };
-      printToKitchen(toPrint); // <-- usa la funzione che hai già incollato
+      printToKitchen({
+        ...order,
+        items: items.map(it => ({ name: it.name, qty: Number(it.qty), price: Number(it.price) }))
+      });
     }
 
-    // 5) risposta
-    return res.json({ ok:true, order_id: currentOrder.id });
-
+    return res.json({ ok:true, order_id: order.id });
   } catch (e) {
-    console.error(e);
+    console.error("checkout_failed:", e);
     return res.status(500).json({ ok:false, error:"checkout_failed" });
   }
 });
 
-
-
-// ✅ elenco ordini: “paid” ora mostra SOLO i completed (dopo “Fatto”)
-// ✅ /api/orders ora supporta status=all/paid/pending/canceled + filtro ?day=YYYY-MM-DD
 app.get("/api/orders", requireAdminApi, async (req, res) => {
   try {
     const status = (req.query.status || "").toString();
     const dayStr = (req.query.day || req.query.date || "").toString().slice(0,10);
 
-    let q = supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
+    let q = supabase.from("orders").select("*").order("created_at", { ascending: false });
 
-    // Filtro per stato (come prima)
-    if (status === "all") {
-      q = q.neq("status","canceled");
-    } else if (status === "due") {
-      q = q.eq("payment_status","pending");
-    } else if (status === "paid") {
-      q = q.eq("payment_status","paid");
-    } else if (status) {
-      q = q.eq("status", status);
-    } else {
-      q = q.eq("status","pending");
-    }
+    if (status === "all") q = q.neq("status","canceled");
+    else if (status === "due") q = q.eq("payment_status","pending");
+    else if (status === "paid") q = q.eq("payment_status","paid");
+    else if (status) q = q.eq("status", status);
+    else q = q.eq("status","pending");
 
-    // 🆕 Filtro per giorno (opzionale)
     if (dayStr) {
       const { start, end } = localDayBounds(dayStr);
       q = q.gte("created_at", start).lte("created_at", end);
@@ -470,7 +364,7 @@ app.get("/api/orders", requireAdminApi, async (req, res) => {
   }
 });
 
-// --- rotte legacy (restano identiche)
+// --- azioni su ordini
 app.post("/api/orders/:id/complete", requireAdminApi, async (req, res) => {
   const { error } = await supabase.from("orders")
     .update({ status:"completed", completed_at:new Date().toISOString() })
@@ -490,21 +384,18 @@ app.post("/api/orders/:id/restore", requireAdminApi, async (req, res) => {
   res.json({ ok: !error });
 });
 app.post("/api/orders/:id/ack", requireAdminApi, async (req, res) => {
-  const { error } = await supabase.from("orders")
-    .update({ ack:true })
-    .eq("id", req.params.id);
+  const { error } = await supabase.from("orders").update({ ack:true }).eq("id", req.params.id);
   res.json({ ok: !error });
 });
-app.post("/api/orders/:id/printed", requireAdminApi, (_req, res) => res.json({ ok:true }));
 
-// ✅ nuove rotte pagamenti manuali/online
+// ✅ pagamenti manuali
 app.post("/api/orders/:id/pay", requireAdminApi, async (req, res) => {
   try{
-    const method = (req.body?.method||"cash").toString(); // 'cash' | 'online'
+    const method = (req.body?.method||"cash").toString();
     const patch = { payment_status: "paid", paid_at: new Date().toISOString(), pay_method: method };
     let { error } = await supabase.from("orders").update(patch).eq("id", req.params.id);
     if (error) {
-      console.warn("orders.pay: colonne pagamento assenti, salto patch dettagli:", error.message);
+      console.warn("orders.pay: colonne pagamento assenti:", error.message);
       return res.json({ ok:true, note:"patched_without_payment_columns" });
     }
     res.json({ ok:true });
@@ -515,7 +406,7 @@ app.post("/api/orders/:id/unpay", requireAdminApi, async (req, res) => {
     const patch = { payment_status: "unpaid", paid_at: null, pay_method: null };
     let { error } = await supabase.from("orders").update(patch).eq("id", req.params.id);
     if (error) {
-      console.warn("orders.unpay: colonne pagamento assenti:", error.message);
+      console.warn("orders.unpay:", error.message);
       return res.json({ ok:true, note:"patched_without_payment_columns" });
     }
     res.json({ ok:true });
@@ -526,7 +417,7 @@ app.post("/api/orders/:id/pay-pending", requireAdminApi, async (req, res) => {
     const patch = { payment_status: "pending", paid_at: null, pay_method: null };
     let { error } = await supabase.from("orders").update(patch).eq("id", req.params.id);
     if (error) {
-      console.warn("orders.pay-pending: colonne pagamento assenti:", error.message);
+      console.warn("orders.pay-pending:", error.message);
       return res.json({ ok:true, note:"patched_without_payment_columns" });
     }
     res.json({ ok:true });
@@ -539,16 +430,10 @@ app.post("/api/orders/:id/pay-pending", requireAdminApi, async (req, res) => {
 app.get("/api/settings", requireAdminApi, async (_req, res) => {
   try {
     const keys = ["sound_enabled","autorefresh"];
-    const { data, error } = await supabase
-      .from("settings").select("key,value").in("key", keys);
+    const { data, error } = await supabase.from("settings").select("key,value").in("key", keys);
     if (error) throw error;
-
     const map = Object.fromEntries((data||[]).map(r => [r.key, r.value?.v]));
-    res.json({
-      ok:true,
-      sound_enabled: !!map.sound_enabled,
-      autorefresh: !!map.autorefresh
-    });
+    res.json({ ok:true, sound_enabled: !!map.sound_enabled, autorefresh: !!map.autorefresh });
   } catch(e){ console.error(e); res.json({ ok:false }); }
 });
 
@@ -566,18 +451,15 @@ app.post("/api/settings", requireAdminApi, async (req, res) => {
 });
 
 // =====================================================================================
-// API STATISTICHE — compatibili con dashboard (day + range top)
+// API STATISTICHE
 // =====================================================================================
 app.get("/api/stats", requireAdminApi, async (req, res) => {
   try {
     const day = (req.query.day || "").toString().slice(0,10);
     const { start, end } = localDayBounds(day);
-
     const { data: rows, error } = await supabase
-      .from("orders")
-      .select("id,total,status,created_at")
-      .gte("created_at", start)
-      .lte("created_at", end);
+      .from("orders").select("id,total,status,created_at")
+      .gte("created_at", start).lte("created_at", end);
     if (error) throw error;
 
     const all = rows || [];
@@ -604,12 +486,9 @@ app.get("/api/stats/day", requireAdminApi, async (req, res) => {
   try {
     const day = (req.query.date || req.query.day || "").toString().slice(0,10);
     const { start, end, startLocal } = localDayBounds(day);
-
     const { data: orders, error } = await supabase
-      .from("orders")
-      .select("id,total,status,created_at")
-      .gte("created_at", start)
-      .lte("created_at", end);
+      .from("orders").select("id,total,status,created_at")
+      .gte("created_at", start).lte("created_at", end);
     if (error) throw error;
 
     const all = orders || [];
@@ -623,18 +502,15 @@ app.get("/api/stats/day", requireAdminApi, async (req, res) => {
       return { key: h, bucket: b.toISOString(), count: 0, revenue: 0 };
     });
 
-    for (const o of all) {
-  if (o.status === "completed") {              // ✅ solo ordini accettati
-    const b = new Date(o.created_at);
-    const h = b.getHours();
-    const idx = buckets.findIndex(x => x.key === h);
-    if (idx >= 0) {
-      buckets[idx].count += 1;                 // conta solo accepted
-      buckets[idx].revenue += Number(o.total||0);
+    for (const o of completed) {
+      const b = new Date(o.created_at);
+      const h = b.getHours();
+      const idx = buckets.findIndex(x => x.key === h);
+      if (idx >= 0) {
+        buckets[idx].count += 1;
+        buckets[idx].revenue += Number(o.total||0);
+      }
     }
-  }
-}
-      
     for (const b of buckets) b.revenue = Number(b.revenue.toFixed(2));
 
     res.json({ ok: true, count: countAccepted, total: Number(totalRev.toFixed(2)), perBucket: { rows: buckets } });
@@ -654,14 +530,11 @@ app.get("/api/stats/range", requireAdminApi, async (req, res) => {
     const { end: toIso }     = localDayBounds(toStr);
 
     const { data: orders, error } = await supabase
-      .from("orders")
-      .select("id,total,status,created_at")
-      .gte("created_at", fromIso)
-      .lte("created_at", toIso);
+      .from("orders").select("id,total,status,created_at")
+      .gte("created_at", fromIso).lte("created_at", toIso);
     if (error) throw error;
 
     const all = orders || [];
-
     const byDay = {};
     for (const o of all) {
       const d = (o.created_at || "").slice(0,10);
@@ -680,6 +553,7 @@ app.get("/api/stats/range", requireAdminApi, async (req, res) => {
         revenue: Number(d.revenue.toFixed(2))
       }));
 
+    // Top prodotti su ordini completed
     const completedIds = all.filter(o=>o.status==="completed").map(o=>o.id);
     let top = { list: [] };
 
@@ -798,7 +672,6 @@ app.get("/test-sumup", async (req, res) => {
   }
 });
 
-// ✅ ora accetta body { amount, currency?, description?, order_id? }
 app.post("/api/pay-sumup", async (req, res) => {
   try {
     const { amount, currency = "EUR", description = "Pagamento Mangia & Fuggi", order_id=null } = req.body || {};
@@ -842,27 +715,23 @@ app.post("/api/pay-sumup", async (req, res) => {
 });
 
 // =====================================================================================
-// FISCALE (MOCK) — verrà sostituito da FISKALY SIGN IT quando attivo
+// FISCALE (MOCK finché FISKALY_ENABLED !== "true")
 // =====================================================================================
-const FISKALY_ENABLED   = (process.env.FISKALY_ENABLED || "false").toLowerCase() === "true";
-const PRINT_SPOOL_DIR   = process.env.PRINT_SPOOL_DIR || "./spool";
+const FISKALY_ENABLED = (process.env.FISKALY_ENABLED || "false").toLowerCase() === "true";
+const PRINT_SPOOL_DIR = process.env.PRINT_SPOOL_DIR || "./spool";
 
 app.post("/api/fiscal/receipt", async (req, res) => {
-  console.log("🧾 /api/fiscal/receipt CHIAMATA con body:", req.body); // 👈 LOG INIZIALE
-
+  console.log("🧾 /api/fiscal/receipt CHIAMATA con body:", req.body);
   try {
     const { orderId, table = null, items = [] } = req.body || {};
     if (!orderId) return res.status(400).json({ ok: false, error: "missing_orderId" });
 
-    // Se FISKALY è spento → mock su file
     if (!FISKALY_ENABLED) {
       try {
         if (!fs.existsSync(PRINT_SPOOL_DIR)) fs.mkdirSync(PRINT_SPOOL_DIR, { recursive: true });
         const out = {
           type: "MOCK_FISCAL_RECEIPT",
-          orderId,
-          table,
-          items,
+          orderId, table, items,
           totals: {
             gross: (items || []).reduce(
               (s, it) => s + Number((it.unitPrice ?? it.price) || 0) * Number(it.qty || 1),
@@ -873,24 +742,20 @@ app.post("/api/fiscal/receipt", async (req, res) => {
         };
         const filePath = path.join(PRINT_SPOOL_DIR, `receipt-${orderId}.json`);
         fs.writeFileSync(filePath, JSON.stringify(out, null, 2));
-
-        console.log("✅ MOCK scontrino salvato:", filePath); // 👈 LOG DI SUCCESSO
+        console.log("✅ MOCK scontrino salvato:", filePath);
       } catch (e) {
         console.warn("mock fiscal write failed:", e?.message || e);
       }
       return res.json({ ok: true, mock: true });
     }
 
-    // ----- LIVE (TEST/PROD) con Fiskaly -----
-
-    // 1) prendo ordine
+    // LIVE
     const { data: ord } = await supabase
       .from("orders")
       .select("id,total,pay_method,table_code")
       .eq("id", orderId)
       .single();
 
-    // 2) prendo righe se non sono state inviate
     let lines = items;
     if (!lines || !lines.length) {
       const { data: its } = await supabase
@@ -900,7 +765,6 @@ app.post("/api/fiscal/receipt", async (req, res) => {
       lines = its || [];
     }
 
-    // 3) normalizzo per fiskaly.js (usa 'price', non 'unitPrice')
     const normItems = (lines || []).map(r => ({
       name: r.name,
       qty: Number(r.qty || 1),
@@ -908,11 +772,9 @@ app.post("/api/fiscal/receipt", async (req, res) => {
       vatRate: Number(r.vatRate ?? 10)
     }));
 
-    // 4) calcolo totale se manca
     const calcTotal = normItems.reduce((s, i) => s + i.price * i.qty, 0);
     const total = Number((ord?.total ?? calcTotal).toFixed(2));
 
-    // 5) costruisco l'oggetto ordine per fiskaly.js
     const order = {
       id: orderId,
       items: normItems,
@@ -921,10 +783,8 @@ app.post("/api/fiscal/receipt", async (req, res) => {
       table_code: table || ord?.table_code || null
     };
 
-    // 6) invio a Fiskaly
     const rec = await createFiscalReceipt(order);
 
-    // 7) salvo (se hai le colonne; se non ci sono, ignora l’errore)
     try {
       await supabase
         .from("orders")
@@ -938,6 +798,7 @@ app.post("/api/fiscal/receipt", async (req, res) => {
     res.status(500).json({ ok: false, error: "fiscal_failed" });
   }
 });
+
 // --- Helpers prenotazioni/waitlist ---
 async function promoteNextWaiter(tableId){
   const { data: next, error: e1 } = await supabase
@@ -969,10 +830,8 @@ async function promoteNextWaiter(tableId){
 }
 
 // =====================================================================================
-// TAVOLI & PRENOTAZIONI (UNICA VERSIONE, senza duplicati) ✅
+// TAVOLI & PRENOTAZIONI
 // =====================================================================================
-
-// ---- TAVOLI (dashboard)
 app.get("/api/tables", requireAdminApi, async (_req, res) => {
   try{
     let { data, error } = await supabase
@@ -981,7 +840,6 @@ app.get("/api/tables", requireAdminApi, async (_req, res) => {
       .order("id",{ascending:true});
     if (error) throw error;
 
-    // 🔹 AUTO-SEED se vuota
     if (!data || data.length === 0) {
       const seed = [
         { id:1, name:"Tavolo 1", seats:2, status:"free" },
@@ -1003,7 +861,6 @@ app.get("/api/tables", requireAdminApi, async (_req, res) => {
 app.post("/api/tables/:id/free", requireAdminApi, async (req, res) => {
   try{
     const { id } = req.params;
-
     const { error: e0 } = await supabase
       .from("restaurant_tables")
       .update({ status:"free", current_reservation: null, updated_at:new Date().toISOString() })
@@ -1014,12 +871,8 @@ app.post("/api/tables/:id/free", requireAdminApi, async (req, res) => {
     if (promo.promoted){
       return res.json({ ok:true, autoConfirmed: true, reservation_id: promo.reservation_id });
     }
-
     res.json({ ok:true, autoConfirmed: false });
-  }catch(e){ 
-    console.error("table free error:", e); 
-    res.status(500).json({ ok:false }); 
-  }
+  }catch(e){ console.error("table free error:", e); res.status(500).json({ ok:false }); }
 });
 
 app.post("/api/tables/:id/seat", requireAdminApi, async (req, res) => {
@@ -1034,7 +887,7 @@ app.post("/api/tables/:id/seat", requireAdminApi, async (req, res) => {
   }catch(e){ console.error("table seat error:", e); res.status(500).json({ ok:false }); }
 });
 
-// ---- STATO per i clienti (prenota)
+// pubblico per mostrare stato ai clienti
 app.get("/api/tables/status", async (_req, res) => {
   try{
     let { data, error } = await supabase
@@ -1043,7 +896,6 @@ app.get("/api/tables/status", async (_req, res) => {
       .order("id",{ascending:true});
     if (error) throw error;
 
-    // 🔹 AUTO-SEED anche lato clienti
     if (!data || data.length === 0) {
       const seed = [
         { id:1, name:"Tavolo 1", seats:2, status:"free" },
@@ -1062,17 +914,14 @@ app.get("/api/tables/status", async (_req, res) => {
   }catch(e){ console.error("tables status error:", e); res.status(500).json({ ok:false, error:"tables_status_failed" }); }
 });
 
-// ---- PRENOTAZIONI
+// prenotazioni
 app.post("/api/reservations", async (req, res) => {
   try {
     const { table_id, customer_name, customer_phone, size=2, requested_for=null } = req.body || {};
     if (!table_id || !customer_name) return res.status(400).json({ ok:false, error:"missing_params" });
 
     const { data: t, error: te } = await supabase
-      .from("restaurant_tables")
-      .select("id,status")
-      .eq("id", table_id)
-      .single();
+      .from("restaurant_tables").select("id,status").eq("id", table_id).single();
     if (te || !t) throw te || new Error("table_not_found");
 
     const initialStatus = (t.status === "free") ? "confirmed" : "waiting";
@@ -1123,9 +972,7 @@ app.post("/api/reservations/:id/seat", requireAdminApi, async (req, res) => {
       .eq("id", id);
     if (error) throw error;
 
-    await supabase.from("restaurant_tables")
-      .update({ status:"occupied" })
-      .eq("id", r0.table_id);
+    await supabase.from("restaurant_tables").update({ status:"occupied" }).eq("id", r0.table_id);
 
     res.json({ ok:true });
   } catch (e) {
@@ -1182,6 +1029,35 @@ app.post("/api/reservations/:id/cancel", requireAdminApi, async (req, res) => {
     console.error("reservation cancel error:", e);
     res.status(500).json({ ok:false, error:"reservation_cancel_failed" });
   }
+});
+
+// =====================================================================================
+// DEBUG & SEED (solo per test locale o protetto con ADMIN_API_TOKEN)
+// =====================================================================================
+app.get("/api/debug/ping", (_req,res)=>res.json({ok:true, now:new Date().toISOString()}));
+
+app.get("/api/debug/supa", async (_req,res) => {
+  try {
+    const { data, error } = await supabase.from("orders").select("id").limit(1);
+    if (error) return res.status(500).json({ ok:false, error:error.message });
+    res.json({ ok:true, hasOrders: !!(data && data.length) });
+  } catch(e){ res.status(500).json({ ok:false, error:String(e) }); }
+});
+
+// Crea un ordine finto per vedere subito qualcosa in dashboard
+app.post("/api/debug/seed-order", requireAdminApi, async (_req,res)=>{
+  try{
+    const { data: order, error:oErr } = await supabase.from("orders").insert([{ total: 12.5, status:"pending", ack:false, payment_status:"unpaid", table_code:"T1" }]).select().single();
+    if (oErr) throw oErr;
+    const rows = [
+      { order_id: order.id, name:"Margherita", price:6.0, qty:1 },
+      { order_id: order.id, name:"Acqua",      price:1.5, qty:1 },
+      { order_id: order.id, name:"Coperto",    price:2.0, qty:2 }
+    ];
+    const { error:iErr } = await supabase.from("order_items").insert(rows);
+    if (iErr) throw iErr;
+    res.json({ ok:true, order_id: order.id });
+  }catch(e){ console.error(e); res.status(500).json({ ok:false, error:"seed_failed" }); }
 });
 
 // ---- Avvio
