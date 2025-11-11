@@ -164,7 +164,11 @@ app.use("/admin", (req, res, next) => {
 app.get("/", (_req, res) => res.render("home"));
 app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/storia", (_req, res) => res.render("storia"));
-app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL })); // ← niente SUPABASE_KEY
+app.get("/admin", (_req, res) => {
+  const SUPABASE_URL  = (process.env.SUPABASE_URL || "").trim();
+  const SUPABASE_ANON = (process.env.SUPABASE_ANON_KEY || "").trim();
+  res.render("admin", { SUPABASE_URL, SUPABASE_KEY: SUPABASE_ANON });
+});
 app.get("/test-video", (_req, res) => res.render("test-video"));
 app.get("/prenota", (_req, res) => res.render("prenota"));
 
