@@ -170,7 +170,21 @@ app.use("/admin", (req, res, next) => {
 app.get("/", (_req, res) => res.render("home"));
 app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/storia", (_req, res) => res.render("storia"));
-app.get("/admin", (_req, res) => res.render("admin", { SUPABASE_URL })); // ← niente SUPABASE_KEY
+app.get("/admin", (req, res) => {
+  // usa SOLO la anon key nel client
+  const SUPABASE_ANON = getEnvAny("SUPABASE_ANON_KEY") || "";
+  res.render("admin", {
+    SUPABASE_URL,
+    SUPABASE_KEY: SUPABASE_ANON,
+    BASE_URL: getBaseUrl(req)
+  }, (err, html) => {
+    if (err) {
+      console.error("admin.ejs render error:", err);
+      return res.status(500).send("Errore interno");
+    }
+    res.send(html);
+  });
+});
 app.get("/test-video", (_req, res) => res.render("test-video"));
 app.get("/prenota", (_req, res) => res.render("prenota"));
 
