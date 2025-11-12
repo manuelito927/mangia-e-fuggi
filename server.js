@@ -132,16 +132,18 @@ app.get("/sitemap.xml", (req, res) => {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
 });
 
-// ===== Middleware API Admin (Bearer token) =====
+// ===== Middleware API Admin (sessione OPPURE Bearer) =====
 const ADMIN_API_TOKEN = getEnvAny("ADMIN_API_TOKEN");
+
 function requireAdminApi(req, res, next) {
+  // se la dashboard ha fatto login (basic), la sessione è valida
+  if (req.session?.isAdmin) return next();
+
+  // altrimenti accetta Bearer ADMIN_API_TOKEN (Postman, script, ecc.)
   const auth = req.headers.authorization || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (!ADMIN_API_TOKEN) {
-    console.warn("⚠️ ADMIN_API_TOKEN non impostato: API admin non protette");
-    return res.status(500).json({ ok:false, error:"admin_token_missing" });
-  }
-  if (token === ADMIN_API_TOKEN) return next();
+  if (ADMIN_API_TOKEN && token === ADMIN_API_TOKEN) return next();
+
   return res.status(403).json({ ok:false, error:"admin_only" });
 }
 
