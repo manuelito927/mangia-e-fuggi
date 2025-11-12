@@ -147,18 +147,22 @@ function requireAdminApi(req, res, next) {
   return res.status(403).json({ ok:false, error:"admin_only" });
 }
 
-// ---------- Basic Auth su /admin (usa ADMIN_PASSWORD) — solo password, no key
 app.use("/admin", (req, res, next) => {
   const required = (process.env.ADMIN_PASSWORD || "").trim();
   if (!required) return next();
+
   const auth  = req.headers.authorization || "";
   const token = auth.split(" ")[1] || "";
   let pass = "";
   try { pass = Buffer.from(token, "base64").toString("utf8").split(":")[1] || ""; } catch {}
+
   if (pass !== required) {
     res.set("WWW-Authenticate", 'Basic realm="Area Riservata"');
     return res.status(401).send("Accesso riservato");
   }
+
+  // login ok → abilita sessione admin per le API
+  req.session.isAdmin = true;
   next();
 });
 
