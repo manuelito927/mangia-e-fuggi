@@ -152,7 +152,9 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
 
 <script>
 /* ========= CONFIG ========= */
-const supabase = window.supabase.createClient("<%= SUPABASE_URL %>", "<%= SUPABASE_KEY %>");
+const SUPA_URL = "<%= SUPABASE_URL %>";
+const SUPA_KEY = "<%= SUPABASE_KEY %>";
+const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 const $  = (s,root=document)=>root.querySelector(s);
 const $$ = (s,root=document)=>Array.from(root.querySelectorAll(s));
 const euro = v => "€ " + Number(v||0).toFixed(2).replace(".", ",");
