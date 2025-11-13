@@ -82,7 +82,41 @@ app.get("/pizza.mp4", (req, res) => {
   });
 });
 
-app.use(helmet({ contentSecurityPolicy: false }));
+const SUPABASE_HOST = (() => { try { return new URL(SUPABASE_URL).hostname; } catch { return ""; } })();
+const FISKALY_BASE = getEnvAny("FISKALY_BASE_URL") || "https://api.fiskaly.com";
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+      "style-src":  ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+      "img-src":    ["'self'", "data:", "https:"],
+      "font-src":   ["'self'", "data:", "https://fonts.gstatic.com"],
+      "connect-src": [
+        "'self'",
+        SUPABASE_URL,
+        `https://${SUPABASE_HOST}`,
+        `wss://${SUPABASE_HOST}`,
+        FISKALY_BASE,
+        "https://api.sumup.com"
+      ].filter(Boolean),
+      "frame-ancestors": ["'none'"]
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
+// Hardening extra (aiuta anche ZAP)
+app.use((req, res, next) => {
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  if (req.path.startsWith("/api") || req.path.startsWith("/admin")) {
+    res.setHeader("Cache-Control", "no-store");
+  }
+  next();
+});
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
