@@ -110,6 +110,53 @@ app.use(helmet({
 
 import crypto from "crypto";
 
+// --- Security headers + CSP + parsers + session (unico blocco) ---
+app.use((req, res, next) => {
+  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  if (req.path.startsWith("/api") || req.path.startsWith("/admin")) {
+    res.setHeader("Cache-Control", "no-store");
+  }
+  next();
+});
+
+// CSP con nonce (niente wildcard, niente 'unsafe-inline')
+app.use((req, res, next) => {
+  const nonce = crypto.randomBytes(16).toString("base64");
+  res.locals.cspNonce = nonce;
+  res.setHeader("Content-Security-Policy", [
+    "default-src 'self'",
+    `script-src 'self' https://cdn.jsdelivr.net 'nonce-${nonce}'`,
+    "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "connect-src 'self' https://oxihxlamgkncaqbxfwfh.supabase.co wss://oxihxlamgkncaqbxfwfh.supabase.co https://api.sumup.com https://sign-api.sandbox.fiskaly.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    "upgrade-insecure-requests"
+  ].join("; "));
+  next();
+});
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(cookieParser());
+
+app.use(session({
+  name: "mangia.sid",
+  secret: process.env.SESSION_SECRET || "dev",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 giorni
+  }
+}));
+
 // ---------- Helpers generali
 const euroString = v => Number(v || 0).toFixed(2);
 function toAmount2(n){ const cents = Math.round(Number(n || 0) * 100); return Number((cents/100).toFixed(2)); }
