@@ -109,9 +109,9 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-import crypto from "crypto";
+// --- Security headers + CSP + parsers + session (UNICO BLOCCO) ---
 
-// --- Security headers + CSP + parsers + session (unico blocco) ---
+// HSTS + X-CTO + cache API/admin
 app.use((req, res, next) => {
   res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -121,23 +121,27 @@ app.use((req, res, next) => {
   next();
 });
 
-// CSP con nonce (niente wildcard, niente 'unsafe-inline')
+// CSP con nonce (niente 'unsafe-inline')
+const SUPABASE_HOST = (SUPABASE_URL ? new URL(SUPABASE_URL).host : "");
 app.use((req, res, next) => {
   const nonce = crypto.randomBytes(16).toString("base64");
   res.locals.cspNonce = nonce;
-  res.setHeader("Content-Security-Policy", [
-    "default-src 'self'",
-    `script-src 'self' https://cdn.jsdelivr.net 'nonce-${nonce}'`,
-    "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-    "img-src 'self' data: blob:",
-    "font-src 'self' data: https://fonts.gstatic.com",
-    "connect-src 'self' https://oxihxlamgkncaqbxfwfh.supabase.co wss://oxihxlamgkncaqbxfwfh.supabase.co https://api.sumup.com https://sign-api.sandbox.fiskaly.com",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "object-src 'none'",
-    "upgrade-insecure-requests"
-  ].join("; "));
+  res.setHeader(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      `script-src 'self' https://cdn.jsdelivr.net 'nonce-${nonce}'`,
+      "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST} https://api.sumup.com https://sign-api.sandbox.fiskaly.com`,
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+      "upgrade-insecure-requests"
+    ].join("; ")
+  );
   next();
 });
 
