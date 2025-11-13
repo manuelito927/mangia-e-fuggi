@@ -89,6 +89,8 @@ app.get("/pizza.mp4", (req, res) => {
   });
 });
 
+const SUPABASE_HOST = (() => { try { return new URL(SUPABASE_URL).hostname; } catch { return ""; } })();
+const FISKALY_BASE = getEnvAny("FISKALY_BASE_URL") || "https://api.fiskaly.com";
 
 app.use(helmet({
   contentSecurityPolicy: {
