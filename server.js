@@ -7,7 +7,6 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
-import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs";
@@ -54,13 +53,13 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+/* ========================= CORS ========================= */
 const ALLOWED_ORIGINS = [
   "https://mangia-e-fuggi.onrender.com",
   "http://localhost:3000",
   "http://localhost:5173"
 ];
 
-// 🌐 CORS con whitelist
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
@@ -74,6 +73,7 @@ app.use((req, res, next) => {
   next();
 });
 
+/* ========================= STATIC ========================= */
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/video", express.static(path.join(__dirname, "public", "video"), {
   setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
@@ -89,6 +89,7 @@ app.get("/pizza.mp4", (req, res) => {
   });
 });
 
+/* =================== SECURITY HEADERS / CSP =================== */
 const SUPABASE_HOST = (() => { try { return new URL(SUPABASE_URL).hostname; } catch { return ""; } })();
 const FISKALY_BASE = getEnvAny("FISKALY_BASE_URL") || "https://api.fiskaly.com";
 
@@ -97,6 +98,7 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       "default-src": ["'self'"],
+      // manteniamo 'unsafe-inline' per non rompere eventuali script/style inline nelle EJS
       "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
       "style-src":  ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
       "img-src":    ["'self'", "data:", "https:"],
@@ -109,15 +111,16 @@ app.use(helmet({
         FISKALY_BASE,
         "https://api.sumup.com"
       ].filter(Boolean),
-      "frame-ancestors": ["'none'"]
+      "frame-ancestors": ["'none'"],
+      "base-uri": ["'self'"],
+      "form-action": ["'self'"],
+      "object-src": ["'none'"]
     }
   },
   crossOriginEmbedderPolicy: false
 }));
 
-// --- Security headers + CSP + parsers + session (UNICO BLOCCO) ---
-
-// HSTS + X-CTO + cache API/admin
+// HSTS + X-CTO + no-store per API/admin
 app.use((req, res, next) => {
   res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -127,30 +130,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// CSP con nonce (niente 'unsafe-inline')
-const SUPABASE_HOST = (SUPABASE_URL ? new URL(SUPABASE_URL).host : "");
-app.use((req, res, next) => {
-  const nonce = crypto.randomBytes(16).toString("base64");
-  res.locals.cspNonce = nonce;
-  res.setHeader(
-    "Content-Security-Policy",
-    [
-      "default-src 'self'",
-      `script-src 'self' https://cdn.jsdelivr.net 'nonce-${nonce}'`,
-      "style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-      "img-src 'self' data: blob:",
-      "font-src 'self' data: https://fonts.gstatic.com",
-      `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST} https://api.sumup.com https://sign-api.sandbox.fiskaly.com`,
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "object-src 'none'",
-      "upgrade-insecure-requests"
-    ].join("; ")
-  );
-  next();
-});
-
+/* ========================= PARSERS & SESSIONE ========================= */
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -168,6 +148,7 @@ app.use(session({
   }
 }));
 
+/* ========================= HELPERS ========================= */
 // ---------- Helpers generali
 const euroString = v => Number(v || 0).toFixed(2);
 function toAmount2(n){ const cents = Math.round(Number(n || 0) * 100); return Number((cents/100).toFixed(2)); }
