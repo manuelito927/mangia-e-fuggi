@@ -108,54 +108,7 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// Hardening extra (aiuta anche ZAP)
-app.use((req, res, next) => {
-  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  if (req.path.startsWith("/api") || req.path.startsWith("/admin")) {
-    res.setHeader("Cache-Control", "no-store");
-  }
-  next();
-});
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(cookieParser());
-app.use(session({
-  secret: process.env.SESSION_SECRET || "dev",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production"
-  }
-}));
-  // Hardening extra (aiuta anche ZAP)
-app.use((req, res, next) => {
-  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  if (req.path.startsWith("/api") || req.path.startsWith("/admin")) {
-    res.setHeader("Cache-Control", "no-store");
-  }
-  next();
-});
-
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(cookieParser());
-
-app.use(session({
-  name: "mangia.sid",
-  secret: process.env.SESSION_SECRET || "dev",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 giorni
-  }
-}));
+import crypto from "crypto";
 
 // ---------- Helpers generali
 const euroString = v => Number(v || 0).toFixed(2);
