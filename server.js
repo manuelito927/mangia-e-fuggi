@@ -123,6 +123,15 @@ app.use(cookieParser());
 app.use(session({
   secret: process.env.SESSION_SECRET || "dev",
   resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production"
+  }
+}));
+  secret: process.env.SESSION_SECRET || "dev",
+  resave: false,
   saveUninitialized: false
 }));
 
