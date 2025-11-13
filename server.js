@@ -54,6 +54,12 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+const ALLOWED_ORIGINS = [
+  "https://mangia-e-fuggi.onrender.com",
+  "http://localhost:3000",
+  "http://localhost:5173"
+];
+
 // 🌐 CORS con whitelist
 app.use((req, res, next) => {
   const origin = req.headers.origin;
