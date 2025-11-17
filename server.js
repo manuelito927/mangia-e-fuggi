@@ -244,6 +244,82 @@ app.get("/admin", (req, res) => {
     res.send(html);
   });
 });
+
+// PAGINA IMPOSTAZIONI PIZZERIA
+
+// mostra il form
+app.get("/admin/settings", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("settings")
+      .select("*")
+      .eq("key", "restaurant")
+      .single();
+
+    if (error) {
+      console.error("Errore caricamento settings:", error);
+      return res.status(500).send("Errore caricamento impostazioni");
+    }
+
+    const ok = req.query.ok;
+
+    res.render("settings", {
+      settings: data,
+      ok,
+    });
+  } catch (err) {
+    console.error("Eccezione GET /admin/settings:", err);
+    res.status(500).send("Errore interno");
+  }
+});
+
+// salva il form
+app.post("/admin/settings", async (req, res) => {
+  try {
+    const {
+      name,
+      address,
+      vat_number,
+      phone,
+      email,
+      iva_percent,
+      service_fee_p,
+      cover_charge,
+      payments,
+      auto_sound,
+      auto_refresh,
+    } = req.body;
+
+    const { error } = await supabase
+      .from("settings")
+      .update({
+        name,
+        address,
+        vat_number,
+        phone,
+        email,
+        iva_percent: Number(iva_percent) || 0,
+        service_fee_p: Number(service_fee_p) || 0,
+        cover_charge: Number(cover_charge) || 0,
+        payments,
+        auto_sound: auto_sound === "on",
+        auto_refresh: auto_refresh === "on",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("key", "restaurant");
+
+    if (error) {
+      console.error("Errore salvataggio settings:", error);
+      return res.status(500).send("Errore salvataggio impostazioni");
+    }
+
+    res.redirect("/admin/settings?ok=1");
+  } catch (err) {
+    console.error("Eccezione POST /admin/settings:", err);
+    res.status(500).send("Errore interno");
+  }
+});
+
 app.get("/test-video", (_req, res) => res.render("test-video"));
 app.get("/prenota", (_req, res) => res.render("prenota"));
 
