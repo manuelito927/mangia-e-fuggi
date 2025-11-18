@@ -198,8 +198,9 @@ $$('[data-section]').forEach(a=>{
     $('#sec-stats').style.display  = sec === 'stats'  ? 'block' : 'none';
     $('#sec-menu').style.display   = sec === 'menu'   ? 'block' : 'none';
     $('#sec-tables').style.display = sec === 'tables' ? 'block' : 'none';
+
     if (sec === 'tables') loadTables();
-    if (sec === 'menu')   loadCategories();   // 👈 QUESTA È LA NUOVA RIGA
+    if (sec === 'menu')   loadMenu();   // ✅ usa loadMenu
   });
 });
 
