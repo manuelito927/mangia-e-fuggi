@@ -204,69 +204,78 @@ $$('[data-section]').forEach(a=>{
   });
 });
 
-/* ========= MENU (categorie + piatti) ========= */
-async function loadMenu(){
-  const list = document.getElementById('menuCategories');
-  if (!list) return;
-
+/* ========= MENU: CATEGORIE + PIATTI ========= */
+async function loadMenu() {
   try {
-    // 1. CATEGORIE
-    const { data: cats, error: errCats } = await supabase
+    // 1) Prendo le categorie attive
+    const { data: categories, error: catErr } = await supabase
       .from('menu_categories')
       .select('id, name, sort_order, is_active')
+      .eq('is_active', true)
       .order('sort_order', { ascending: true });
 
-    if (errCats) throw errCats;
-
-    // 2. PIATTI
-    const { data: items, error: errItems } = await supabase
-      .from('menu_items')
-      .select('id, name, price, is_available, category_id, sort_order')
-      .order('sort_order', { ascending: true });
-
-    if (errItems) throw errItems;
-
-    // Nessuna categoria
-    if (!cats || cats.length === 0) {
-      list.innerHTML = '<li>Nessuna categoria ancora creata.</li>';
+    if (catErr) {
+      console.error(catErr);
+      showErr('Errore nel caricamento delle categorie del menu');
       return;
     }
 
-    list.innerHTML = '';
+    const ul = document.querySelector('#menuCategories');
+    if (!ul) return;
+    ul.innerHTML = '';
 
-    // 3. Costruisco HTML categorie + piatti
-    cats.forEach(cat => {
-      const li = document.createElement('li');
-      li.style.marginBottom = '8px';
+    if (!categories || !categories.length) {
+      ul.innerHTML = '<li>Nessuna categoria ancora creata.</li>';
+      return;
+    }
 
-      const catItems = (items || []).filter(it => it.category_id === cat.id);
-      const availableCount = catItems.filter(it => it.is_available).length;
+    // 2) Per ogni categoria prendo i piatti collegati
+    for (const cat of categories) {
+      const { data: items, error: itemErr } = await supabase
+        .from('menu_items')
+        .select('id, name, price, is_available, category_id')
+        .eq('category_id', cat.id)
+        .order('position', { ascending: true });
 
-      let itemsHtml;
-      if (catItems.length) {
-        itemsHtml =
-          '<ul style="margin:4px 0 0 16px; padding-left:0;">' +
-          catItems.map(it =>
-            `<li>${it.name} — ${euro(it.price)} ` +
-            `${it.is_available ? '' : '<span class="muted">(non disponibile)</span>'}</li>`
-          ).join('') +
-          '</ul>';
-      } else {
-        itemsHtml = '<div class="muted">Nessun piatto in questa categoria.</div>';
+      if (itemErr) {
+        console.error(itemErr);
+        showErr('Errore nel caricamento dei piatti del menu');
+        continue;
       }
 
-      li.innerHTML = `
+      const totalItems = items.length;
+      const availableItems = items.filter(it => it.is_available !== false).length;
+      // (se is_available è NULL lo considero disponibile)
+
+      // 3) Costruisco l’HTML per la categoria
+      const li = document.createElement('li');
+
+      let html = `
         <strong>${cat.name}</strong>
-        <span class="muted"> (${availableCount}/${catItems.length} disponibili)</span>
-        ${itemsHtml}
+        <span class="muted"> (${availableItems}/${totalItems} disponibili)</span>
       `;
 
-      list.appendChild(li);
-    });
+      if (totalItems === 0) {
+        html += `<div class="muted small">Nessun piatto in questa categoria.</div>`;
+      } else {
+        html += `<ul class="small">` +
+          items.map(it => `
+            <li>
+              ${it.name}
+              ${it.price != null ? ` – € ${it.price}` : ''}
+              ${it.is_available === false ? ' <span class="muted">(non disponibile)</span>' : ''}
+            </li>
+          `).join('') +
+        `</ul>`;
+      }
+
+      li.innerHTML = html;
+      ul.appendChild(li);
+    }
 
   } catch (e) {
     console.error(e);
-    list.innerHTML = '<li>Errore nel caricamento del menù.</li>';
+    showErr('Errore nel caricamento del menu');
   }
 }
 
