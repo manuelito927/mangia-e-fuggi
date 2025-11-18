@@ -223,15 +223,21 @@ async function loadMenu() {
       return;
     }
 
-    // 2) Prendo TUTTI i piatti
+    // 2) Prendo TUTTI i piatti (senza specificare colonne, così siamo sicuri)
     const { data: allItems, error: itemErr } = await supabase
       .from('menu_items')
-      .select('id, name, price, is_available, category_id, position');
+      .select('*');
 
     if (itemErr) {
       console.error(itemErr);
       showErr('Errore nel caricamento dei piatti del menu');
       return;
+    }
+
+    // DEBUG: faccio vedere cosa arriva
+    const debugDiv = document.querySelector('#menuDebug');
+    if (debugDiv) {
+      debugDiv.textContent = 'DEBUG piatti: ' + JSON.stringify(allItems);
     }
 
     const ul = document.querySelector('#menuCategories');
@@ -245,12 +251,11 @@ async function loadMenu() {
 
     // 3) Per ogni categoria filtro i piatti corrispondenti
     for (const cat of categories) {
-      // confronto sia con === sia con == per gestire numero/stringa
-      let items = allItems.filter(it =>
+      let items = (allItems || []).filter(it =>
         it.category_id === cat.id || it.category_id == cat.id
       );
 
-      // ordino per position (se manca, considero 0)
+      // ordino per position se esiste, altrimenti 0
       items = items.sort((a, b) => (a.position || 0) - (b.position || 0));
 
       const totalItems = items.length;
