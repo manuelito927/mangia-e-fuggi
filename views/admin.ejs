@@ -189,11 +189,12 @@ $$('[data-section]').forEach(a=>{
     e.preventDefault();
     $$('[data-section]').forEach(x=>x.classList.remove('active'));
     a.classList.add('active');
-    const sec=a.dataset.section;
-    $('#sec-orders').style.display = sec==='orders' ? 'block' : 'none';
-    $('#sec-stats').style.display  = sec==='stats'  ? 'block' : 'none';
-    $('#sec-tables').style.display = sec==='tables' ? 'block' : 'none';
-    if(sec==='tables') loadTables();
+    const sec = a.dataset.section;
+    $('#sec-orders').style.display = sec === 'orders' ? 'block' : 'none';
+    $('#sec-stats').style.display  = sec === 'stats'  ? 'block' : 'none';
+    $('#sec-menu').style.display   = sec === 'menu'   ? 'block' : 'none';  // 👈 QUESTA È LA RIGA NUOVA
+    $('#sec-tables').style.display = sec === 'tables' ? 'block' : 'none';
+    if (sec === 'tables') loadTables();
   });
 });
 
