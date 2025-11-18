@@ -220,6 +220,17 @@ async function loadMenu() {
       return;
     }
 
+    // 2) Prendo TUTTI i piatti
+    const { data: allItems, error: itemErr } = await supabase
+      .from('menu_items')
+      .select('id, name, price, is_available, category_id, position');
+
+    if (itemErr) {
+      console.error(itemErr);
+      showErr('Errore nel caricamento dei piatti del menu');
+      return;
+    }
+
     const ul = document.querySelector('#menuCategories');
     if (!ul) return;
     ul.innerHTML = '';
@@ -229,25 +240,19 @@ async function loadMenu() {
       return;
     }
 
-    // 2) Per ogni categoria prendo i piatti collegati
+    // 3) Per ogni categoria filtro i piatti corrispondenti
     for (const cat of categories) {
-      const { data: items, error: itemErr } = await supabase
-        .from('menu_items')
-        .select('id, name, price, is_available, category_id')
-        .eq('category_id', cat.id)
-        .order('position', { ascending: true });
+      // confronto sia con === sia con == per gestire numero/stringa
+      let items = allItems.filter(it =>
+        it.category_id === cat.id || it.category_id == cat.id
+      );
 
-      if (itemErr) {
-        console.error(itemErr);
-        showErr('Errore nel caricamento dei piatti del menu');
-        continue;
-      }
+      // ordino per position (se manca, considero 0)
+      items = items.sort((a, b) => (a.position || 0) - (b.position || 0));
 
       const totalItems = items.length;
       const availableItems = items.filter(it => it.is_available !== false).length;
-      // (se is_available è NULL lo considero disponibile)
 
-      // 3) Costruisco l’HTML per la categoria
       const li = document.createElement('li');
 
       let html = `
