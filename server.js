@@ -320,6 +320,42 @@ app.post("/admin/settings", async (req, res) => {
   }
 });
 
+// === API MENU (categorie + piatti) ===
+app.get("/admin/menu-json", async (req, res) => {
+  try {
+    // categorie
+    const { data: categories, error: catError } = await supabase
+      .from("menu_categories")
+      .select("id, name, sort_order, is_active")
+      .order("sort_order", { ascending: true });
+
+    if (catError) {
+      console.error("Errore categorie:", catError);
+      return res.status(500).json({ ok: false, error: "catError" });
+    }
+
+    // piatti
+    const { data: items, error: itemError } = await supabase
+      .from("menu_items")
+      .select("id, category_id, name, description, price, is_available")
+      .order("sort_order", { ascending: true });
+
+    if (itemError) {
+      console.error("Errore items:", itemError);
+      return res.status(500).json({ ok: false, error: "itemError" });
+    }
+
+    res.json({
+      ok: true,
+      categories,
+      items,
+    });
+  } catch (e) {
+    console.error("Errore generico /admin/menu-json:", e);
+    res.status(500).json({ ok: false, error: "serverError" });
+  }
+});
+
 app.get("/test-video", (_req, res) => res.render("test-video"));
 app.get("/prenota", (_req, res) => res.render("prenota"));
 
