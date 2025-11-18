@@ -203,6 +203,41 @@ $$('[data-section]').forEach(a=>{
   });
 });
 
+/* ========= MENU: CATEGORIE ========= */
+async function loadCategories(){
+  try{
+    const { data, error } = await supabase
+      .from('menu_categories')
+      .select('id, name')
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error(error);
+      showErr('Errore nel caricamento delle categorie del menu');
+      return;
+    }
+
+    const ul = document.querySelector('#menuCategories');
+    if (!ul) return;
+
+    ul.innerHTML = '';
+
+    if (!data || !data.length) {
+      ul.innerHTML = '<li>Nessuna categoria ancora creata.</li>';
+      return;
+    }
+
+    data.forEach(c => {
+      const li = document.createElement('li');
+      li.textContent = c.name;
+      ul.appendChild(li);
+    });
+  } catch (e) {
+    console.error(e);
+    showErr('Errore nel caricamento delle categorie del menu');
+  }
+}
+
 /* ========= SETTINGS ========= */
 async function loadSettings(){
   try{
