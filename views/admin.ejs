@@ -273,6 +273,51 @@ async function loadMenu() {
   }
 }
 
+/* ========= MENU: AGGIUNTA CATEGORIA ========= */
+async function addCategory(){
+  const nameInput = document.querySelector('#newCatName');
+  const sortInput = document.querySelector('#newCatSort');
+  const msg = document.querySelector('#menuMsg');
+
+  const name = (nameInput.value || '').trim();
+  const sort = Number(sortInput.value || 0) || null;
+
+  if (!name) {
+    msg.textContent = 'Inserisci un nome per la categoria.';
+    return;
+  }
+
+  msg.textContent = 'Salvataggio in corso...';
+
+  try {
+    const resp = await F('/api/menu/categories', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ name, sort_order: sort })
+    });
+
+    const j = await resp.json();
+    if (!j.ok) {
+      console.error(j);
+      msg.textContent = 'Errore nel salvataggio della categoria.';
+      return;
+    }
+
+    msg.textContent = 'Categoria aggiunta ✅';
+    nameInput.value = '';
+    sortInput.value = '';
+
+    // ricarica l’elenco categorie
+    await loadMenu();
+  } catch (e) {
+    console.error(e);
+    msg.textContent = 'Errore di rete durante il salvataggio.';
+  }
+}
+
+// collega il bottone "+ Aggiungi" alla funzione
+document.querySelector('#btnAddCat')?.addEventListener('click', addCategory);
+
 /* ========= SETTINGS ========= */
 async function loadSettings(){
   try{
