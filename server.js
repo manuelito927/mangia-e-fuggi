@@ -642,21 +642,29 @@ app.post("/api/settings", requireAdminApi, async (req, res) => {
 });
 
 // ========================= MENU (JSON PER ADMIN) =========================
-app.get("/admin/menu-json", requireAdminApi, async (_req, res) => {
+app.get("/admin/menu-json", async (_req, res) => {
   try {
+    console.log("GET /admin/menu-json");
+
     const { data: categories, error: cErr } = await supabase
       .from("menu_categories")
       .select("id, name, sort_order, is_active")
       .order("sort_order", { ascending: true });
 
-    if (cErr) throw cErr;
+    if (cErr) {
+      console.error("menu-json categories error:", cErr);
+      throw cErr;
+    }
 
     const { data: items, error: iErr } = await supabase
       .from("menu_items")
       .select("id, category_id, name, description, price, is_available")
       .order("category_id", { ascending: true });
 
-    if (iErr) throw iErr;
+    if (iErr) {
+      console.error("menu-json items error:", iErr);
+      throw iErr;
+    }
 
     res.json({ ok: true, categories: categories || [], items: items || [] });
   } catch (e) {
@@ -666,10 +674,13 @@ app.get("/admin/menu-json", requireAdminApi, async (_req, res) => {
 });
 
 // aggiungi categoria
-app.post("/admin/menu-json/add-category", requireAdminApi, async (req, res) => {
+app.post("/admin/menu-json/add-category", async (req, res) => {
   try {
+    console.log("POST /admin/menu-json/add-category body:", req.body);
+
     const { name, sort_order } = req.body || {};
     const trimmed = (name || "").toString().trim();
+
     if (!trimmed) {
       return res.status(400).json({ ok: false, error: "missing_name" });
     }
@@ -686,7 +697,10 @@ app.post("/admin/menu-json/add-category", requireAdminApi, async (req, res) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("add-category supabase error:", error);
+      throw error;
+    }
 
     res.json({ ok: true, category: data });
   } catch (e) {
