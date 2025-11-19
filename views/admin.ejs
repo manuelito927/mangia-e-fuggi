@@ -131,16 +131,26 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
 <section id="sec-menu" class="card" style="display:none">
   <h3 style="margin-top:0">Menu</h3>
   <p class="muted">
-    Qui potrai gestire le voci del menù (piatti, prezzi, disponibilità).
+    Qui puoi gestire le voci del menù (categorie, piatti, prezzi, disponibilità).
   </p>
 
+  <!-- LISTA CATEGORIE ESISTENTI -->
   <h4>Categorie esistenti</h4>
   <ul id="menuCategories" class="muted">
     <li>Caricamento categorie…</li>
   </ul>
 
-  <!-- SOLO PER DEBUG, DOPO LO TOGLIAMO -->
+  <!-- DEBUG (lo possiamo tenere ancora) -->
   <div id="menuDebug" class="muted small"></div>
+
+  <!-- FORM NUOVA CATEGORIA -->
+  <h4 style="margin-top:16px">Aggiungi categoria</h4>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <input id="newCatName" class="input" placeholder="Nome categoria (es. Pizze)" />
+    <input id="newCatSort" class="input" type="number" style="max-width:120px" placeholder="Ordine (es. 1)" />
+    <button id="btnAddCat" class="btn brand">+ Aggiungi</button>
+  </div>
+  <div id="menuMsg" class="muted" style="margin-top:6px;"></div>
 </section>
 
       <!-- TAVOLI -->
