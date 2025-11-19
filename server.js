@@ -641,6 +641,60 @@ app.post("/api/settings", requireAdminApi, async (req, res) => {
   } catch(e){ console.error(e); res.json({ ok:false }); }
 });
 
+// ========================= MENU (JSON PER ADMIN) =========================
+app.get("/admin/menu-json", requireAdminApi, async (_req, res) => {
+  try {
+    const { data: categories, error: cErr } = await supabase
+      .from("menu_categories")
+      .select("id, name, sort_order, is_active")
+      .order("sort_order", { ascending: true });
+
+    if (cErr) throw cErr;
+
+    const { data: items, error: iErr } = await supabase
+      .from("menu_items")
+      .select("id, category_id, name, description, price, is_available")
+      .order("category_id", { ascending: true });
+
+    if (iErr) throw iErr;
+
+    res.json({ ok: true, categories: categories || [], items: items || [] });
+  } catch (e) {
+    console.error("menu-json error:", e);
+    res.status(500).json({ ok: false, error: "menu_json_failed" });
+  }
+});
+
+// aggiungi categoria
+app.post("/admin/menu-json/add-category", requireAdminApi, async (req, res) => {
+  try {
+    const { name, sort_order } = req.body || {};
+    const trimmed = (name || "").toString().trim();
+    if (!trimmed) {
+      return res.status(400).json({ ok: false, error: "missing_name" });
+    }
+
+    const orderNum = Number(sort_order) || 0;
+
+    const { data, error } = await supabase
+      .from("menu_categories")
+      .insert([{
+        name: trimmed,
+        sort_order: orderNum,
+        is_active: true
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ ok: true, category: data });
+  } catch (e) {
+    console.error("add-category error:", e);
+    res.status(500).json({ ok: false, error: "add_category_failed" });
+  }
+});
+
 // =====================================================================================
 // API STATISTICHE
 // =====================================================================================
