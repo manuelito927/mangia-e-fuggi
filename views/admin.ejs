@@ -134,63 +134,34 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
     Qui puoi gestire le voci del menù (categorie, piatti, prezzi, disponibilità).
   </p>
 
-  /* ========= MENU: AGGIUNGI CATEGORIA ========= */
-(function () {
-  const nameInput = document.querySelector('#newCatName');
-  const sortInput = document.querySelector('#newCatSort');
-  const btn       = document.querySelector('#btnAddCat');
-  const msg       = document.querySelector('#menuMsg');
+  <!-- LISTA CATEGORIE ESISTENTI -->
+  <h4>Categorie esistenti</h4>
+  <ul id="menuCategories" class="muted">
+    <li>Caricamento categorie…</li>
+  </ul>
 
-  if (!btn || !nameInput || !sortInput || !msg) return;
+  <!-- DEBUG (facoltativo) -->
+  <div id="menuDebug" class="muted small"></div>
 
-  btn.addEventListener('click', async () => {
-    const name = (nameInput.value || '').trim();
-    const sort_order = Number(sortInput.value) || 0;
-
-    if (!name) {
-      msg.textContent = 'Inserisci un nome categoria.';
-      return;
-    }
-
-    msg.textContent = 'Salvataggio...';
-
-    try {
-      const res = await fetch('/admin/menu-json/add-category', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, sort_order })
-      });
-
-      const text = await res.text();
-      let data = null;
-      try { data = JSON.parse(text); } catch (_) {}
-
-      // Se il server risponde con errore HTTP (404, 500, ecc.)
-      if (!res.ok) {
-        console.error('HTTP error:', res.status, text);
-        msg.textContent = `Errore HTTP ${res.status}: ${text}`;
-        return;
-      }
-
-      // Se il server risponde ma ok=false
-      if (!data || !data.ok) {
-        console.error('API error:', data);
-        msg.textContent = `Errore API: ${data && data.error ? data.error : 'sconosciuto'}`;
-        return;
-      }
-
-      // Tutto ok
-      msg.textContent = 'Categoria salvata ✅';
-      nameInput.value = '';
-      sortInput.value = '';
-
-      await loadMenu();
-    } catch (e) {
-      console.error('fetch failed', e);
-      msg.textContent = `Errore di rete: ${e.message || e}`;
-    }
-  });
-})();
+  <!-- FORM NUOVA CATEGORIA -->
+  <h4 style="margin-top:16px">Aggiungi categoria</h4>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <input
+      id="newCatName"
+      class="input"
+      placeholder="Nome categoria (es. Pizze)"
+    />
+    <input
+      id="newCatSort"
+      class="input"
+      type="number"
+      style="max-width:120px"
+      placeholder="Ordine (es. 1)"
+    />
+    <button id="btnAddCat" class="btn brand">+ Aggiungi</button>
+  </div>
+  <div id="menuMsg" class="muted" style="margin-top:6px;"></div>
+</section>
 
       <!-- TAVOLI -->
       <section id="sec-tables" class="card" style="display:none">
