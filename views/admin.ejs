@@ -1,23 +1,39 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Mangia & Fuggi — Dashboard</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
 <style>
-:root{--bg:#f6efe7;--panel:#fff;--ink:#2c2623;--muted:#7b6d66;--brand:#7a4a3b;--ring:#ead8cf;--ok:#1f8f4e;--warn:#b42318}
+:root{
+  --bg:#f6efe7;--panel:#fff;--ink:#2c2623;--muted:#7b6d66;
+  --brand:#7a4a3b;--ring:#ead8cf;--ok:#1f8f4e;--warn:#b42318
+}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui}
 .wrap{max-width:1200px;margin:0 auto;padding:16px}
 h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
 .layout{display:grid;grid-template-columns:230px 1fr;gap:16px}
 @media (max-width:900px){.layout{grid-template-columns:1fr}}
-.side{background:var(--panel);border:1px solid var(--ring);border-radius:16px;padding:14px;height:fit-content;position:sticky;top:12px}
-.nav .item{display:block;padding:10px 12px;border:1px solid #eee;border-radius:10px;margin-bottom:8px;color:inherit;text-decoration:none}
+.side{
+  background:var(--panel);border:1px solid var(--ring);
+  border-radius:16px;padding:14px;height:fit-content;
+  position:sticky;top:12px
+}
+.nav .item{
+  display:block;padding:10px 12px;border:1px solid #eee;
+  border-radius:10px;margin-bottom:8px;color:inherit;text-decoration:none
+}
 .nav .item.active{background:var(--brand);color:#fff;border-color:var(--brand)}
-.card{background:var(--panel);border:1px solid var(--ring);border-radius:16px;padding:14px;margin-bottom:16px}
+.card{
+  background:var(--panel);border:1px solid var(--ring);
+  border-radius:16px;padding:14px;margin-bottom:16px
+}
 .row{display:flex;gap:10px;justify-content:space-between;align-items:center}
 .muted{color:var(--muted)}
 .pill{background:#f3e7e2;color:var(--brand);border-radius:999px;padding:6px 10px;font-weight:700}
@@ -28,6 +44,7 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
 .btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}
 .btn.ok{background:#e8f6ee;border-color:#cde8d5;color:var(--ok)}
 .btn.danger{background:#fdeaea;border-color:#f3caca;color:var(--warn)}
+.btn-ghost{background:#fff;border-color:#ead8cf;color:#7b4a3b}
 .input{border:1px solid var(--ring);border-radius:10px;padding:8px 10px;background:#fff}
 .order{border:1px solid var(--ring);border-radius:14px;padding:12px;margin-bottom:12px;background:#fff}
 .order .head{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -37,30 +54,33 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
 .tbl table{width:100%;border-collapse:collapse;font-size:14px}
 .tbl th,.tbl td{padding:8px;border-bottom:1px solid #eee;text-align:left}
 .badge{display:inline-flex;align-items:center;gap:6px}
-.bell{font-size:18px; cursor:pointer}
+.bell{font-size:18px;cursor:pointer}
 .bell.new{color:#d97706}
-.clearx{margin-left:6px; cursor:pointer; color:#555}
+.clearx{margin-left:6px;cursor:pointer;color:#555}
 .kg{display:flex;gap:8px;flex-wrap:wrap}
 .kg .k{background:#fff;border:1px solid var(--ring);padding:8px 10px;border-radius:10px}
 .tab.active{background:#f1d9d1}
-.errorbar{background:#fdeaea;border:1px solid #f3caca;color:#7a2e2e;border-radius:12px;padding:10px;margin-bottom:12px;display:none}
+.errorbar{
+  background:#fdeaea;border:1px solid #f3caca;color:#7a2e2e;
+  border-radius:12px;padding:10px;margin-bottom:12px;display:none
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Mangia & Fuggi — Dashboard</h1>
   <div id="err" class="errorbar"></div>
+
   <div class="layout">
     <!-- Sidebar -->
     <aside class="side">
-   <div class="nav">
-  <a href="#" class="item active" data-section="orders">📋 Ordini</a>
-  <a href="#" class="item" data-section="stats">📊 Statistiche</a>
-  <a href="#" class="item" data-section="menu">🍕 Menu</a>
-  <a href="#" class="item" data-section="tables">🪑 Tavoli</a>
-  <!-- nuovo link impostazioni -->
-  <a href="/admin/settings" class="item">⚙️ Impostazioni</a>
-</div>
+      <div class="nav">
+        <a href="#" class="item active" data-section="orders">📋 Ordini</a>
+        <a href="#" class="item" data-section="stats">📊 Statistiche</a>
+        <a href="#" class="item" data-section="menu">🍕 Menu</a>
+        <a href="#" class="item" data-section="tables">🪑 Tavoli</a>
+        <a href="/admin/settings" class="item">⚙️ Impostazioni</a>
+      </div>
       <div class="card">
         <label style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
           <input type="checkbox" id="chk-sound"/> Suono nuovi ordini
@@ -84,10 +104,10 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
             <button class="btn tab" data-status="canceled">Eliminati <span id="c-canc" class="pill" style="padding:2px 8px"></span></button>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input id="q" class="input" placeholder="Cerca tavolo o piatto…" />
+            <input id="q" class="input" placeholder="Cerca tavolo o piatto…"/>
             <span id="clearQ" class="clearx">Elimina</span>
             <label class="muted" for="dayOrders">Giorno:</label>
-            <input id="dayOrders" type="date" class="input" />
+            <input id="dayOrders" type="date" class="input"/>
             <button id="btn-refresh" class="btn brand">Aggiorna</button>
           </div>
         </div>
@@ -100,7 +120,7 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
           <div class="card">
             <h3 style="margin:0 0 8px 0">Giorno</h3>
             <div class="row" style="gap:8px">
-              <input id="day" type="date" class="input" />
+              <input id="day" type="date" class="input"/>
               <button id="btn-day" class="btn brand">Aggiorna</button>
             </div>
             <div id="kpis" class="kg" style="margin-top:10px">
@@ -115,8 +135,8 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
           <div class="card">
             <h3 style="margin:0 0 8px 0">Intervallo</h3>
             <div class="row" style="gap:8px">
-              <input id="from" type="date" class="input" />
-              <input id="to"   type="date" class="input" />
+              <input id="from" type="date" class="input"/>
+              <input id="to" type="date" class="input"/>
               <button id="btn-range" class="btn brand">Aggiorna</button>
             </div>
             <div class="card" style="margin-top:12px">
@@ -127,12 +147,98 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
         </div>
       </section>
 
+      <!-- MENU -->
+      <section id="sec-menu" class="card" style="display:none">
+        <h2>Menu</h2>
+        <p class="muted">
+          Qui puoi gestire le voci del menù (categorie, piatti, prezzi, disponibilità).
+        </p>
+
+        <h3>Categorie esistenti</h3>
+        <ul id="menuCategories" style="padding-left:18px"></ul>
+
+        <h3 style="margin-top:16px">Aggiungi categoria</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <input id="newCatName" class="input" style="flex:2;min-width:160px" placeholder="Nome categoria (es. Pizze)"/>
+          <input id="newCatSort" class="input" style="width:120px" type="number" placeholder="Ordine (es. 1)"/>
+          <button id="btnAddCat" class="btn brand">+ Aggiungi</button>
+        </div>
+        <div id="menuMsg" class="muted"></div>
+      </section>
+
+      <!-- TAVOLI -->
+      <section id="sec-tables" class="card" style="display:none">
+        <h2>Tavoli</h2>
+        <p class="muted">Stato dei tavoli in sala.</p>
+        <div class="tbl">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Posti</th>
+                <th>Stato</th>
+                <th>Aggiornato</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="tablesBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script>
+/* ========= UTILS ========= */
+const $  = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const euro = n => "€ " + Number(n).toFixed(2).replace(".", ",");
+
+function showErr(msg){
+  const bar = $('#err');
+  if(!bar) return;
+  bar.textContent = msg;
+  bar.style.display = 'block';
+  setTimeout(()=>{ bar.style.display = 'none'; }, 5000);
+}
+
+// fetch con gestione base errori auth
+async function F(url, opts){
+  const r = await fetch(url, opts);
+  if(r.status === 401){
+    showErr('Sessione non autenticata. Ricarica la pagina e reinserisci la password.');
+  }
+  return r;
+}
+
+/* ========= NAV LATERALE (ORDINI / STAT / MENU / TAVOLI) ========= */
+const SECTIONS = {
+  orders: $('#sec-orders'),
+  stats:  $('#sec-stats'),
+  menu:   $('#sec-menu'),
+  tables: $('#sec-tables')
+};
+
+$$('.nav .item[data-section]').forEach(link=>{
+  link.addEventListener('click', e=>{
+    e.preventDefault();
+    $$('.nav .item').forEach(i=>i.classList.remove('active'));
+    link.classList.add('active');
+    const target = link.dataset.section;
+    Object.entries(SECTIONS).forEach(([key,sec])=>{
+      if(!sec) return;
+      sec.style.display = (key === target) ? 'block' : 'none';
+    });
+  });
+});
+
 /* ========= MENU: CATEGORIE + PIATTI ========= */
 async function loadMenu() {
   const ul = document.querySelector('#menuCategories');
   if (!ul) return;
 
-  ul.innerHTML = '<li>Caricamento…</li>';
+  ul.innerHTML = '<li class="muted">Caricamento…</li>';
 
   try {
     const res = await fetch('/admin/menu-json', {
@@ -146,7 +252,7 @@ async function loadMenu() {
     ul.innerHTML = '';
 
     if (!categories || !categories.length) {
-      ul.innerHTML = '<li>Nessuna categoria ancora creata.</li>';
+      ul.innerHTML = '<li class="muted">Nessuna categoria ancora creata.</li>';
       return;
     }
 
@@ -169,7 +275,6 @@ async function loadMenu() {
         ? catItems.map(it => `${it.name} (€${Number(it.price).toFixed(2)})`).join(', ')
         : 'Nessun piatto in questa categoria.';
 
-      // 🔴 bottone elimina categoria
       const delBtn = document.createElement('button');
       delBtn.textContent = 'Elimina';
       delBtn.className   = 'btn btn-ghost';
@@ -186,7 +291,7 @@ async function loadMenu() {
     });
   } catch (e) {
     console.error('loadMenu error', e);
-    ul.innerHTML = '<li>Errore nel caricamento del menù.</li>';
+    ul.innerHTML = '<li class="muted">Errore nel caricamento del menù.</li>';
   }
 }
 
@@ -235,7 +340,7 @@ async function addCategory() {
     nameInput.value = '';
     sortInput.value = '';
 
-    await loadMenu(); // ricarica la lista categorie+piatti
+    await loadMenu();
   } catch (e) {
     console.error('fetch failed', e);
     msg.textContent = 'Errore di rete durante il salvataggio.';
@@ -265,69 +370,13 @@ async function deleteCategory(id, name) {
       return;
     }
 
-    await loadMenu(); // ricarica la lista aggiornata
+    await loadMenu();
   } catch (e) {
     console.error(e);
     alert('Errore di rete durante l’eliminazione.');
   }
 }
 
-// collega il bottone "+ Aggiungi" alla funzione
-document.querySelector('#btnAddCat')?.addEventListener('click', addCategory);
-
-/* ========= MENU: AGGIUNGI CATEGORIA ========= */
-async function addCategory() {
-  const nameInput = document.querySelector('#newCatName');
-  const sortInput = document.querySelector('#newCatSort');
-  const msg       = document.querySelector('#menuMsg');
-
-  if (!nameInput || !sortInput || !msg) return;
-
-  const name       = (nameInput.value || '').trim();
-  const sort_order = Number(sortInput.value || 0) || 0;
-
-  if (!name) {
-    msg.textContent = 'Inserisci un nome categoria.';
-    return;
-  }
-
-  msg.textContent = 'Salvataggio...';
-
-  try {
-    const res = await fetch('/admin/menu-json/add-category', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, sort_order })
-    });
-
-    const text = await res.text();
-    let data = null;
-    try { data = JSON.parse(text); } catch (_) {}
-
-    if (!res.ok) {
-      console.error('HTTP error:', res.status, text);
-      msg.textContent = `Errore HTTP ${res.status}: ${text}`;
-      return;
-    }
-
-    if (!data || !data.ok) {
-      console.error('API error:', data);
-      msg.textContent = `Errore API: ${data && data.error ? data.error : 'sconosciuto'}`;
-      return;
-    }
-
-    msg.textContent = 'Categoria salvata ✅';
-    nameInput.value = '';
-    sortInput.value = '';
-
-    await loadMenu(); // ricarica la lista categorie+piatti
-  } catch (e) {
-    console.error('fetch failed', e);
-    msg.textContent = `Errore di rete durante il salvataggio.`;
-  }
-}
-
-// collega il bottone "+ Aggiungi" alla funzione
 document.querySelector('#btnAddCat')?.addEventListener('click', addCategory);
 
 /* ========= SETTINGS ========= */
@@ -345,8 +394,15 @@ async function loadSettings(){
 }
 async function saveSettings(){
   try{
-    const payload = { sound_enabled: $('#chk-sound').checked, autorefresh: $('#chk-autorefresh').checked };
-    await F('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const payload = {
+      sound_enabled: $('#chk-sound').checked,
+      autorefresh: $('#chk-autorefresh').checked
+    };
+    await F('/api/settings',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
     setAutoRefresh();
   }catch(e){ showErr('Salvataggio impostazioni fallito.'); }
 }
@@ -392,7 +448,6 @@ async function counters(){
 
 async function fetchOrders(){
   try{
-    // map tavoli per bollini
     const t=await F('/api/tables').then(r=>r.json());
     if(t.ok){
       TABLES_MAP = {};
@@ -543,7 +598,7 @@ $$('.tab').forEach(t=>{
   t.addEventListener('click', async ()=>{
     $$('.tab').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
-    STATUS=t.dataset.status; // all | due | paid | canceled
+    STATUS=t.dataset.status;
     await fetchOrders();
   });
 });
@@ -562,7 +617,8 @@ function setAutoRefresh(){
 
 /* ========= REALTIME ========= */
 function attachRealtime(){
-  if(typeof supabase.channel!=="function" || SUBS) return; SUBS=true;
+  if(typeof supabase === 'undefined' || typeof supabase.channel!=="function" || SUBS) return;
+  SUBS=true;
   supabase.channel("rt:orders")
     .on("postgres_changes",{event:"*",schema:"public",table:"orders"},async()=>{
       if($('#chk-sound').checked) beep();
@@ -575,7 +631,7 @@ function attachRealtime(){
     }).subscribe();
 }
 function attachRealtimeTables(){
-  if(typeof supabase.channel!=="function") return;
+  if(typeof supabase === 'undefined' || typeof supabase.channel!=="function") return;
   supabase.channel("rt:restaurant_tables")
     .on("postgres_changes",{event:"*",schema:"public",table:"restaurant_tables"},async()=>{
       await loadTables();
@@ -596,7 +652,11 @@ function beep(){
 
 /* ========= STATISTICHE ========= */
 let chartHour=null, chartTop=null;
-function setKPI(cnt,rev){ $('#k-count').textContent=cnt; $('#k-rev').textContent=euro(rev); $('#k-avg').textContent=euro(cnt?rev/cnt:0); }
+function setKPI(cnt,rev){
+  $('#k-count').textContent=cnt;
+  $('#k-rev').textContent=euro(rev);
+  $('#k-avg').textContent=euro(cnt?rev/cnt:0);
+}
 
 async function loadDay(){
   try{
@@ -608,7 +668,11 @@ async function loadDay(){
     const labels=j.perBucket.rows.map(b=>new Date(b.bucket).getHours());
     const data=j.perBucket.rows.map(b=>b.revenue);
     if(chartHour) chartHour.destroy();
-    chartHour=new Chart($('#chartHour'),{type:'bar',data:{labels,datasets:[{label:'Incasso €/ora',data}]},options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'€ '+v}}}}});
+    chartHour=new Chart($('#chartHour'),{
+      type:'bar',
+      data:{labels,datasets:[{label:'Incasso €/ora',data}]},
+      options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'€ '+v}}}}
+    });
   }catch(e){ showErr('Errore caricamento statistiche giorno.'); }
 }
 
@@ -622,7 +686,11 @@ async function loadRange(){
     const top=j.top.list.slice(0,5);
     const labels=top.map(x=>x.name), data=top.map(x=>x.qty);
     if(chartTop) chartTop.destroy();
-    chartTop=new Chart($('#chartTop'),{type:'doughnut',data:{labels,datasets:[{data}]},options:{plugins:{legend:{position:'bottom'}}}});
+    chartTop=new Chart($('#chartTop'),{
+      type:'doughnut',
+      data:{labels,datasets:[{data}]},
+      options:{plugins:{legend:{position:'bottom'}}}
+    });
     $('#topTable').innerHTML=`<table><thead><tr><th>Prodotto</th><th>Qtà</th><th>Fatturato</th><th>% Qtà</th><th>% Fatt.</th></tr></thead><tbody>${
       j.top.list.map(x=>`<tr><td>${x.name}</td><td>${x.qty}</td><td>${euro(x.revenue)}</td><td>${x.pctQty.toFixed(1)}%</td><td>${x.pctRev.toFixed(1)}%</td></tr>`).join('')
     }</tbody></table>`;
@@ -638,7 +706,9 @@ async function loadTables(){
     const tbody=$('#tablesBody');
     tbody.innerHTML='';
     j.tables.forEach(t=>{
-      const state = t.status==='reserved' ? '🟡 Prenotato' : (t.status==='occupied' ? '🔴 Occupato' : '🟢 Libero');
+      const state = t.status==='reserved'
+        ? '🟡 Prenotato'
+        : (t.status==='occupied' ? '🔴 Occupato' : '🟢 Libero');
       const tr=document.createElement('tr');
       tr.innerHTML=`
         <td>${t.name||'Tavolo '+t.id}</td>
@@ -652,7 +722,6 @@ async function loadTables(){
       tbody.appendChild(tr);
     });
 
-    // aggiorna cache per bollini
     TABLES_MAP = {};
     (j.tables||[]).forEach(tb=>{
       TABLES_MAP[(tb.name||('Tavolo '+tb.id))] = tb.status;
@@ -682,6 +751,8 @@ async function setTable(id,action){
   await fetchOrders();
   await loadDay();
   await loadRange();
+  await loadMenu();
+  await loadTables();
   attachRealtime();
   attachRealtimeTables();
   setAutoRefresh();
