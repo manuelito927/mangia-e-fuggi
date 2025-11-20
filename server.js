@@ -324,11 +324,12 @@ app.post("/admin/settings", async (req, res) => {
 app.get("/admin/menu-json", async (req, res) => {
   try {
     // categorie
-    const { data: categories, error: catError } = await supabase
-      .from("menu_categories")
-      .select("id, name, sort_order, is_active")
-      .order("sort_order", { ascending: true });
-
+    const { data: categories, error: cErr } = await supabase
+  .from("menu_categories")
+  .select("id,name,sort_order,is_active")
+  .order("sort_order", { ascending: true, nullsLast: true })
+  .order("id", { ascending: true });
+  
     if (catError) {
       console.error("Errore categorie:", catError);
       return res.status(500).json({ ok: false, error: "catError" });
