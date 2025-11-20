@@ -324,12 +324,12 @@ app.post("/admin/settings", async (req, res) => {
 app.get("/admin/menu-json", async (req, res) => {
   try {
     // categorie
-    const { data: categories, error: cErr } = await supabase
-  .from("menu_categories")
-  .select("id,name,sort_order,is_active")
-  .order("sort_order", { ascending: true, nullsLast: true })
-  .order("id", { ascending: true });
-  
+    const { data: categories, error: catError } = await supabase
+      .from("menu_categories")
+      .select("id, name, sort_order, is_active")
+      .order("sort_order", { ascending: true, nullsLast: true })
+      .order("id", { ascending: true });
+
     if (catError) {
       console.error("Errore categorie:", catError);
       return res.status(500).json({ ok: false, error: "catError" });
@@ -338,8 +338,9 @@ app.get("/admin/menu-json", async (req, res) => {
     // piatti
     const { data: items, error: itemError } = await supabase
       .from("menu_items")
-      .select("id, category_id, name, description, price, is_available")
-      .order("sort_order", { ascending: true });
+      .select("id, category_id, name, description, price, is_available, sort_order")
+      .order("sort_order", { ascending: true, nullsLast: true })
+      .order("id", { ascending: true });
 
     if (itemError) {
       console.error("Errore items:", itemError);
@@ -357,8 +358,38 @@ app.get("/admin/menu-json", async (req, res) => {
   }
 });
 
-app.get("/test-video", (_req, res) => res.render("test-video"));
-app.get("/prenota", (_req, res) => res.render("prenota"));
+// === ELIMINA CATEGORIA ===
+app.post("/admin/menu-json/delete-category", async (req, res) => {
+  try {
+    const { id } = req.body || {};
+    const catId = Number(id);
+
+    if (!catId) {
+      return res.status(400).json({ ok: false, error: "missing_id" });
+    }
+
+    // 1) cancello eventuali piatti della categoria
+    const { error: itemsErr } = await supabase
+      .from("menu_items")
+      .delete()
+      .eq("category_id", catId);
+
+    if (itemsErr) throw itemsErr;
+
+    // 2) cancello la categoria
+    const { error: catErr } = await supabase
+      .from("menu_categories")
+      .delete()
+      .eq("id", catId);
+
+    if (catErr) throw catErr;
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("delete-category error:", e);
+    res.status(500).json({ ok: false, error: "delete_category_failed" });
+  }
+});
 
 // ---------- Stampa cucina (SPOOL)
 const SPOOL_DIR = process.env.PRINT_SPOOL_DIR || path.join(__dirname, "spool");
