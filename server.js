@@ -391,6 +391,9 @@ app.post("/admin/menu-json/delete-category", async (req, res) => {
   }
 });
 
+app.get("/test-video", (_req, res) => res.render("test-video"));
+app.get("/prenota", (_req, res) => res.render("prenota"));
+
 // ---------- Stampa cucina (SPOOL)
 const SPOOL_DIR = process.env.PRINT_SPOOL_DIR || path.join(__dirname, "spool");
 app.use("/spool", express.static(SPOOL_DIR));
