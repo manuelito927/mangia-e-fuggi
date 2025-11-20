@@ -735,6 +735,14 @@
         return;
       }
 
+// Ordina le categorie per sort_order (vuote in fondo) e poi per id
+categories.sort((a, b) => {
+  const sa = (a.sort_order == null ? 9999 : a.sort_order);
+  const sb = (b.sort_order == null ? 9999 : b.sort_order);
+  if (sa !== sb) return sa - sb;
+  return (a.id || 0) - (b.id || 0);
+});
+
       const cats = [...categories]
         .filter(c => c.is_active !== false)
         .sort((a,b) => (a.sort_order || 0) - (b.sort_order || 0));
