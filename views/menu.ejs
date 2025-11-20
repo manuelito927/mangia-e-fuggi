@@ -95,51 +95,15 @@
 
   <div class="container">
     <main>
-      <!-- ANTIPASTI -->
-      <section id="antipasti" class="card">
-        <h2 data-i18n="sec_starters">Antipasti</h2>
-        <!-- I prodotti restano come sono (IT) -->
-        <%- include('partials/item', {name:'Bruschette',        desc:'Pomodoro, basilico, olio EVO', price:4.00, img:'/img/BRUSCHETTE.JPG.jpg'}) %>
-        <%- include('partials/item', {name:'Olive & Taralli',    desc:'Selezione tipica pugliese',    price:3.50, img:'/img/TARALLINI E OLIVE.JPG'}) %>
-        <%- include('partials/item', {name:'Caprese',            desc:'Mozzarella, pomodoro, origano',price:7.00, img:'/img/CAPRESE.JPG'}) %>
-        <%- include('partials/item', {name:'Parmigiana',         desc:'Melanzane, pomodoro, grana',   price:7.50, img:'/img/PARMIGIANA.JPG'}) %>
-        <%- include('partials/item', {name:'Fritto misto',       desc:'Arancini, crocchè, panelle',   price:8.00, img:'/img/FRITTINI.JPG'}) %>
-      </section>
+      <section class="card">
+        <h2>Menù</h2>
+        <p class="muted">
+          Seleziona i prodotti e aggiungili al carrello.
+        </p>
 
-      <!-- PIZZE CLASSICHE -->
-      <section id="classiche" class="card">
-        <h2 data-i18n="sec_classic">Pizze classiche</h2>
-        <%- include('partials/item', {name:'Margherita',         desc:'Pomodoro, mozzarella, basilico', price:5.00, img:'/img/MARGHERITA.JPG'}) %>
-        <%- include('partials/item', {name:'Marinara',           desc:'Pomodoro, aglio, origano',       price:4.50, img:'/img/MARINARA.JPG'}) %>
-        <%- include('partials/item', {name:'Diavola',            desc:'Salame piccante',                price:7.00, img:'/img/DIAVOLA.JPG'}) %>
-        <%- include('partials/item', {name:'Prosciutto e funghi',desc:'Cotto e champignon',             price:7.50, img:'/img/COTTOEFUNGHI.JPG'}) %>
-        <%- include('partials/item', {name:'Quattro formaggi',   desc:'Mozzarella, gorgonzola, grana, provola', price:8.00, img:'/img/4FORMAGGI.JPG'}) %>
-      </section>
-
-      <!-- PIZZE GOURMET -->
-      <section id="gourmet" class="card">
-        <h2 data-i18n="sec_gourmet">Pizze gourmet</h2>
-        <%- include('partials/item', {name:'Bufalina',           desc:'Pomodoro, bufala DOP, basilico', price:9.00,  img:'/img/BURRATA.JPG'}) %>
-        <%- include('partials/item', {name:'Tartufo',            desc:'Crema di tartufo, provola, speck',price:11.00, img:'/img/TARTUFO.JPG'}) %>
-        <%- include('partials/item', {name:'Mortazza',           desc:'Pistacchio, stracciatella, mortadella', price:10.50, img:'/img/MORTAZZA.JPG'}) %>
-        <%- include('partials/item', {name:'Nduja & Burrata',    desc:'’Nduja calabrese, burrata',       price:10.00, img:'/img/NDUJA E MORTADELLA.JPG'}) %>
-      </section>
-
-      <!-- BEVANDE -->
-      <section id="bevande" class="card">
-        <h2 data-i18n="sec_drinks">Bevande</h2>
-        <%- include('partials/item', {name:'Acqua',              desc:'Naturale o frizzante', price:1.50, img:'/img/ACQUA.JPG'}) %>
-        <%- include('partials/item', {name:'Coca-Cola',          desc:'Lattina 33cl',          price:2.50, img:'/img/COCACOLA.JPG'}) %>
-        <%- include('partials/item', {name:'Birra',              desc:'Chiara alla spina',     price:4.00, img:'/img/BIRRA.JPG'}) %>
-        <%- include('partials/item', {name:'Vino della casa',    desc:'Bicchiere',             price:3.50, img:'/img/VINO.JPG'}) %>
-      </section>
-
-      <!-- DESSERT -->
-      <section id="dessert" class="card">
-        <h2 data-i18n="sec_desserts">Dessert</h2>
-        <%- include('partials/item', {name:'Tiramisù',           desc:'Classico',            price:4.50, img:'/img/TIRAMISU.JPG'}) %>
-        <%- include('partials/item', {name:'Panna cotta',        desc:'Frutti di bosco',     price:4.00, img:'/img/PANNACOTTA.JPG'}) %>
-        <%- include('partials/item', {name:'Cheesecake',         desc:'Ricotta e pistacchio',price:4.50, img:'/img/CHEESECAKE.JPG'}) %>
+        <div id="menu-app">
+          <p class="muted">Caricamento menù…</p>
+        </div>
       </section>
     </main>
 
