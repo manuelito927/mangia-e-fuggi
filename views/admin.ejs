@@ -283,51 +283,55 @@ async function loadMenu() {
   }
 }
 
-/* ========= MENU: AGGIUNTA CATEGORIA (diretto su Supabase) ========= */
+/* ========= MENU: AGGIUNGI CATEGORIA ========= */
 async function addCategory() {
   const nameInput = document.querySelector('#newCatName');
   const sortInput = document.querySelector('#newCatSort');
   const msg       = document.querySelector('#menuMsg');
 
-  // se qualcosa non c’è, esco
-  if (!nameInput || !sortInput || !msg || !window.supabase) return;
+  if (!nameInput || !sortInput || !msg) return;
 
   const name       = (nameInput.value || '').trim();
   const sort_order = Number(sortInput.value || 0) || 0;
 
   if (!name) {
-    msg.textContent = 'Inserisci un nome per la categoria.';
+    msg.textContent = 'Inserisci un nome categoria.';
     return;
   }
 
-  msg.textContent = 'Salvataggio in corso...';
+  msg.textContent = 'Salvataggio...';
 
   try {
-    const { data, error } = await window.supabase
-      .from('menu_categories')
-      .insert([{
-        name,
-        sort_order,
-        is_active: true
-      }])
-      .select()
-      .single();
+    const res = await fetch('/admin/menu-json/add-category', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, sort_order })
+    });
 
-    if (error) {
-      console.error('Supabase addCategory error:', error);
-      msg.textContent = 'Errore nel salvataggio: ' + (error.message || 'sconosciuto');
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch (_) {}
+
+    if (!res.ok) {
+      console.error('HTTP error:', res.status, text);
+      msg.textContent = `Errore HTTP ${res.status}: ${text}`;
       return;
     }
 
-    msg.textContent = 'Categoria aggiunta ✅';
+    if (!data || !data.ok) {
+      console.error('API error:', data);
+      msg.textContent = `Errore API: ${data && data.error ? data.error : 'sconosciuto'}`;
+      return;
+    }
+
+    msg.textContent = 'Categoria salvata ✅';
     nameInput.value = '';
     sortInput.value = '';
 
-    // ricarica le categorie + piatti
-    await loadMenu();
+    await loadMenu(); // ricarica la lista categorie+piatti
   } catch (e) {
-    console.error('addCategory exception:', e);
-    msg.textContent = 'Errore di rete: ' + (e.message || e);
+    console.error('fetch failed', e);
+    msg.textContent = `Errore di rete durante il salvataggio.`;
   }
 }
 
