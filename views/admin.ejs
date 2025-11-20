@@ -127,106 +127,6 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
         </div>
       </section>
 
-<!-- MENU -->
-<section id="sec-menu" class="card" style="display:none">
-  <h3 style="margin-top:0">Menu</h3>
-  <p class="muted">
-    Qui puoi gestire le voci del menù (categorie, piatti, prezzi, disponibilità).
-  </p>
-
-  <!-- LISTA CATEGORIE ESISTENTI -->
-  <h4>Categorie esistenti</h4>
-  <ul id="menuCategories" class="muted">
-    <li>Caricamento categorie…</li>
-  </ul>
-
-  <!-- DEBUG (facoltativo) -->
-  <div id="menuDebug" class="muted small"></div>
-
-  <!-- FORM NUOVA CATEGORIA -->
-  <h4 style="margin-top:16px">Aggiungi categoria</h4>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-    <input
-      id="newCatName"
-      class="input"
-      placeholder="Nome categoria (es. Pizze)"
-    />
-    <input
-      id="newCatSort"
-      class="input"
-      type="number"
-      style="max-width:120px"
-      placeholder="Ordine (es. 1)"
-    />
-    <button id="btnAddCat" class="btn brand">+ Aggiungi</button>
-  </div>
-  <div id="menuMsg" class="muted" style="margin-top:6px;"></div>
-</section>
-
-      <!-- TAVOLI -->
-      <section id="sec-tables" class="card" style="display:none">
-        <div class="row" style="flex-wrap:wrap">
-          <h3 style="margin:0">Tavoli</h3>
-          <div class="muted">Segna manualmente se un tavolo è libero o occupato.</div>
-        </div>
-
-        <div class="tbl" style="margin-top:10px">
-          <table>
-            <thead>
-              <tr>
-                <th>Tavolo</th>
-                <th>Posti</th>
-                <th>Stato</th>
-                <th>Ultimo aggiornamento</th>
-                <th>Azioni</th>
-              </tr>
-            </thead>
-            <tbody id="tablesBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  </div>
-</div>
-
-<script>
-/* ========= CONFIG ========= */
-const SUPA_URL = "<%= SUPABASE_URL %>";
-const SUPA_KEY = "<%= SUPABASE_KEY %>";
-const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
-const $  = (s,root=document)=>root.querySelector(s);
-const $$ = (s,root=document)=>Array.from(root.querySelectorAll(s));
-const euro = v => "€ " + Number(v||0).toFixed(2).replace(".", ",");
-
-/* ========= FETCH CON COOKIE (SESSIONE ADMIN) ========= */
-const F = (url, opts={}) => fetch(url, { credentials: 'include', ...opts });
-
-/* ========= ERROR BAR ========= */
-function showErr(msg){
-  const bar = $('#err');
-  if(!bar) return;
-  bar.textContent = msg;
-  bar.style.display = 'block';
-  setTimeout(()=>{ bar.style.display='none'; }, 6000);
-}
-
-/* ========= NAV ========= */
-$$('[data-section]').forEach(a=>{
-  a.addEventListener('click',e=>{
-    e.preventDefault();
-    $$('[data-section]').forEach(x=>x.classList.remove('active'));
-    a.classList.add('active');
-    const sec = a.dataset.section;
-    $('#sec-orders').style.display = sec === 'orders' ? 'block' : 'none';
-    $('#sec-stats').style.display  = sec === 'stats'  ? 'block' : 'none';
-    $('#sec-menu').style.display   = sec === 'menu'   ? 'block' : 'none';
-    $('#sec-tables').style.display = sec === 'tables' ? 'block' : 'none';
-
-    if (sec === 'tables') loadTables();
-    if (sec === 'menu')   loadMenu();   // ✅ usa loadMenu
-  });
-});
-
 /* ========= MENU: CATEGORIE + PIATTI ========= */
 async function loadMenu() {
   const ul = document.querySelector('#menuCategories');
@@ -251,27 +151,34 @@ async function loadMenu() {
     }
 
     categories.forEach(cat => {
-      const catItems = (items || []).filter(it => it.category_id === cat.id);
-      const total = catItems.length;
-      const available = catItems.filter(it => it.is_available).length;
+      const catItems   = (items || []).filter(it => it.category_id === cat.id);
+      const total      = catItems.length;
+      const available  = catItems.filter(it => it.is_available).length;
 
-      const li = document.createElement('li');
-
+      const li    = document.createElement('li');
       const title = document.createElement('strong');
       title.textContent = cat.name + ' ';
 
       const count = document.createElement('span');
-      count.className = 'muted';
+      count.className   = 'muted';
       count.textContent = `(${available}/${total} disponibili)`;
 
-      const desc = document.createElement('div');
-      desc.className = 'muted';
+      const desc  = document.createElement('div');
+      desc.className   = 'muted';
       desc.textContent = total
         ? catItems.map(it => `${it.name} (€${Number(it.price).toFixed(2)})`).join(', ')
         : 'Nessun piatto in questa categoria.';
 
+      // 🔴 bottone elimina categoria
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Elimina';
+      delBtn.className   = 'btn btn-ghost';
+      delBtn.style.marginLeft = '8px';
+      delBtn.onclick = () => deleteCategory(cat.id, cat.name);
+
       li.appendChild(title);
       li.appendChild(count);
+      li.appendChild(delBtn);
       li.appendChild(document.createElement('br'));
       li.appendChild(desc);
 
@@ -282,6 +189,91 @@ async function loadMenu() {
     ul.innerHTML = '<li>Errore nel caricamento del menù.</li>';
   }
 }
+
+/* ========= MENU: AGGIUNGI CATEGORIA ========= */
+async function addCategory() {
+  const nameInput = document.querySelector('#newCatName');
+  const sortInput = document.querySelector('#newCatSort');
+  const msg       = document.querySelector('#menuMsg');
+
+  if (!nameInput || !sortInput || !msg) return;
+
+  const name       = (nameInput.value || '').trim();
+  const sort_order = Number(sortInput.value || 0) || 0;
+
+  if (!name) {
+    msg.textContent = 'Inserisci un nome categoria.';
+    return;
+  }
+
+  msg.textContent = 'Salvataggio...';
+
+  try {
+    const res = await fetch('/admin/menu-json/add-category', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, sort_order })
+    });
+
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch (_) {}
+
+    if (!res.ok) {
+      console.error('HTTP error:', res.status, text);
+      msg.textContent = `Errore HTTP ${res.status}: ${text}`;
+      return;
+    }
+
+    if (!data || !data.ok) {
+      console.error('API error:', data);
+      msg.textContent = `Errore API: ${data && data.error ? data.error : 'sconosciuto'}`;
+      return;
+    }
+
+    msg.textContent = 'Categoria salvata ✅';
+    nameInput.value = '';
+    sortInput.value = '';
+
+    await loadMenu(); // ricarica la lista categorie+piatti
+  } catch (e) {
+    console.error('fetch failed', e);
+    msg.textContent = 'Errore di rete durante il salvataggio.';
+  }
+}
+
+/* ========= MENU: ELIMINA CATEGORIA ========= */
+async function deleteCategory(id, name) {
+  const ok = confirm(
+    `Eliminare la categoria "${name}"?\n` +
+    `Verranno eliminati anche tutti i piatti associati.`
+  );
+  if (!ok) return;
+
+  try {
+    const res = await fetch('/admin/menu-json/delete-category', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.ok) {
+      console.error('deleteCategory error', res.status, data);
+      alert('Errore durante l’eliminazione della categoria.');
+      return;
+    }
+
+    await loadMenu(); // ricarica la lista aggiornata
+  } catch (e) {
+    console.error(e);
+    alert('Errore di rete durante l’eliminazione.');
+  }
+}
+
+// collega il bottone "+ Aggiungi" alla funzione
+document.querySelector('#btnAddCat')?.addEventListener('click', addCategory);
 
 /* ========= MENU: AGGIUNGI CATEGORIA ========= */
 async function addCategory() {
