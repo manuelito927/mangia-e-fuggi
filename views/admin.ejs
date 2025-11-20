@@ -283,14 +283,17 @@ async function loadMenu() {
   }
 }
 
-/* ========= MENU: AGGIUNTA CATEGORIA ========= */
-async function addCategory(){
+/* ========= MENU: AGGIUNTA CATEGORIA (diretto su Supabase) ========= */
+async function addCategory() {
   const nameInput = document.querySelector('#newCatName');
   const sortInput = document.querySelector('#newCatSort');
-  const msg = document.querySelector('#menuMsg');
+  const msg       = document.querySelector('#menuMsg');
 
-  const name = (nameInput.value || '').trim();
-  const sort = Number(sortInput.value || 0) || null;
+  // se qualcosa non c’è, esco
+  if (!nameInput || !sortInput || !msg || !window.supabase) return;
+
+  const name       = (nameInput.value || '').trim();
+  const sort_order = Number(sortInput.value || 0) || 0;
 
   if (!name) {
     msg.textContent = 'Inserisci un nome per la categoria.';
@@ -300,16 +303,19 @@ async function addCategory(){
   msg.textContent = 'Salvataggio in corso...';
 
   try {
-    const resp = await F('/api/menu/categories', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ name, sort_order: sort })
-    });
+    const { data, error } = await window.supabase
+      .from('menu_categories')
+      .insert([{
+        name,
+        sort_order,
+        is_active: true
+      }])
+      .select()
+      .single();
 
-    const j = await resp.json();
-    if (!j.ok) {
-      console.error(j);
-      msg.textContent = 'Errore nel salvataggio della categoria.';
+    if (error) {
+      console.error('Supabase addCategory error:', error);
+      msg.textContent = 'Errore nel salvataggio: ' + (error.message || 'sconosciuto');
       return;
     }
 
@@ -317,11 +323,11 @@ async function addCategory(){
     nameInput.value = '';
     sortInput.value = '';
 
-    // ricarica l’elenco categorie
+    // ricarica le categorie + piatti
     await loadMenu();
   } catch (e) {
-    console.error(e);
-    msg.textContent = 'Errore di rete durante il salvataggio.';
+    console.error('addCategory exception:', e);
+    msg.textContent = 'Errore di rete: ' + (e.message || e);
   }
 }
 
