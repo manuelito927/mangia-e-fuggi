@@ -691,6 +691,38 @@ app.post("/admin/menu-json/add-category", async (req, res) => {
   }
 });
 
+// ====== MENU PUBBLICO PER LA PAGINA CLIENTE ======
+app.get("/api/menu", async (_req, res) => {
+  try {
+    const { data: categories, error: cErr } = await supabase
+      .from("menu_categories")
+      .select("id,name,sort_order,is_active")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    if (cErr) throw cErr;
+
+    const catIds = (categories || []).map(c => c.id);
+
+    let items = [];
+    if (catIds.length) {
+      const { data: rows, error: iErr } = await supabase
+        .from("menu_items")
+        .select("id,category_id,name,description,price,is_available")
+        .in("category_id", catIds)
+        .order("id", { ascending: true });
+
+      if (iErr) throw iErr;
+      items = rows || [];
+    }
+
+    res.json({ ok: true, categories: categories || [], items });
+  } catch (e) {
+    console.error("api/menu error:", e);
+    res.status(500).json({ ok: false, error: "menu_failed" });
+  }
+});
+
 // =====================================================================================
 // API STATISTICHE
 // =====================================================================================
