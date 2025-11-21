@@ -18,22 +18,23 @@
     .btn, .lang-select, input, select { font-size: 16px; } /* evita zoom sui form iOS */
 
     /* ==== Stili generali ==== */
-/* Nome piatto in grassetto + descrizione sulla stessa riga */
+/* === Stile nomi piatti + descrizione === */
 .item-name{
-  font-weight:700;
-  display:inline;
+  font-weight:700;      /* nome in grassetto */
+  margin-bottom:2px;
 }
 
 .item-desc{
-  display:inline;
-  margin-left:4px;
-  font-size:14px;
-  color:#6b4a3b;
+  margin-bottom:4px;    /* piccolo spazio sotto gli ingredienti */
 }
 
 .item-desc em{
-  font-style:normal;
+  font-style:italic;    /* corsivo per gli ingredienti */
+  font-size:14px;
+  color:#6b5a54;        /* marroncino leggibile */
+  display:inline;       /* testo in linea, non a colonna */
 }
+
     .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 340px;gap:18px}
     .card{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
     h2{font-size:20px;margin:8px 0 12px;color:#7b4b3a}
