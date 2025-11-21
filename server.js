@@ -735,7 +735,8 @@ app.post("/admin/menu-json/add-item", async (req, res) => {
       description,
       price,
       sort_order,
-      is_available
+      is_available,
+      image_url          // 👈 NUOVO CAMPO DAL BODY
     } = req.body || {};
 
     const catId = Number(category_id);
@@ -752,7 +753,10 @@ app.post("/admin/menu-json/add-item", async (req, res) => {
         // accetta sia 6.5 sia "6,5"
         price: Number(String(price).replace(",", ".")) || 0,
         sort_order: Number(sort_order) || 0,
-        is_available: is_available !== false
+        is_available: is_available !== false,
+        image_url: image_url && image_url.trim() !== ""     // 👈 se stringa non vuota
+          ? image_url.trim()
+          : null                                            // 👈 altrimenti NULL
       })
       .select()
       .single();
