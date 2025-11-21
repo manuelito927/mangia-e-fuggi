@@ -147,7 +147,7 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
         </div>
       </section>
 
-          <!-- MENU -->
+      <!-- MENU -->
       <section id="sec-menu" class="card" style="display:none">
         <h3 style="margin-top:0">Menu</h3>
         <p class="muted">
@@ -158,8 +158,6 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
         <ul id="menuCategories" class="muted">
           <li class="muted">Caricamento…</li>
         </ul>
-
-        <div id="menuDebug" class="muted small"></div>
 
         <!-- Aggiungi categoria -->
         <div style="margin-top:12px">
@@ -172,52 +170,34 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
           <div id="menuMsg" class="muted" style="margin-top:6px;font-size:13px"></div>
         </div>
 
-        <!-- Aggiungi piatto -->
-        <div style="margin-top:16px">
-          <h4 style="margin:0 0 6px 0">Aggiungi piatto</h4>
-          <div class="row" style="gap:8px;flex-wrap:wrap">
-            <select id="newItemCat" class="input" style="min-width:160px">
-              <option value="">Scegli categoria…</option>
+        <!-- PRODOTTI -->
+        <div class="card" style="margin-top:16px">
+          <h3 style="margin-top:0">Prodotti</h3>
+
+          <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px">
+            <select id="itemCategory" class="input" style="min-width:160px">
+              <option value="">Seleziona categoria</option>
             </select>
-            <input id="newItemName" class="input" placeholder="Nome piatto (es. Margherita)" />
-            <input id="newItemPrice" class="input" type="number" step="0.01" placeholder="Prezzo (es. 7,50)" style="width:110px" />
+            <input id="itemName" class="input" placeholder="Nome prodotto" style="flex:1;min-width:150px" />
           </div>
-          <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">
-            <input id="newItemDesc" class="input" placeholder="Descrizione (facoltativa)" style="flex:1" />
-            <button id="btnAddItem" class="btn brand">+ Aggiungi piatto</button>
+
+          <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px">
+            <input id="itemDesc" class="input" placeholder="Descrizione (es. Pomodoro, fior di latte, basilico)" style="flex:1;min-width:200px" />
           </div>
-        </div>
-      </section>
 
-          <!-- COLONNA DESTRA: PRODOTTI -->
-          <div class="card">
-            <h3 style="margin-top:0">Prodotti</h3>
-
-            <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px">
-              <select id="itemCategory" class="input" style="min-width:160px">
-                <option value="">Seleziona categoria</option>
-              </select>
-              <input id="itemName" class="input" placeholder="Nome prodotto" style="flex:1;min-width:150px" />
-            </div>
-
-            <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px">
-              <input id="itemDesc" class="input" placeholder="Descrizione (es. Pomodoro, fior di latte, basilico)" style="flex:1;min-width:200px" />
-            </div>
-
-            <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px">
-              <input id="itemPrice" class="input" type="number" step="0.01" placeholder="Prezzo €" style="width:120px" />
-              <input id="itemSort" class="input" type="number" placeholder="Ordine" style="width:100px" />
-              <label class="muted" style="display:flex;align-items:center;gap:6px">
-                <input id="itemAvailable" type="checkbox" checked /> Disponibile
-              </label>
-              <button id="btnAddItem" class="btn brand">+ Aggiungi prodotto</button>
-            </div>
-
-            <div id="itemMsg" class="muted" style="margin-top:6px;font-size:13px"></div>
-            <p class="muted" style="font-size:12px;margin-top:10px">
-              I prodotti inseriti qui compariranno subito nel menù pubblico nella categoria scelta.
-            </p>
+          <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px">
+            <input id="itemPrice" class="input" type="number" step="0.01" placeholder="Prezzo €" style="width:120px" />
+            <input id="itemSort" class="input" type="number" placeholder="Ordine" style="width:100px" />
+            <label class="muted" style="display:flex;align-items:center;gap:6px">
+              <input id="itemAvailable" type="checkbox" checked /> Disponibile
+            </label>
+            <button id="btnAddItem" class="btn brand">+ Aggiungi prodotto</button>
           </div>
+
+          <div id="itemMsg" class="muted" style="margin-top:6px;font-size:13px"></div>
+          <p class="muted" style="font-size:12px;margin-top:10px">
+            I prodotti inseriti qui compariranno subito nel menù pubblico nella categoria scelta.
+          </p>
         </div>
       </section>
 
@@ -267,7 +247,7 @@ async function F(url, opts){
   return r;
 }
 
-/* ========= NAV LATERALE (ORDINI / STAT / MENU / TAVOLI) ========= */
+/* ========= NAV LATERALE ========= */
 const SECTIONS = {
   orders: $('#sec-orders'),
   stats:  $('#sec-stats'),
@@ -288,17 +268,16 @@ $$('.nav .item[data-section]').forEach(link=>{
   });
 });
 
-/* ========= MENU: CATEGORIE + PIATTI ========= */
+/* ========= MENU: CATEGORIE + PRODOTTI ========= */
 async function loadMenu() {
-  const ul        = document.querySelector('#menuCategories');
-  const catSelect = document.querySelector('#newItemCat'); // select per il nuovo piatto
+  const ul        = $('#menuCategories');
+  const catSelect = $('#itemCategory');
 
   if (!ul) return;
 
-  // messaggi iniziali
   ul.innerHTML = '<li class="muted">Caricamento…</li>';
   if (catSelect) {
-    catSelect.innerHTML = '<option value="">Seleziona categoria…</option>';
+    catSelect.innerHTML = '<option value="">Seleziona categoria</option>';
   }
 
   try {
@@ -314,25 +293,24 @@ async function loadMenu() {
 
     if (!categories || !categories.length) {
       ul.innerHTML = '<li class="muted">Nessuna categoria ancora creata.</li>';
-      // niente categorie → niente opzioni nella select
       if (catSelect) {
         catSelect.innerHTML = '<option value="">Nessuna categoria disponibile</option>';
       }
       return;
     }
 
-    // 🔹 RIEMPIAMO LA SELECT DEL NUOVO PIATTO
+    // popola select prodotti
     if (catSelect) {
-      catSelect.innerHTML = '<option value="">Seleziona categoria…</option>';
+      catSelect.innerHTML = '<option value="">Seleziona categoria</option>';
       categories.forEach(cat => {
         const opt = document.createElement('option');
-        opt.value = cat.id;        // id numerico della categoria
-        opt.textContent = cat.name; // nome da mostrare
+        opt.value = cat.id;
+        opt.textContent = cat.name;
         catSelect.appendChild(opt);
       });
     }
 
-    // 🔹 ELENCO CATEGORIE + PIATTI SOTTO
+    // lista categorie + piatti
     categories.forEach(cat => {
       const catItems   = (items || []).filter(it => it.category_id === cat.id);
       const total      = catItems.length;
@@ -372,156 +350,11 @@ async function loadMenu() {
   }
 }
 
-    // ===== POPOLA SELECT PER NUOVO PIATTO =====
-    if (catSelect && categories && categories.length) {
-      catSelect.innerHTML = '<option value="">Scegli categoria…</option>';
-      categories.forEach(cat => {
-        const opt = document.createElement('option');
-        opt.value = cat.id;      // id numerico della categoria
-        opt.textContent = cat.name;
-        catSelect.appendChild(opt);
-      });
-    }
-  } catch (e) {
-    console.error('loadMenu error', e);
-    if (ul) {
-      ul.innerHTML = '<li class="muted">Errore nel caricamento del menù.</li>';
-    }
-  }
-}
-
-/* ========= MENU: AGGIUNGI CATEGORIA ========= */
+/* AGGIUNGI CATEGORIA */
 async function addCategory() {
-  const nameInput = document.querySelector('#newCatName');
-  const sortInput = document.querySelector('#newCatSort');
-  const msg       = document.querySelector('#menuMsg');
-
-  if (!nameInput || !sortInput || !msg) return;
-
-  const name       = (nameInput.value || '').trim();
-  const sort_order = Number(sortInput.value || 0) || 0;
-
-  if (!name) {
-    msg.textContent = 'Inserisci un nome categoria.';
-    return;
-  }
-
-  msg.textContent = 'Salvataggio...';
-
-  try {
-    const res = await fetch('/admin/menu-json/add-category', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, sort_order })
-    });
-
-    const text = await res.text();
-    let data = null;
-    try { data = JSON.parse(text); } catch (_) {}
-
-    if (!res.ok) {
-      console.error('HTTP error:', res.status, text);
-      msg.textContent = `Errore HTTP ${res.status}: ${text}`;
-      return;
-    }
-
-    if (!data || !data.ok) {
-      console.error('API error:', data);
-      msg.textContent = `Errore API: ${data && data.error ? data.error : 'sconosciuto'}`;
-      return;
-    }
-
-    msg.textContent = 'Categoria salvata ✅';
-    nameInput.value = '';
-    sortInput.value = '';
-
-    await loadMenu(); // ricarica categorie + select
-  } catch (e) {
-    console.error('fetch failed', e);
-    msg.textContent = 'Errore di rete durante il salvataggio.';
-  }
-}
-
-/* ========= MENU: CATEGORIE + PIATTI ========= */
-async function loadMenu() {
-  const ul = document.querySelector('#menuCategories');
-  if (!ul) return;
-
-  ul.innerHTML = '<li class="muted">Caricamento…</li>';
-
-  try {
-    const res = await fetch('/admin/menu-json', {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (!res.ok) throw new Error('bad_response');
-
-    const { ok, categories, items } = await res.json();
-    if (!ok) throw new Error('menu_not_ok');
-
-    ul.innerHTML = '';
-
-    if (!categories || !categories.length) {
-      ul.innerHTML = '<li class="muted">Nessuna categoria ancora creata.</li>';
-    } else {
-      // 🔹 POPOLA LA SELECT DEI PIATTI
-      const catSelect = document.querySelector('#itemCat');
-      if (catSelect) {
-        catSelect.innerHTML = '<option value="">Categoria…</option>';
-        categories.forEach(cat => {
-          const opt = document.createElement('option');
-          opt.value = cat.id;
-          opt.textContent = cat.name;
-          catSelect.appendChild(opt);
-        });
-      }
-
-      // 🔹 LISTA CATEGORIE + PIATTI
-      categories.forEach(cat => {
-        const catItems   = (items || []).filter(it => it.category_id === cat.id);
-        const total      = catItems.length;
-        const available  = catItems.filter(it => it.is_available).length;
-
-        const li    = document.createElement('li');
-        const title = document.createElement('strong');
-        title.textContent = cat.name + ' ';
-
-        const count = document.createElement('span');
-        count.className   = 'muted';
-        count.textContent = `(${available}/${total} disponibili)`;
-
-        const desc  = document.createElement('div');
-        desc.className   = 'muted';
-        desc.textContent = total
-          ? catItems.map(it => `${it.name} (€${Number(it.price).toFixed(2)})`).join(', ')
-          : 'Nessun piatto in questa categoria.';
-
-        // 🔴 bottone elimina categoria
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Elimina';
-        delBtn.className   = 'btn btn-ghost';
-        delBtn.style.marginLeft = '8px';
-        delBtn.onclick = () => deleteCategory(cat.id, cat.name);
-
-        li.appendChild(title);
-        li.appendChild(count);
-        li.appendChild(delBtn);
-        li.appendChild(document.createElement('br'));
-        li.appendChild(desc);
-
-        ul.appendChild(li);
-      });
-    }
-  } catch (e) {
-    console.error('loadMenu error', e);
-    ul.innerHTML = '<li class="muted">Errore nel caricamento del menù.</li>';
-  }
-}
-
-/* ========= MENU: AGGIUNGI CATEGORIA ========= */
-async function addCategory() {
-  const nameInput = document.querySelector('#newCatName');
-  const sortInput = document.querySelector('#newCatSort');
-  const msg       = document.querySelector('#menuMsg');
+  const nameInput = $('#newCatName');
+  const sortInput = $('#newCatSort');
+  const msg       = $('#menuMsg');
 
   if (!nameInput || !sortInput || !msg) return;
 
@@ -569,7 +402,7 @@ async function addCategory() {
   }
 }
 
-/* ========= MENU: ELIMINA CATEGORIA ========= */
+/* ELIMINA CATEGORIA */
 async function deleteCategory(id, name) {
   const ok = confirm(
     `Eliminare la categoria "${name}"?\n` +
@@ -599,14 +432,15 @@ async function deleteCategory(id, name) {
   }
 }
 
-/* ========= MENU: AGGIUNGI PIATTO ========= */
+/* AGGIUNGI PRODOTTO */
 async function addItem() {
-  const catSelect  = document.querySelector('#itemCat');
-  const nameInput  = document.querySelector('#itemName');
-  const priceInput = document.querySelector('#itemPrice');
-  const descInput  = document.querySelector('#itemDesc');
-  const availCheck = document.querySelector('#itemAvailable');
-  const msg        = document.querySelector('#itemMsg') || document.querySelector('#menuMsg');
+  const catSelect  = $('#itemCategory');
+  const nameInput  = $('#itemName');
+  const priceInput = $('#itemPrice');
+  const descInput  = $('#itemDesc');
+  const sortInput  = $('#itemSort');
+  const availCheck = $('#itemAvailable');
+  const msg        = $('#itemMsg') || $('#menuMsg');
 
   if (!catSelect || !nameInput || !priceInput || !descInput || !msg) return;
 
@@ -614,14 +448,15 @@ async function addItem() {
   const name  = (nameInput.value || '').trim();
   const desc  = (descInput.value || '').trim();
   const price = Number(String(priceInput.value || '').replace(',', '.'));
+  const sort_order  = Number(sortInput.value || 0) || 0;
   const is_available = !!(availCheck && availCheck.checked);
 
   if (!category_id) {
-    msg.textContent = 'Scegli una categoria per il piatto.';
+    msg.textContent = 'Scegli una categoria per il prodotto.';
     return;
   }
   if (!name) {
-    msg.textContent = 'Inserisci il nome del piatto.';
+    msg.textContent = 'Inserisci il nome del prodotto.';
     return;
   }
   if (!price || price <= 0) {
@@ -629,13 +464,13 @@ async function addItem() {
     return;
   }
 
-  msg.textContent = 'Salvataggio piatto...';
+  msg.textContent = 'Salvataggio prodotto...';
 
   try {
     const res = await fetch('/admin/menu-json/add-item', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category_id, name, description: desc, price, is_available })
+      body: JSON.stringify({ category_id, name, description: desc, price, sort_order, is_available })
     });
 
     const text = await res.text();
@@ -654,59 +489,25 @@ async function addItem() {
       return;
     }
 
-    msg.textContent = 'Piatto salvato ✅';
+    msg.textContent = 'Prodotto salvato ✅';
 
-    // pulisci campi
     nameInput.value  = '';
     priceInput.value = '';
     descInput.value  = '';
+    sortInput.value  = '';
     if (availCheck) availCheck.checked = true;
     catSelect.value  = '';
 
-    await loadMenu(); // ricarica elenco categorie+piatti
-  } catch (e) {
-    console.error('fetch failed', e);
-    msg.textContent = 'Errore di rete durante il salvataggio del piatto.';
-  }
-}
-
-/* ========= LISTENER BOTTONI ========= */
-document.querySelector('#btnAddCat')?.addEventListener('click', addCategory);
-document.querySelector('#btnAddItem')?.addEventListener('click', addItem);
-
-/* ========= MENU: ELIMINA CATEGORIA ========= */
-async function deleteCategory(id, name) {
-  const ok = confirm(
-    `Eliminare la categoria "${name}"?\n` +
-    `Verranno eliminati anche tutti i piatti associati.`
-  );
-  if (!ok) return;
-
-  try {
-    const res = await fetch('/admin/menu-json/delete-category', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok || !data.ok) {
-      console.error('deleteCategory error', res.status, data);
-      alert('Errore durante l’eliminazione della categoria.');
-      return;
-    }
-
     await loadMenu();
   } catch (e) {
-    console.error(e);
-    alert('Errore di rete durante l’eliminazione.');
+    console.error('fetch failed', e);
+    msg.textContent = 'Errore di rete durante il salvataggio del prodotto.';
   }
 }
 
-/* ========= HOOK BOTTONI ========= */
-document.querySelector('#btnAddCat')?.addEventListener('click', addCategory);
-document.querySelector('#btnAddItem')?.addEventListener('click', addItem);
+/* LISTENER MENU */
+$('#btnAddCat')?.addEventListener('click', addCategory);
+$('#btnAddItem')?.addEventListener('click', addItem);
 
 /* ========= SETTINGS ========= */
 async function loadSettings(){
