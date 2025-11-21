@@ -866,11 +866,19 @@ catItems.forEach(it => {
   const textBox = document.createElement('div');
   textBox.style.flex = '1';
 
-  // NOME PRODOTTO (grassetto)
-  const nameEl = document.createElement('div');
-  nameEl.className = 'item-name';
-  nameEl.textContent = it.name;
-  textBox.appendChild(nameEl);
+// IMMAGINE (se presente) + NOME PRODOTTO
+if (it.image_url) {
+  const img = document.createElement('img');
+  img.src = it.image_url;
+  img.alt = it.name;
+  img.className = 'item-img';   // stile definito nel CSS
+  textBox.appendChild(img);     // l'immagine va sopra al nome
+}
+
+const nameEl = document.createElement('div');
+nameEl.className = 'item-name';
+nameEl.textContent = it.name;
+textBox.appendChild(nameEl);
 
   // DESCRIZIONE / INGREDIENTI (corsivo, orizzontale)
   if (it.description) {
