@@ -784,20 +784,18 @@ categories.sort((a, b) => {
           const left = document.createElement('div');
 
           const nameEl = document.createElement('div');
-          nameEl.className = 'item-name';
-          nameEl.setAttribute('data-i18n-name', it.name);
-          nameEl.textContent = it.name;
-          left.appendChild(nameEl);
+nameEl.className = 'item-name';
+nameEl.setAttribute('data-i18n-name', it.name);
+nameEl.textContent = it.name;
+left.appendChild(nameEl);
 
-          if (it.description) {
-            const descWrap = document.createElement('div');
-            descWrap.className = 'item-desc';
-            const em = document.createElement('em');
-            em.setAttribute('data-i18n-desc', it.description);
-            em.textContent = it.description;
-            descWrap.appendChild(em);
-            left.appendChild(descWrap);
-          }
+if (it.description) {
+  const span = document.createElement('span');
+  span.className = 'item-desc';
+  span.setAttribute('data-i18n-desc', it.name + '_desc');
+  span.textContent = ' — ' + it.description; // trattino + descrizione
+  nameEl.appendChild(span); // 👉 attacco la descrizione al nome
+}
 
           const priceEl = document.createElement('div');
           priceEl.style.marginTop = '4px';
