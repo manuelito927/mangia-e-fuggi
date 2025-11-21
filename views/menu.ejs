@@ -802,73 +802,118 @@ categories.sort((a, b) => {
 
 const left = document.createElement('div');
 
-// NOME PRODOTTO (grassetto)
-const nameEl = document.createElement('div');
-nameEl.className = 'item-name';
-nameEl.textContent = it.name;
-left.appendChild(nameEl);
+catItems.forEach(it => {
+  const row = document.createElement('div');
+  row.className = 'menu-row';
+  row.style.display = 'flex';
+  row.style.justifyContent = 'space-between';
+  row.style.gap = '10px';
+  row.style.alignItems = 'flex-start';
+  row.style.padding = '8px 0';
+  row.style.borderTop = '1px solid #eee';
 
-if (it.description) {
-  const descWrap = document.createElement('div');
-  descWrap.className = 'item-desc';
+  // CONTENITORE SINISTRA: immagine (se c'è) + testo
+  const left = document.createElement('div');
+  left.style.display = 'flex';
+  left.style.gap = '10px';
+  left.style.alignItems = 'flex-start';
 
-  const em = document.createElement('em');
+  // 👉 IMMAGINE PRODOTTO (se image_url è valorizzato)
+  if (it.image_url) {
+    const imgBox = document.createElement('div');
+    imgBox.style.flexShrink = '0';
 
-  // Trasforma eventuali "a capo" in virgola + spazio
-  const flatDesc = String(it.description).replace(/\s*\n\s*/g, ', ');
+    const img = document.createElement('img');
+    img.src = it.image_url;
+    img.alt = it.name;
+    img.loading = 'lazy';
+    img.style.width = '72px';
+    img.style.height = '72px';
+    img.style.objectFit = 'cover';
+    img.style.borderRadius = '10px';
+    img.style.border = '1px solid #eee';
+    img.onerror = function () {
+      this.style.display = 'none'; // se URL rotto, sparisce senza rompere il layout
+    };
 
-  em.textContent = flatDesc;
-  descWrap.appendChild(em);
-  left.appendChild(descWrap);
-}
+    imgBox.appendChild(img);
+    left.appendChild(imgBox);
+  }
 
-          const qtyBox = document.createElement('div');
-          qtyBox.className = 'i-qty';
-          qtyBox.style.display = 'flex';
-          qtyBox.style.flexDirection = 'column';
-          qtyBox.style.alignItems = 'flex-end';
-          qtyBox.style.gap = '4px';
+  // BLOCCO TESTO (nome + descrizione)
+  const textBox = document.createElement('div');
+  textBox.style.flex = '1';
 
-          const controls = document.createElement('div');
-          controls.style.display = 'flex';
-          controls.style.alignItems = 'center';
-          controls.style.gap = '6px';
+  // NOME PRODOTTO (grassetto)
+  const nameEl = document.createElement('div');
+  nameEl.className = 'item-name';
+  nameEl.textContent = it.name;
+  textBox.appendChild(nameEl);
 
-          const btnMinus = document.createElement('button');
-          btnMinus.type = 'button';
-          btnMinus.className = 'btn btn-ghost';
-          btnMinus.textContent = '−';
-          btnMinus.addEventListener('click', () => dec(it.name));
+  // DESCRIZIONE / INGREDIENTI (corsivo, orizzontale)
+  if (it.description) {
+    const descWrap = document.createElement('div');
+    descWrap.className = 'item-desc';
 
-          const qtySpan = document.createElement('span');
-          qtySpan.className = 'qv';
-          const idSafe = cssId(it.name);
-          qtySpan.id = 'q-' + idSafe;
-          qtySpan.textContent = '0';
+    const em = document.createElement('em');
+    const flatDesc = String(it.description).replace(/\s*\n\s*/g, ', ');
 
-          const btnPlus = document.createElement('button');
-          btnPlus.type = 'button';
-          btnPlus.className = 'btn';
-          btnPlus.textContent = '+';
-          btnPlus.addEventListener('click', () => inc(it.name, it.price));
+    em.textContent = flatDesc;
+    descWrap.appendChild(em);
+    textBox.appendChild(descWrap);
+  }
 
-          controls.appendChild(btnMinus);
-          controls.appendChild(qtySpan);
-          controls.appendChild(btnPlus);
+  left.appendChild(textBox);
 
-          const noteInput = document.createElement('input');
-          noteInput.className = 'note-inline';
-          noteInput.placeholder = 'Nota (es. senza cipolla)';
-          noteInput.addEventListener('input', () => setNote(it.name, noteInput.value));
+  // BOX DESTRO: pulsanti quantità + nota
+  const qtyBox = document.createElement('div');
+  qtyBox.className = 'i-qty';
+  qtyBox.style.display = 'flex';
+  qtyBox.style.flexDirection = 'column';
+  qtyBox.style.alignItems = 'flex-end';
+  qtyBox.style.gap = '4px';
 
-          qtyBox.appendChild(controls);
-          qtyBox.appendChild(noteInput);
+  const controls = document.createElement('div');
+  controls.style.display = 'flex';
+  controls.style.alignItems = 'center';
+  controls.style.gap = '6px';
 
-          row.appendChild(left);
-          row.appendChild(qtyBox);
+  const btnMinus = document.createElement('button');
+  btnMinus.type = 'button';
+  btnMinus.className = 'btn btn-ghost';
+  btnMinus.textContent = '−';
+  btnMinus.addEventListener('click', () => dec(it.name));
 
-          section.appendChild(row);
-        });
+  const qtySpan = document.createElement('span');
+  qtySpan.className = 'qv';
+  const idSafe = cssId(it.name);
+  qtySpan.id = 'q-' + idSafe;
+  qtySpan.textContent = '0';
+
+  const btnPlus = document.createElement('button');
+  btnPlus.type = 'button';
+  btnPlus.className = 'btn';
+  btnPlus.textContent = '+';
+  btnPlus.addEventListener('click', () => inc(it.name, it.price));
+
+  controls.appendChild(btnMinus);
+  controls.appendChild(qtySpan);
+  controls.appendChild(btnPlus);
+
+  const noteInput = document.createElement('input');
+  noteInput.className = 'note-inline';
+  noteInput.placeholder = 'Nota (es. senza cipolla)';
+  noteInput.addEventListener('input', () => setNote(it.name, noteInput.value));
+
+  qtyBox.appendChild(controls);
+  qtyBox.appendChild(noteInput);
+
+  // Montiamo la riga
+  row.appendChild(left);
+  row.appendChild(qtyBox);
+
+  section.appendChild(row);
+});
 
         root.appendChild(section);
       });
