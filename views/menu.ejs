@@ -806,18 +806,20 @@ nameEl.setAttribute('data-i18n-name', it.name);
 nameEl.textContent = it.name;
 left.appendChild(nameEl);
 
-if (it.description) {
-  const span = document.createElement('span');
-  span.className = 'item-desc';
-  span.setAttribute('data-i18n-desc', it.name + '_desc');
-  span.textContent = ' — ' + it.description; // trattino + descrizione
-  nameEl.appendChild(span); // 👉 attacco la descrizione al nome
-}
+  // prendiamo la descrizione da qualunque proprietà ci sia
+  const rawDesc = it.description || it.desc || it.subtitle || it.details || '';
 
-          const priceEl = document.createElement('div');
-          priceEl.style.marginTop = '4px';
-          priceEl.innerHTML = '<strong>' + euro(it.price) + '</strong>';
-          left.appendChild(priceEl);
+  if (rawDesc) {
+    const descWrap = document.createElement('div');
+    descWrap.className = 'item-desc';
+
+    const em = document.createElement('em');
+    em.setAttribute('data-i18n-desc', it.description_key || '');
+    em.textContent = rawDesc;  // qui mettiamo gli ingredienti / descrizione
+
+    descWrap.appendChild(em);
+    left.appendChild(descWrap);
+  }
 
           const qtyBox = document.createElement('div');
           qtyBox.className = 'i-qty';
