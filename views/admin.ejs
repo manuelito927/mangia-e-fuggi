@@ -291,14 +291,14 @@ $$('.nav .item[data-section]').forEach(link=>{
 /* ========= MENU: CATEGORIE + PIATTI ========= */
 async function loadMenu() {
   const ul        = document.querySelector('#menuCategories');
-  const catSelect = document.querySelector('#newItemCat');
+  const catSelect = document.querySelector('#newItemCat'); // select per il nuovo piatto
 
-  if (ul) {
-    ul.innerHTML = '<li class="muted">Caricamento…</li>';
-  }
+  if (!ul) return;
+
+  // messaggi iniziali
+  ul.innerHTML = '<li class="muted">Caricamento…</li>';
   if (catSelect) {
-    // reset della tendina categorie per i PIATTI
-    catSelect.innerHTML = '<option value="">Scegli categoria…</option>';
+    catSelect.innerHTML = '<option value="">Seleziona categoria…</option>';
   }
 
   try {
@@ -310,49 +310,67 @@ async function loadMenu() {
     const { ok, categories, items } = await res.json();
     if (!ok) throw new Error('menu_not_ok');
 
-    // ===== LISTA CATEGORIE + PIATTI =====
-    if (ul) {
-      ul.innerHTML = '';
+    ul.innerHTML = '';
 
-      if (!categories || !categories.length) {
-        ul.innerHTML = '<li class="muted">Nessuna categoria ancora creata.</li>';
-      } else {
-        categories.forEach(cat => {
-          const catItems   = (items || []).filter(it => it.category_id === cat.id);
-          const total      = catItems.length;
-          const available  = catItems.filter(it => it.is_available).length;
-
-          const li    = document.createElement('li');
-          const title = document.createElement('strong');
-          title.textContent = cat.name + ' ';
-
-          const count = document.createElement('span');
-          count.className   = 'muted';
-          count.textContent = `(${available}/${total} disponibili)`;
-
-          const desc  = document.createElement('div');
-          desc.className   = 'muted';
-          desc.textContent = total
-            ? catItems.map(it => `${it.name} (€${Number(it.price).toFixed(2)})`).join(', ')
-            : 'Nessun piatto in questa categoria.';
-
-          // Bottone elimina categoria
-          const delBtn = document.createElement('button');
-          delBtn.textContent = 'Elimina';
-          delBtn.className   = 'btn btn-ghost';
-          delBtn.style.marginLeft = '8px';
-          delBtn.onclick = () => deleteCategory(cat.id, cat.name);
-
-          li.appendChild(title);
-          li.appendChild(count);
-          li.appendChild(delBtn);
-          li.appendChild(document.createElement('br'));
-          li.appendChild(desc);
-
-          ul.appendChild(li);
-        });
+    if (!categories || !categories.length) {
+      ul.innerHTML = '<li class="muted">Nessuna categoria ancora creata.</li>';
+      // niente categorie → niente opzioni nella select
+      if (catSelect) {
+        catSelect.innerHTML = '<option value="">Nessuna categoria disponibile</option>';
       }
+      return;
     }
+
+    // 🔹 RIEMPIAMO LA SELECT DEL NUOVO PIATTO
+    if (catSelect) {
+      catSelect.innerHTML = '<option value="">Seleziona categoria…</option>';
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat.id;        // id numerico della categoria
+        opt.textContent = cat.name; // nome da mostrare
+        catSelect.appendChild(opt);
+      });
+    }
+
+    // 🔹 ELENCO CATEGORIE + PIATTI SOTTO
+    categories.forEach(cat => {
+      const catItems   = (items || []).filter(it => it.category_id === cat.id);
+      const total      = catItems.length;
+      const available  = catItems.filter(it => it.is_available).length;
+
+      const li    = document.createElement('li');
+      const title = document.createElement('strong');
+      title.textContent = cat.name + ' ';
+
+      const count = document.createElement('span');
+      count.className   = 'muted';
+      count.textContent = `(${available}/${total} disponibili)`;
+
+      const desc  = document.createElement('div');
+      desc.className   = 'muted';
+      desc.textContent = total
+        ? catItems.map(it => `${it.name} (€${Number(it.price).toFixed(2)})`).join(', ')
+        : 'Nessun piatto in questa categoria.';
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Elimina';
+      delBtn.className   = 'btn btn-ghost';
+      delBtn.style.marginLeft = '8px';
+      delBtn.onclick = () => deleteCategory(cat.id, cat.name);
+
+      li.appendChild(title);
+      li.appendChild(count);
+      li.appendChild(delBtn);
+      li.appendChild(document.createElement('br'));
+      li.appendChild(desc);
+
+      ul.appendChild(li);
+    });
+  } catch (e) {
+    console.error('loadMenu error', e);
+    ul.innerHTML = '<li class="muted">Errore nel caricamento del menù.</li>';
+  }
+}
 
     // ===== POPOLA SELECT PER NUOVO PIATTO =====
     if (catSelect && categories && categories.length) {
