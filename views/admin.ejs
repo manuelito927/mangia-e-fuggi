@@ -443,22 +443,24 @@ async function deleteCategory(id, name) {
 
 /* AGGIUNGI PRODOTTO */
 async function addItem() {
-  const catSelect  = $('#itemCategory');
-  const nameInput  = $('#itemName');
-  const priceInput = $('#itemPrice');
-  const descInput  = $('#itemDesc');
-  const sortInput  = $('#itemSort');
-  const availCheck = $('#itemAvailable');
-  const msg        = $('#itemMsg') || $('#menuMsg');
+  const catSelect   = $('#itemCategory');
+  const nameInput   = $('#itemName');
+  const priceInput  = $('#itemPrice');
+  const descInput   = $('#itemDesc');
+  const sortInput   = $('#itemSort');
+  const imageInput  = $('#itemImage');     // 👈 NEW
+  const availCheck  = $('#itemAvailable');
+  const msg         = $('#itemMsg') || $('#menuMsg');
 
   if (!catSelect || !nameInput || !priceInput || !descInput || !msg) return;
 
   const category_id = Number(catSelect.value || 0);
-  const name  = (nameInput.value || '').trim();
-  const desc  = (descInput.value || '').trim();
-  const price = Number(String(priceInput.value || '').replace(',', '.'));
+  const name        = (nameInput.value || '').trim();
+  const desc        = (descInput.value || '').trim();
+  const price       = Number(String(priceInput.value || '').replace(',', '.'));
   const sort_order  = Number(sortInput.value || 0) || 0;
   const is_available = !!(availCheck && availCheck.checked);
+  const image_url   = imageInput ? (imageInput.value || '').trim() : '';  // 👈 NEW
 
   if (!category_id) {
     msg.textContent = 'Scegli una categoria per il prodotto.';
@@ -479,7 +481,15 @@ async function addItem() {
     const res = await fetch('/admin/menu-json/add-item', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category_id, name, description: desc, price, sort_order, is_available })
+      body: JSON.stringify({
+        category_id,
+        name,
+        description: desc,
+        price,
+        sort_order,
+        is_available,
+        image_url              // 👈 NEW: lo mandiamo al backend
+      })
     });
 
     const text = await res.text();
@@ -500,12 +510,14 @@ async function addItem() {
 
     msg.textContent = 'Prodotto salvato ✅';
 
-    nameInput.value  = '';
-    priceInput.value = '';
-    descInput.value  = '';
-    sortInput.value  = '';
+    // pulizia campi
+    nameInput.value   = '';
+    priceInput.value  = '';
+    descInput.value   = '';
+    sortInput.value   = '';
+    if (imageInput) imageInput.value = '';    // 👈 puliamo anche URL immagine
     if (availCheck) availCheck.checked = true;
-    catSelect.value  = '';
+    catSelect.value   = '';
 
     await loadMenu();
   } catch (e) {
