@@ -726,6 +726,49 @@ app.post("/admin/menu-json/add-category", async (req, res) => {
   }
 });
 
+// === AGGIUNGI PRODOTTO ===
+app.post("/admin/menu-json/add-item", async (req, res) => {
+  try {
+    const {
+      category_id,
+      name,
+      description,
+      price,
+      sort_order,
+      is_available
+    } = req.body || {};
+
+    const catId = Number(category_id);
+    if (!catId || !name) {
+      return res.status(400).json({ ok: false, error: "missing_fields" });
+    }
+
+    const { data, error } = await supabase
+      .from("menu_items")
+      .insert({
+        category_id: catId,
+        name,
+        description: description || "",
+        // accetta sia 6.5 sia "6,5"
+        price: Number(String(price).replace(",", ".")) || 0,
+        sort_order: Number(sort_order) || 0,
+        is_available: is_available !== false
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("add-item error:", error);
+      return res.status(500).json({ ok: false, error: "db_error" });
+    }
+
+    res.json({ ok: true, item: data });
+  } catch (e) {
+    console.error("add-item exception:", e);
+    res.status(500).json({ ok: false, error: "server_error" });
+  }
+});
+
 // ====== MENU PUBBLICO PER LA PAGINA CLIENTE ======
 app.get("/api/menu", async (_req, res) => {
   try {
