@@ -26,13 +26,15 @@
 
 .item-desc{
   margin-bottom:4px;    /* piccolo spazio sotto gli ingredienti */
+  white-space:normal;   /* niente elenco verticale */
 }
 
 .item-desc em{
   font-style:italic;    /* corsivo per gli ingredienti */
   font-size:14px;
   color:#6b5a54;        /* marroncino leggibile */
-  display:inline;       /* testo in linea, non a colonna */
+  display:inline;       /* testo in linea */
+  white-space:normal;   /* ignora gli a capo dentro il testo */
 }
 
     .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 340px;gap:18px}
