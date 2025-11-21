@@ -806,20 +806,25 @@ nameEl.setAttribute('data-i18n-name', it.name);
 nameEl.textContent = it.name;
 left.appendChild(nameEl);
 
-  // prendiamo la descrizione da qualunque proprietà ci sia
-  const rawDesc = it.description || it.desc || it.subtitle || it.details || '';
+const nameEl = document.createElement('div');
+nameEl.className = 'item-name';
+nameEl.setAttribute('data-i18n-name', it.name_key || '');
+nameEl.textContent = it.name;
+left.appendChild(nameEl);
 
-  if (rawDesc) {
-    const descWrap = document.createElement('div');
-    descWrap.className = 'item-desc';
+// 🔽 SOSTITUISCI QUI
+const rawDesc = it.description || it.desc || it.subtitle || it.details || '';
 
-    const em = document.createElement('em');
-    em.setAttribute('data-i18n-desc', it.description_key || '');
-    em.textContent = rawDesc;  // qui mettiamo gli ingredienti / descrizione
-
-    descWrap.appendChild(em);
-    left.appendChild(descWrap);
-  }
+if (rawDesc) {
+  const descWrap = document.createElement('div');
+  descWrap.className = 'item-desc';
+  const em = document.createElement('em');
+  em.setAttribute('data-i18n-desc', it.description_key || '');
+  em.textContent = rawDesc;
+  descWrap.appendChild(em);
+  left.appendChild(descWrap);
+}
+// 🔼 FINO A QUI
 
           const qtyBox = document.createElement('div');
           qtyBox.className = 'i-qty';
