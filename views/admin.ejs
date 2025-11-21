@@ -269,10 +269,16 @@ $$('.nav .item[data-section]').forEach(link=>{
 
 /* ========= MENU: CATEGORIE + PIATTI ========= */
 async function loadMenu() {
-  const ul = document.querySelector('#menuCategories');
-  if (!ul) return;
+  const ul        = document.querySelector('#menuCategories');
+  const catSelect = document.querySelector('#newItemCat');
 
-  ul.innerHTML = '<li class="muted">Caricamento…</li>';
+  if (ul) {
+    ul.innerHTML = '<li class="muted">Caricamento…</li>';
+  }
+  if (catSelect) {
+    // reset della tendina categorie per i PIATTI
+    catSelect.innerHTML = '<option value="">Scegli categoria…</option>';
+  }
 
   try {
     const res = await fetch('/admin/menu-json', {
@@ -283,49 +289,65 @@ async function loadMenu() {
     const { ok, categories, items } = await res.json();
     if (!ok) throw new Error('menu_not_ok');
 
-    ul.innerHTML = '';
+    // ===== LISTA CATEGORIE + PIATTI =====
+    if (ul) {
+      ul.innerHTML = '';
 
-    if (!categories || !categories.length) {
-      ul.innerHTML = '<li class="muted">Nessuna categoria ancora creata.</li>';
-      return;
+      if (!categories || !categories.length) {
+        ul.innerHTML = '<li class="muted">Nessuna categoria ancora creata.</li>';
+      } else {
+        categories.forEach(cat => {
+          const catItems   = (items || []).filter(it => it.category_id === cat.id);
+          const total      = catItems.length;
+          const available  = catItems.filter(it => it.is_available).length;
+
+          const li    = document.createElement('li');
+          const title = document.createElement('strong');
+          title.textContent = cat.name + ' ';
+
+          const count = document.createElement('span');
+          count.className   = 'muted';
+          count.textContent = `(${available}/${total} disponibili)`;
+
+          const desc  = document.createElement('div');
+          desc.className   = 'muted';
+          desc.textContent = total
+            ? catItems.map(it => `${it.name} (€${Number(it.price).toFixed(2)})`).join(', ')
+            : 'Nessun piatto in questa categoria.';
+
+          // Bottone elimina categoria
+          const delBtn = document.createElement('button');
+          delBtn.textContent = 'Elimina';
+          delBtn.className   = 'btn btn-ghost';
+          delBtn.style.marginLeft = '8px';
+          delBtn.onclick = () => deleteCategory(cat.id, cat.name);
+
+          li.appendChild(title);
+          li.appendChild(count);
+          li.appendChild(delBtn);
+          li.appendChild(document.createElement('br'));
+          li.appendChild(desc);
+
+          ul.appendChild(li);
+        });
+      }
     }
 
-    categories.forEach(cat => {
-      const catItems   = (items || []).filter(it => it.category_id === cat.id);
-      const total      = catItems.length;
-      const available  = catItems.filter(it => it.is_available).length;
-
-      const li    = document.createElement('li');
-      const title = document.createElement('strong');
-      title.textContent = cat.name + ' ';
-
-      const count = document.createElement('span');
-      count.className   = 'muted';
-      count.textContent = `(${available}/${total} disponibili)`;
-
-      const desc  = document.createElement('div');
-      desc.className   = 'muted';
-      desc.textContent = total
-        ? catItems.map(it => `${it.name} (€${Number(it.price).toFixed(2)})`).join(', ')
-        : 'Nessun piatto in questa categoria.';
-
-      const delBtn = document.createElement('button');
-      delBtn.textContent = 'Elimina';
-      delBtn.className   = 'btn btn-ghost';
-      delBtn.style.marginLeft = '8px';
-      delBtn.onclick = () => deleteCategory(cat.id, cat.name);
-
-      li.appendChild(title);
-      li.appendChild(count);
-      li.appendChild(delBtn);
-      li.appendChild(document.createElement('br'));
-      li.appendChild(desc);
-
-      ul.appendChild(li);
-    });
+    // ===== POPOLA SELECT PER NUOVO PIATTO =====
+    if (catSelect && categories && categories.length) {
+      catSelect.innerHTML = '<option value="">Scegli categoria…</option>';
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat.id;      // id numerico della categoria
+        opt.textContent = cat.name;
+        catSelect.appendChild(opt);
+      });
+    }
   } catch (e) {
     console.error('loadMenu error', e);
-    ul.innerHTML = '<li class="muted">Errore nel caricamento del menù.</li>';
+    if (ul) {
+      ul.innerHTML = '<li class="muted">Errore nel caricamento del menù.</li>';
+    }
   }
 }
 
@@ -374,10 +396,78 @@ async function addCategory() {
     nameInput.value = '';
     sortInput.value = '';
 
-    await loadMenu();
+    await loadMenu(); // ricarica categorie + select
   } catch (e) {
     console.error('fetch failed', e);
     msg.textContent = 'Errore di rete durante il salvataggio.';
+  }
+}
+
+/* ========= MENU: AGGIUNGI PIATTO ========= */
+async function addItem() {
+  const catSelect = document.querySelector('#newItemCat');
+  const nameInput = document.querySelector('#newItemName');
+  const priceInput= document.querySelector('#newItemPrice');
+  const descInput = document.querySelector('#newItemDesc');
+  const msg       = document.querySelector('#menuMsg');
+
+  if (!catSelect || !nameInput || !priceInput || !descInput || !msg) return;
+
+  const category_id = Number(catSelect.value || 0);
+  const name  = (nameInput.value || '').trim();
+  const desc  = (descInput.value || '').trim();
+  // accetta sia "7.5" che "7,5"
+  const price = Number(String(priceInput.value || '').replace(',', '.'));
+
+  if (!category_id) {
+    msg.textContent = 'Scegli una categoria per il piatto.';
+    return;
+  }
+  if (!name) {
+    msg.textContent = 'Inserisci il nome del piatto.';
+    return;
+  }
+  if (!price || price <= 0) {
+    msg.textContent = 'Inserisci un prezzo valido.';
+    return;
+  }
+
+  msg.textContent = 'Salvataggio piatto...';
+
+  try {
+    const res = await fetch('/admin/menu-json/add-item', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category_id, name, description: desc, price })
+    });
+
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch (_) {}
+
+    if (!res.ok) {
+      console.error('HTTP error:', res.status, text);
+      msg.textContent = `Errore HTTP ${res.status}: ${text}`;
+      return;
+    }
+
+    if (!data || !data.ok) {
+      console.error('API error:', data);
+      msg.textContent = `Errore API: ${data && data.error ? data.error : 'sconosciuto'}`;
+      return;
+    }
+
+    msg.textContent = 'Piatto salvato ✅';
+
+    // pulisci campi
+    nameInput.value  = '';
+    priceInput.value = '';
+    descInput.value  = '';
+
+    await loadMenu(); // ricarica elenco
+  } catch (e) {
+    console.error('fetch failed', e);
+    msg.textContent = 'Errore di rete durante il salvataggio del piatto.';
   }
 }
 
@@ -411,7 +501,9 @@ async function deleteCategory(id, name) {
   }
 }
 
+/* ========= HOOK BOTTONI ========= */
 document.querySelector('#btnAddCat')?.addEventListener('click', addCategory);
+document.querySelector('#btnAddItem')?.addEventListener('click', addItem);
 
 /* ========= SETTINGS ========= */
 async function loadSettings(){
