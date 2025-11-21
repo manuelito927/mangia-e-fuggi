@@ -806,12 +806,18 @@ nameEl.className = 'item-name';
 nameEl.textContent = it.name;
 left.appendChild(nameEl);
 
-// DESCRIZIONE / INGREDIENTI (corsivo, su una riga)
 if (it.description) {
-  const descEl = document.createElement('div');
-  descEl.className = 'item-desc';
-  descEl.textContent = it.description;  // es. "Patatine, polpette, arancini…"
-  left.appendChild(descEl);
+  const descWrap = document.createElement('div');
+  descWrap.className = 'item-desc';
+
+  const em = document.createElement('em');
+
+  // Trasforma eventuali "a capo" in virgola + spazio
+  const flatDesc = String(it.description).replace(/\s*\n\s*/g, ', ');
+
+  em.textContent = flatDesc;
+  descWrap.appendChild(em);
+  left.appendChild(descWrap);
 }
 
           const qtyBox = document.createElement('div');
