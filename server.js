@@ -790,7 +790,7 @@ app.get("/api/menu", async (_req, res) => {
     if (catIds.length) {
       const { data: rows, error: iErr } = await supabase
         .from("menu_items")
-        .select("id,category_id,name,description,price,is_available")
+        .select("id,category_id,name,description,price,is_available,image_url") // 👈 AGGIUNTO QUI
         .in("category_id", catIds)
         .order("id", { ascending: true });
 
