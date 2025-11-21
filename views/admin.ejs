@@ -403,21 +403,179 @@ async function addCategory() {
   }
 }
 
+/* ========= MENU: CATEGORIE + PIATTI ========= */
+async function loadMenu() {
+  const ul = document.querySelector('#menuCategories');
+  if (!ul) return;
+
+  ul.innerHTML = '<li class="muted">Caricamento…</li>';
+
+  try {
+    const res = await fetch('/admin/menu-json', {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error('bad_response');
+
+    const { ok, categories, items } = await res.json();
+    if (!ok) throw new Error('menu_not_ok');
+
+    ul.innerHTML = '';
+
+    if (!categories || !categories.length) {
+      ul.innerHTML = '<li class="muted">Nessuna categoria ancora creata.</li>';
+    } else {
+      // 🔹 POPOLA LA SELECT DEI PIATTI
+      const catSelect = document.querySelector('#itemCat');
+      if (catSelect) {
+        catSelect.innerHTML = '<option value="">Categoria…</option>';
+        categories.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat.id;
+          opt.textContent = cat.name;
+          catSelect.appendChild(opt);
+        });
+      }
+
+      // 🔹 LISTA CATEGORIE + PIATTI
+      categories.forEach(cat => {
+        const catItems   = (items || []).filter(it => it.category_id === cat.id);
+        const total      = catItems.length;
+        const available  = catItems.filter(it => it.is_available).length;
+
+        const li    = document.createElement('li');
+        const title = document.createElement('strong');
+        title.textContent = cat.name + ' ';
+
+        const count = document.createElement('span');
+        count.className   = 'muted';
+        count.textContent = `(${available}/${total} disponibili)`;
+
+        const desc  = document.createElement('div');
+        desc.className   = 'muted';
+        desc.textContent = total
+          ? catItems.map(it => `${it.name} (€${Number(it.price).toFixed(2)})`).join(', ')
+          : 'Nessun piatto in questa categoria.';
+
+        // 🔴 bottone elimina categoria
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Elimina';
+        delBtn.className   = 'btn btn-ghost';
+        delBtn.style.marginLeft = '8px';
+        delBtn.onclick = () => deleteCategory(cat.id, cat.name);
+
+        li.appendChild(title);
+        li.appendChild(count);
+        li.appendChild(delBtn);
+        li.appendChild(document.createElement('br'));
+        li.appendChild(desc);
+
+        ul.appendChild(li);
+      });
+    }
+  } catch (e) {
+    console.error('loadMenu error', e);
+    ul.innerHTML = '<li class="muted">Errore nel caricamento del menù.</li>';
+  }
+}
+
+/* ========= MENU: AGGIUNGI CATEGORIA ========= */
+async function addCategory() {
+  const nameInput = document.querySelector('#newCatName');
+  const sortInput = document.querySelector('#newCatSort');
+  const msg       = document.querySelector('#menuMsg');
+
+  if (!nameInput || !sortInput || !msg) return;
+
+  const name       = (nameInput.value || '').trim();
+  const sort_order = Number(sortInput.value || 0) || 0;
+
+  if (!name) {
+    msg.textContent = 'Inserisci un nome categoria.';
+    return;
+  }
+
+  msg.textContent = 'Salvataggio...';
+
+  try {
+    const res = await fetch('/admin/menu-json/add-category', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, sort_order })
+    });
+
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch (_) {}
+
+    if (!res.ok) {
+      console.error('HTTP error:', res.status, text);
+      msg.textContent = `Errore HTTP ${res.status}: ${text}`;
+      return;
+    }
+
+    if (!data || !data.ok) {
+      console.error('API error:', data);
+      msg.textContent = `Errore API: ${data && data.error ? data.error : 'sconosciuto'}`;
+      return;
+    }
+
+    msg.textContent = 'Categoria salvata ✅';
+    nameInput.value = '';
+    sortInput.value = '';
+
+    await loadMenu();
+  } catch (e) {
+    console.error('fetch failed', e);
+    msg.textContent = 'Errore di rete durante il salvataggio.';
+  }
+}
+
+/* ========= MENU: ELIMINA CATEGORIA ========= */
+async function deleteCategory(id, name) {
+  const ok = confirm(
+    `Eliminare la categoria "${name}"?\n` +
+    `Verranno eliminati anche tutti i piatti associati.`
+  );
+  if (!ok) return;
+
+  try {
+    const res = await fetch('/admin/menu-json/delete-category', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.ok) {
+      console.error('deleteCategory error', res.status, data);
+      alert('Errore durante l’eliminazione della categoria.');
+      return;
+    }
+
+    await loadMenu();
+  } catch (e) {
+    console.error(e);
+    alert('Errore di rete durante l’eliminazione.');
+  }
+}
+
 /* ========= MENU: AGGIUNGI PIATTO ========= */
 async function addItem() {
-  const catSelect = document.querySelector('#newItemCat');
-  const nameInput = document.querySelector('#newItemName');
-  const priceInput= document.querySelector('#newItemPrice');
-  const descInput = document.querySelector('#newItemDesc');
-  const msg       = document.querySelector('#menuMsg');
+  const catSelect  = document.querySelector('#itemCat');
+  const nameInput  = document.querySelector('#itemName');
+  const priceInput = document.querySelector('#itemPrice');
+  const descInput  = document.querySelector('#itemDesc');
+  const availCheck = document.querySelector('#itemAvailable');
+  const msg        = document.querySelector('#itemMsg') || document.querySelector('#menuMsg');
 
   if (!catSelect || !nameInput || !priceInput || !descInput || !msg) return;
 
   const category_id = Number(catSelect.value || 0);
   const name  = (nameInput.value || '').trim();
   const desc  = (descInput.value || '').trim();
-  // accetta sia "7.5" che "7,5"
   const price = Number(String(priceInput.value || '').replace(',', '.'));
+  const is_available = !!(availCheck && availCheck.checked);
 
   if (!category_id) {
     msg.textContent = 'Scegli una categoria per il piatto.';
@@ -438,7 +596,7 @@ async function addItem() {
     const res = await fetch('/admin/menu-json/add-item', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category_id, name, description: desc, price })
+      body: JSON.stringify({ category_id, name, description: desc, price, is_available })
     });
 
     const text = await res.text();
@@ -463,13 +621,19 @@ async function addItem() {
     nameInput.value  = '';
     priceInput.value = '';
     descInput.value  = '';
+    if (availCheck) availCheck.checked = true;
+    catSelect.value  = '';
 
-    await loadMenu(); // ricarica elenco
+    await loadMenu(); // ricarica elenco categorie+piatti
   } catch (e) {
     console.error('fetch failed', e);
     msg.textContent = 'Errore di rete durante il salvataggio del piatto.';
   }
 }
+
+/* ========= LISTENER BOTTONI ========= */
+document.querySelector('#btnAddCat')?.addEventListener('click', addCategory);
+document.querySelector('#btnAddItem')?.addEventListener('click', addItem);
 
 /* ========= MENU: ELIMINA CATEGORIA ========= */
 async function deleteCategory(id, name) {
