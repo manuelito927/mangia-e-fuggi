@@ -589,14 +589,14 @@ async function deleteItem(id) {
   }
 }
 
-/* AGGIUNGI PRODOTTO */
+/* AGGIUNGI / MODIFICA PRODOTTO */
 async function addItem() {
   const catSelect   = $('#itemCategory');
   const nameInput   = $('#itemName');
   const priceInput  = $('#itemPrice');
   const descInput   = $('#itemDesc');
   const sortInput   = $('#itemSort');
-  const imageInput  = $('#itemImage');     // adesso è type="file"
+  const imageInput  = $('#itemImage');
   const availCheck  = $('#itemAvailable');
   const msg         = $('#itemMsg') || $('#menuMsg');
 
@@ -623,7 +623,7 @@ async function addItem() {
     return;
   }
 
-  msg.textContent = 'Salvataggio prodotto...';
+  msg.textContent = editingItemId ? 'Salvataggio modifiche...' : 'Salvataggio prodotto...';
 
   try {
     const formData = new FormData();
@@ -635,13 +635,46 @@ async function addItem() {
     formData.append('is_available', is_available ? 'true' : 'false');
 
     if (file) {
-      formData.append('image', file);   // 👈 qui il file vero
+      formData.append('image', file);
+    }
+    if (editingItemId) {
+      formData.append('id', editingItemId);
     }
 
-    const res = await fetch('/admin/menu-json/add-item', {
+    const url = editingItemId
+      ? '/admin/menu-json/update-item'
+      : '/admin/menu-json/add-item';
+
+    const res = await fetch(url, {
       method: 'POST',
-      body: formData          // 👈 niente headers, li mette il browser
+      body: formData
     });
+
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch (_) {}
+
+    if (!res.ok) {
+      console.error('HTTP error:', res.status, text);
+      msg.textContent = `Errore HTTP ${res.status}: ${text}`;
+      return;
+    }
+
+    if (!data || !data.ok) {
+      console.error('API error:', data);
+      msg.textContent = `Errore API: ${data && data.error ? data.error : 'sconosciuto'}`;
+      return;
+    }
+
+    msg.textContent = editingItemId ? 'Modifiche salvate ✅' : 'Prodotto salvato ✅';
+
+    resetItemForm();
+    await loadMenu();
+  } catch (e) {
+    console.error('fetch failed', e);
+    msg.textContent = 'Errore di rete durante il salvataggio del prodotto.';
+  }
+}
 
     const text = await res.text();
     let data = null;
