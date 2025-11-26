@@ -743,7 +743,6 @@ app.post("/admin/menu-json/add-category", async (req, res) => {
 // === AGGIUNGI PRODOTTO ===
 app.post(
   '/admin/menu-json/add-item',
-  requireAdmin,              // se già lo usi per proteggere la dashboard
   upload.single('image'),    // 👈 multer: campo "image" dal formData
   async (req, res) => {
     try {
