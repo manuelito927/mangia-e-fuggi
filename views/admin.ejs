@@ -305,6 +305,8 @@ async function loadMenu() {
     if (!res.ok) throw new Error('bad_response');
 
     const { ok, categories, items } = await res.json();
+    MENU_CATEGORIES = categories || [];
+    MENU_ITEMS = items || [];
     if (!ok) throw new Error('menu_not_ok');
 
     ul.innerHTML = '';
