@@ -741,54 +741,64 @@ app.post("/admin/menu-json/add-category", async (req, res) => {
 });
 
 // === AGGIUNGI PRODOTTO ===
-app.post("/admin/menu-json/add-item", upload.single("image"), async (req, res) => {
-  try {
-    const {
-      category_id,
-      name,
-      description,
-      price,
-      sort_order,
-      is_available
-      // NIENTE image_url dal body
-    } = req.body || {};
-
-    const catId = Number(category_id);
-    if (!catId || !name) {
-      return res.status(400).json({ ok: false, error: "missing_fields" });
-    }
-
-    // 👇 se è stato caricato un file, costruiamo l'URL pubblico
-    let image_url = null;
-    if (req.file) {
-      image_url = "/uploads/" + req.file.filename;
-    }
-
-    const { data, error } = await supabase
-      .from("menu_items")
-      .insert({
-        category_id: catId,
+app.post(
+  '/admin/menu-json/add-item',
+  requireAdmin,              // se già lo usi per proteggere la dashboard
+  upload.single('image'),    // 👈 multer: campo "image" dal formData
+  async (req, res) => {
+    try {
+      const {
+        category_id,
         name,
-        description: description || "",
-        price: Number(String(price).replace(",", ".")) || 0,
-        sort_order: Number(sort_order) || 0,
-        is_available: is_available !== false,
-        image_url    // 👈 salva l’URL nel DB (oppure null)
-      })
-      .select()
-      .single();
+        description,
+        price,
+        sort_order,
+        is_available
+      } = req.body;
 
-    if (error) {
-      console.error("add-item error:", error);
-      return res.status(500).json({ ok: false, error: "db_error" });
+      let image_url = null;
+
+      // Se il ristoratore ha caricato una foto
+      if (req.file) {
+        const ext = path.extname(req.file.originalname || '');
+        const finalName = req.file.filename + ext;       // es: abc123.jpg
+        const finalPath = path.join(uploadDir, finalName);
+        fs.renameSync(req.file.path, finalPath);         // rinomina file con estensione
+
+        // URL che salviamo nel DB e che il frontend userà
+        image_url = '/uploads/' + finalName;
+      }
+
+      // 🔴 QUI fai l'INSERT nel DB (Supabase o quello che usi)
+      // ESEMPIO con Supabase:
+      /*
+      const { error } = await supabase
+        .from('menu_items')
+        .insert({
+          category_id: Number(category_id),
+          name,
+          description,
+          price: Number(price),
+          sort_order: Number(sort_order) || 0,
+          is_available: is_available === 'true',
+          image_url      // 👈 salva l'URL dell'immagine
+        });
+
+      if (error) {
+        console.error(error);
+        return res.status(500).json({ ok: false, error: error.message });
+      }
+      */
+
+      // Se usi un altro metodo, qui fai il tuo insert, *includendo image_url*
+
+      return res.json({ ok: true });
+    } catch (e) {
+      console.error(e);
+      return res.status(500).json({ ok: false, error: 'server_error' });
     }
-
-    res.json({ ok: true, item: data });
-  } catch (e) {
-    console.error("add-item exception:", e);
-    res.status(500).json({ ok: false, error: "server_error" });
   }
-});
+);
 
 // ====== MENU PUBBLICO PER LA PAGINA CLIENTE ======
 app.get("/api/menu", async (_req, res) => {
