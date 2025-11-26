@@ -5,6 +5,7 @@ import bodyParser from "body-parser";
 import session from "express-session";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
+import multer from "multer";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
