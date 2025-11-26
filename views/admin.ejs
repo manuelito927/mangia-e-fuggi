@@ -650,65 +650,13 @@ async function addItem() {
       body: formData
     });
 
-    const text = await res.text();
-    let data = null;
-    try { data = JSON.parse(text); } catch (_) {}
+async function addItem() {
+  ...   // la funzione
+}       // chiusa
+/* LISTENER MENU */
+$('#btnAddCat')?.addEventListener('click', addCategory);
+$('#btnAddItem')?.addEventListener('click', addItem);
 
-    if (!res.ok) {
-      console.error('HTTP error:', res.status, text);
-      msg.textContent = `Errore HTTP ${res.status}: ${text}`;
-      return;
-    }
-
-    if (!data || !data.ok) {
-      console.error('API error:', data);
-      msg.textContent = `Errore API: ${data && data.error ? data.error : 'sconosciuto'}`;
-      return;
-    }
-
-    msg.textContent = editingItemId ? 'Modifiche salvate ✅' : 'Prodotto salvato ✅';
-
-    resetItemForm();
-    await loadMenu();
-  } catch (e) {
-    console.error('fetch failed', e);
-    msg.textContent = 'Errore di rete durante il salvataggio del prodotto.';
-  }
-}
-
-    const text = await res.text();
-    let data = null;
-    try { data = JSON.parse(text); } catch (_) {}
-
-    if (!res.ok) {
-      console.error('HTTP error:', res.status, text);
-      msg.textContent = `Errore HTTP ${res.status}: ${text}`;
-      return;
-    }
-
-    if (!data || !data.ok) {
-      console.error('API error:', data);
-      msg.textContent = `Errore API: ${data && data.error ? data.error : 'sconosciuto'}`;
-      return;
-    }
-
-    msg.textContent = 'Prodotto salvato ✅';
-
-    // pulizia campi
-    nameInput.value   = '';
-    priceInput.value  = '';
-    descInput.value   = '';
-    sortInput.value   = '';
-    if (imageInput) imageInput.value = '';
-    if (availCheck) availCheck.checked = true;
-    catSelect.value   = '';
-
-    await loadMenu();
-  } catch (e) {
-    console.error('fetch failed', e);
-    msg.textContent = 'Errore di rete durante il salvataggio del prodotto.';
-  }
-}
 
 /* LISTENER MENU */
 $('#btnAddCat')?.addEventListener('click', addCategory);
