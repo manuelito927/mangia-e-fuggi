@@ -741,7 +741,7 @@ app.post("/admin/menu-json/add-category", async (req, res) => {
 });
 
 // === AGGIUNGI PRODOTTO ===
-app.post("/admin/menu-json/add-item", async (req, res) => {
+app.post("/admin/menu-json/add-item", upload.single("image"), async (req, res) => {
   try {
     const {
       category_id,
@@ -749,13 +749,19 @@ app.post("/admin/menu-json/add-item", async (req, res) => {
       description,
       price,
       sort_order,
-      is_available,
-      image_url          // 👈 NUOVO CAMPO DAL BODY
+      is_available
+      // NIENTE image_url dal body
     } = req.body || {};
 
     const catId = Number(category_id);
     if (!catId || !name) {
       return res.status(400).json({ ok: false, error: "missing_fields" });
+    }
+
+    // 👇 se è stato caricato un file, costruiamo l'URL pubblico
+    let image_url = null;
+    if (req.file) {
+      image_url = "/uploads/" + req.file.filename;
     }
 
     const { data, error } = await supabase
@@ -764,13 +770,10 @@ app.post("/admin/menu-json/add-item", async (req, res) => {
         category_id: catId,
         name,
         description: description || "",
-        // accetta sia 6.5 sia "6,5"
         price: Number(String(price).replace(",", ".")) || 0,
         sort_order: Number(sort_order) || 0,
         is_available: is_available !== false,
-        image_url: image_url && image_url.trim() !== ""     // 👈 se stringa non vuota
-          ? image_url.trim()
-          : null                                            // 👈 altrimenti NULL
+        image_url    // 👈 salva l’URL nel DB (oppure null)
       })
       .select()
       .single();
