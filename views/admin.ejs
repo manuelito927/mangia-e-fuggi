@@ -449,7 +449,7 @@ async function addItem() {
   const priceInput  = $('#itemPrice');
   const descInput   = $('#itemDesc');
   const sortInput   = $('#itemSort');
-  const imageInput  = $('#itemImage');     // 👈 NEW
+  const imageInput  = $('#itemImage');     // adesso è type="file"
   const availCheck  = $('#itemAvailable');
   const msg         = $('#itemMsg') || $('#menuMsg');
 
@@ -461,7 +461,7 @@ async function addItem() {
   const price       = Number(String(priceInput.value || '').replace(',', '.'));
   const sort_order  = Number(sortInput.value || 0) || 0;
   const is_available = !!(availCheck && availCheck.checked);
-  const image_url   = imageInput ? (imageInput.value || '').trim() : '';  // 👈 NEW
+  const file        = imageInput && imageInput.files ? imageInput.files[0] : null;
 
   if (!category_id) {
     msg.textContent = 'Scegli una categoria per il prodotto.';
@@ -479,18 +479,21 @@ async function addItem() {
   msg.textContent = 'Salvataggio prodotto...';
 
   try {
+    const formData = new FormData();
+    formData.append('category_id', category_id);
+    formData.append('name', name);
+    formData.append('description', desc);
+    formData.append('price', price);
+    formData.append('sort_order', sort_order);
+    formData.append('is_available', is_available ? 'true' : 'false');
+
+    if (file) {
+      formData.append('image', file);   // 👈 qui il file vero
+    }
+
     const res = await fetch('/admin/menu-json/add-item', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        category_id,
-        name,
-        description: desc,
-        price,
-        sort_order,
-        is_available,
-        image_url              // 👈 NEW: lo mandiamo al backend
-      })
+      body: formData          // 👈 niente headers, li mette il browser
     });
 
     const text = await res.text();
@@ -516,7 +519,7 @@ async function addItem() {
     priceInput.value  = '';
     descInput.value   = '';
     sortInput.value   = '';
-    if (imageInput) imageInput.value = '';    // 👈 puliamo anche URL immagine
+    if (imageInput) imageInput.value = '';
     if (availCheck) availCheck.checked = true;
     catSelect.value   = '';
 
