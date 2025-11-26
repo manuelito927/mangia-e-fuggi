@@ -364,6 +364,8 @@ async function loadMenu() {
 
       ul.appendChild(li);
     });
+    MENU_CATEGORIES = categories || [];
+    MENU_ITEMS = items || [];
   } catch (e) {
     console.error('loadMenu error', e);
     ul.innerHTML = '<li class="muted">Errore nel caricamento del menù.</li>';
