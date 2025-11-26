@@ -454,6 +454,141 @@ async function deleteCategory(id, name) {
   }
 }
 
+function renderItemList() {
+  const box = $('#itemList');
+  if (!box) return;
+
+  if (!MENU_ITEMS.length) {
+    box.textContent = 'Nessun prodotto ancora inserito.';
+    return;
+  }
+
+  box.innerHTML = '';
+
+  MENU_CATEGORIES
+    .slice()
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+    .forEach(cat => {
+      const catItems = MENU_ITEMS.filter(it => it.category_id === cat.id);
+      if (!catItems.length) return;
+
+      const block = document.createElement('div');
+      block.style.marginBottom = '10px';
+
+      const title = document.createElement('div');
+      title.innerHTML = `<strong>${cat.name}</strong>`;
+      title.style.marginBottom = '4px';
+      block.appendChild(title);
+
+      catItems.forEach(it => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.gap = '6px';
+        row.style.borderTop = '1px solid #eee';
+        row.style.padding = '4px 0';
+
+        const left = document.createElement('div');
+        left.innerHTML = `
+          ${it.name}
+          <span class="muted">(€ ${Number(it.price).toFixed(2)})</span>
+          ${it.is_available === false ? '<span class="muted"> · NON disp.</span>' : ''}
+        `;
+
+        const right = document.createElement('div');
+        right.style.display = 'flex';
+        right.style.gap = '4px';
+
+        const btnEdit = document.createElement('button');
+        btnEdit.type = 'button';
+        btnEdit.className = 'btn btn-ghost';
+        btnEdit.textContent = '✏️ Modifica';
+        btnEdit.onclick = () => startEditItem(it.id);
+
+        const btnDel = document.createElement('button');
+        btnDel.type = 'button';
+        btnDel.className = 'btn btn-ghost';
+        btnDel.textContent = '🗑 Elimina';
+        btnDel.onclick = () => deleteItem(it.id);
+
+        right.appendChild(btnEdit);
+        right.appendChild(btnDel);
+
+        row.appendChild(left);
+        row.appendChild(right);
+        block.appendChild(row);
+      });
+
+      box.appendChild(block);
+    });
+
+  if (!box.innerHTML.trim()) {
+    box.textContent = 'Nessun prodotto ancora inserito.';
+  }
+}
+
+function startEditItem(id) {
+  const it = MENU_ITEMS.find(x => x.id === id);
+  if (!it) return;
+
+  editingItemId = id;
+
+  $('#itemCategory').value = it.category_id || '';
+  $('#itemName').value = it.name || '';
+  $('#itemDesc').value = it.description || '';
+  $('#itemPrice').value = it.price != null ? String(it.price).replace('.', ',') : '';
+  $('#itemSort').value = it.sort_order || '';
+  $('#itemAvailable').checked = it.is_available !== false;
+
+  const msg = $('#itemMsg');
+  if (msg) {
+    msg.textContent = 'Stai modificando questo prodotto. Premi "Salva modifiche".';
+  }
+  const btn = $('#btnAddItem');
+  if (btn) btn.textContent = '💾 Salva modifiche';
+}
+
+function resetItemForm() {
+  editingItemId = null;
+  $('#itemCategory').value = '';
+  $('#itemName').value = '';
+  $('#itemDesc').value = '';
+  $('#itemPrice').value = '';
+  $('#itemSort').value = '';
+  const img = $('#itemImage');
+  if (img) img.value = '';
+  $('#itemAvailable').checked = true;
+  const msg = $('#itemMsg');
+  if (msg) msg.textContent = '';
+  const btn = $('#btnAddItem');
+  if (btn) btn.textContent = '+ Aggiungi prodotto';
+}
+
+async function deleteItem(id) {
+  const msg = $('#itemMsg') || $('#menuMsg');
+  if (!confirm('Vuoi davvero eliminare questo prodotto?')) return;
+
+  try {
+    const res = await fetch('/admin/menu-json/delete-item', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ id })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      console.error('deleteItem error', res.status, data);
+      if (msg) msg.textContent = 'Errore durante l’eliminazione del prodotto.';
+      return;
+    }
+    if (editingItemId === id) resetItemForm();
+    await loadMenu();
+  } catch (e) {
+    console.error(e);
+    if (msg) msg.textContent = 'Errore di rete durante l\'eliminazione.';
+  }
+}
+
 /* AGGIUNGI PRODOTTO */
 async function addItem() {
   const catSelect   = $('#itemCategory');
