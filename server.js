@@ -19,6 +19,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 const app = express();
 
+// ===== Upload immagini prodotti =====
+const uploadDir = path.join(__dirname, "public", "uploads");
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// multer salverà i file dentro /public/uploads
+const upload = multer({ dest: uploadDir });
+
+// rende raggiungibili le immagini come /uploads/filename.jpg
+app.use("/uploads", express.static(uploadDir));
+
 // ---------- Utils env
 function getEnvAny(...keys){
   for (const k of keys) {
