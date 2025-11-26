@@ -799,6 +799,77 @@ app.post(
   }
 );
 
+// === MODIFICA PRODOTTO ESISTENTE ===
+app.post("/admin/menu-json/update-item", async (req, res) => {
+  try {
+    const {
+      id,
+      category_id,
+      name,
+      description,
+      price,
+      sort_order,
+      is_available,
+      image_url
+    } = req.body || {};
+
+    const itemId = Number(id);
+    if (!itemId || !name) {
+      return res.status(400).json({ ok: false, error: "missing_id_or_name" });
+    }
+
+    const patch = {
+      name,
+      description: description || "",
+      price: Number(String(price).replace(",", ".")) || 0,
+      sort_order: Number(sort_order) || 0,
+      is_available: is_available !== false
+    };
+
+    if (category_id) patch.category_id = Number(category_id);
+
+    // immagine: se arriva stringa → aggiorna, se stringa vuota → null
+    if (typeof image_url === "string") {
+      patch.image_url = image_url.trim() || null;
+    }
+
+    const { data, error } = await supabase
+      .from("menu_items")
+      .update(patch)
+      .eq("id", itemId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json({ ok: true, item: data });
+  } catch (e) {
+    console.error("update-item error:", e);
+    res.status(500).json({ ok: false, error: "update_item_failed" });
+  }
+});
+
+// === ELIMINA SOLO UN PRODOTTO ===
+app.post("/admin/menu-json/delete-item", async (req, res) => {
+  try {
+    const { id } = req.body || {};
+    const itemId = Number(id);
+    if (!itemId) {
+      return res.status(400).json({ ok: false, error: "missing_id" });
+    }
+
+    const { error } = await supabase
+      .from("menu_items")
+      .delete()
+      .eq("id", itemId);
+
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("delete-item error:", e);
+    res.status(500).json({ ok: false, error: "delete_item_failed" });
+  }
+});
+
 // ====== MENU PUBBLICO PER LA PAGINA CLIENTE ======
 app.get("/api/menu", async (_req, res) => {
   try {
