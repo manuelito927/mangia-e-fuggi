@@ -283,6 +283,10 @@ $$('.nav .item[data-section]').forEach(link=>{
 });
 
 /* ========= MENU: CATEGORIE + PRODOTTI ========= */
+let MENU_CATEGORIES = [];
+let MENU_ITEMS = [];
+let editingItemId = null;
+
 async function loadMenu() {
   const ul        = $('#menuCategories');
   const catSelect = $('#itemCategory');
