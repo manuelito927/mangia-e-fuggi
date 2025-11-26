@@ -848,6 +848,119 @@ app.post("/admin/menu-json/update-item", async (req, res) => {
   }
 });
 
+// === MODIFICA PRODOTTO ESISTENTE ===
+app.post("/admin/menu-json/update-item", upload.single("image"), async (req, res) => {
+  try {
+    const {
+      id,
+      category_id,
+      name,
+      description,
+      price,
+      sort_order,
+      is_available
+    } = req.body || {};
+
+    const itemId = Number(id);
+    if (!itemId || !name) {
+      return res.status(400).json({ ok: false, error: "missing_id_or_name" });
+    }
+
+    // prendo eventuale immagine già salvata
+    let currentImage = null;
+    const { data: existing, error: exErr } = await supabase
+      .from("menu_items")
+      .select("image_url")
+      .eq("id", itemId)
+      .single();
+    if (!exErr && existing) {
+      currentImage = existing.image_url || null;
+    }
+
+    let image_url = currentImage;
+
+    // se c'è un nuovo file, lo carico su Supabase e sostituisco
+    if (req.file) {
+      const file = req.file;
+      const ext  = (file.originalname.split(".").pop() || "jpg").toLowerCase();
+      const path = `items/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+
+      const { error: upErr } = await supabase.storage
+        .from("menu-images")
+        .upload(path, file.buffer, {
+          contentType: file.mimetype,
+          cacheControl: "3600",
+          upsert: false
+        });
+
+      if (upErr) {
+        console.error("Errore upload immagine update:", upErr);
+      } else {
+        const { data: pub } = supabase.storage
+          .from("menu-images")
+          .getPublicUrl(path);
+        image_url = pub?.publicUrl || image_url;
+      }
+    }
+
+    const patch = {
+      name,
+      description: description || "",
+      price: Number(String(price).replace(",", ".")) || 0,
+      sort_order: Number(sort_order) || 0,
+      is_available: !(is_available === "false" || is_available === "0")
+    };
+
+    if (category_id) {
+      patch.category_id = Number(category_id);
+    }
+    patch.image_url = image_url;
+
+    const { data, error } = await supabase
+      .from("menu_items")
+      .update(patch)
+      .eq("id", itemId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("update-item error:", error);
+      return res.status(500).json({ ok: false, error: "db_error" });
+    }
+
+    res.json({ ok: true, item: data });
+  } catch (e) {
+    console.error("update-item exception:", e);
+    res.status(500).json({ ok: false, error: "server_error" });
+  }
+});
+
+// === ELIMINA SOLO UN PRODOTTO ===
+app.post("/admin/menu-json/delete-item", async (req, res) => {
+  try {
+    const { id } = req.body || {};
+    const itemId = Number(id);
+    if (!itemId) {
+      return res.status(400).json({ ok: false, error: "missing_id" });
+    }
+
+    const { error } = await supabase
+      .from("menu_items")
+      .delete()
+      .eq("id", itemId);
+
+    if (error) {
+      console.error("delete-item error:", error);
+      return res.status(500).json({ ok: false, error: "db_error" });
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("delete-item exception:", e);
+    res.status(500).json({ ok: false, error: "server_error" });
+  }
+});
+
 // === ELIMINA SOLO UN PRODOTTO ===
 app.post("/admin/menu-json/delete-item", async (req, res) => {
   try {
