@@ -1038,17 +1038,26 @@ async function loadTables(){
           ? '🟡 Prenotato'
           : (t.status === 'occupied' ? '🔴 Occupato' : '🟢 Libero');
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${t.name || 'Tavolo ' + t.id}</td>
-        <td>${t.seats ?? '-'}</td>
-        <td>${stateText}</td>
-        <td>-</td>
-        <td>
-          <button class="btn ok" onclick="setTable(${t.id},'free')">Libera</button>
-          <button class="btn danger" onclick="setTable(${t.id},'seat')">Siede</button>
-        </td>`;
-      tbody.appendChild(tr);
+const tr = document.createElement('tr');
+tr.innerHTML = `
+  <td>${t.name || 'Tavolo ' + t.id}</td>
+  <td>${t.seats ?? '-'}</td>
+  <td>${stateText}</td>
+  <td>-</td>
+  <td>
+    <button
+      class="btn ok"
+      data-table-id="${t.id}"
+      data-table-action="free"
+    >Libera</button>
+    <button
+      class="btn danger"
+      data-table-id="${t.id}"
+      data-table-action="seat"
+    >Siede</button>
+  </td>`;
+tbody.appendChild(tr);
+
     });
   }catch(e){
     showErr('Errore caricamento tavoli.');
