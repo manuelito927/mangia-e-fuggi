@@ -541,42 +541,48 @@
       if(btnSplit) btnSplit.disabled = !(hasItems && PAY_ENABLED);
     }
 
-    // —— Core: salva ordine e ritorna order_id
-    async function createOrder(){
-      const items = Array.from(cart.entries())
-        .filter(([_,it]) => it.qty > 0)
-        .map(([n,it])=>({
-          name: it.note ? `${n} — Note: ${it.note}` : n,
-          price: it.price,
-          qty: it.qty
-        }));
+// —— Core: salva ordine e ritorna order_id
+async function createOrder(){
+  const items = Array.from(cart.entries())
+    .filter(([_,it]) => it.qty > 0)
+    .map(([n,it])=>({
+      name: it.note ? `${n} — Note: ${it.note}` : n,
+      price: it.price,
+      qty: it.qty
+    }));
 
-      if(items.length===0){ alert(t("alert_add_item")); return null; }
+  if(items.length===0){
+    alert(t("alert_add_item"));
+    return null;
+  }
 
-      const total = items.reduce((s,i)=>s+i.price*i.qty,0);
-      const r = await fetch("/api/checkout",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ tableCode:null, items, total })
-      });
-      const js = await r.json();
-      if(!js.ok){ alert(t("err_send_order")); return null; }
-      return { order_id: js.order_id, total };
+  const total = items.reduce((s,i)=>s+i.price*i.qty,0);
+
+  try {
+    const r = await fetch("/api/checkout",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ tableCode:null, items, total })
+    });
+
+    const text = await r.text();
+    let js;
+    try { js = JSON.parse(text); } catch { js = { ok:false, raw:text }; }
+
+    if (!r.ok || !js.ok) {
+      const msg = js.error || js.raw || (`HTTP ${r.status}`);
+      alert("Errore invio ordine:\n" + msg);
+      console.error("checkout error:", { status:r.status, response:js });
+      return null;
     }
 
-    // 💳 Ordina & paga online (intero)
-    async function orderAndPayOnline(){
-      if(!PAY_ENABLED){ alert(t("pay_not_available")); return; }
-      const saved = await createOrder();
-      if(!saved) return;
-
-      const ok = await payAmount(saved.total, `Mangia & Fuggi - Ordine #${saved.order_id}`);
-      if(ok){
-        cart.clear();
-        renderCart();
-        resetMenuQuantities(); // azzera menu e note
-      }
-    }
+    return { order_id: js.order_id, total };
+  } catch (e) {
+    alert("Errore di rete durante l'invio dell'ordine.");
+    console.error("checkout exception:", e);
+    return null;
+  }
+}
 
     // 💵 Ordina & paga in cassa (intero)
     async function orderPayAtCounter(){
