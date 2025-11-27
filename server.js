@@ -1429,33 +1429,55 @@ app.get("/api/tables", requireAdminApi, async (_req, res) => {
   }catch(e){ console.error("tables list error:", e); res.status(500).json({ ok:false, error:"tables_list_failed" }); }
 });
 
+
+// segna tavolo come LIBERO
 app.post("/api/tables/:id/free", requireAdminApi, async (req, res) => {
-  try{
+  try {
     const { id } = req.params;
-    const { error: e0 } = await supabase
-      .from("restaurant_tables")
-      .update({ status:"free", current_reservation: null, updated_at:new Date().toISOString() })
-      .eq("id", id);
-    if (e0) throw e0;
 
-    const promo = await promoteNextWaiter(id);
-    if (promo.promoted){
-      return res.json({ ok:true, autoConfirmed: true, reservation_id: promo.reservation_id });
-    }
-    res.json({ ok:true, autoConfirmed: false });
-  }catch(e){ console.error("table free error:", e); res.status(500).json({ ok:false }); }
-});
-
-app.post("/api/tables/:id/seat", requireAdminApi, async (req, res) => {
-  try{
-    const { id } = req.params;
     const { error } = await supabase
       .from("restaurant_tables")
-      .update({ status:"occupied", updated_at:new Date().toISOString() })
+      .update({
+        status: "free",
+        updated_at: new Date().toISOString()
+      })
       .eq("id", id);
-    if (error) throw error;
-    res.json({ ok:true });
-  }catch(e){ console.error("table seat error:", e); res.status(500).json({ ok:false }); }
+
+    if (error) {
+      console.error("table free error:", error);
+      return res.status(500).json({ ok: false, error: "table_free_failed" });
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("table free exception:", e);
+    res.status(500).json({ ok: false, error: "table_free_exception" });
+  }
+});
+
+// segna tavolo come OCCUPATO
+app.post("/api/tables/:id/seat", requireAdminApi, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { error } = await supabase
+      .from("restaurant_tables")
+      .update({
+        status: "occupied",
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error("table seat error:", error);
+      return res.status(500).json({ ok: false, error: "table_seat_failed" });
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("table seat exception:", e);
+    res.status(500).json({ ok: false, error: "table_seat_exception" });
+  }
 });
 
 // pubblico per mostrare stato ai clienti
