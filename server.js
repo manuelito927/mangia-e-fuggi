@@ -744,10 +744,10 @@ app.post("/admin/menu-json/add-category", async (req, res) => {
   }
 });
 
-// === AGGIUNGI PRODOTTO ===
+// === AGGIUNGI PRODOTTO (con salvataggio immagine) ===
 app.post(
   '/admin/menu-json/add-item',
-  upload.single('image'),    // 👈 multer: campo "image" dal formData
+  upload.single('image'),
   async (req, res) => {
     try {
       const {
@@ -757,7 +757,11 @@ app.post(
         price,
         sort_order,
         is_available
-      } = req.body;
+      } = req.body || {};
+
+      if (!category_id || !name) {
+        return res.status(400).json({ ok: false, error: 'missing_category_or_name' });
+      }
 
       let image_url = null;
 
@@ -772,32 +776,30 @@ app.post(
         image_url = '/uploads/' + finalName;
       }
 
-      // 🔴 QUI fai l'INSERT nel DB (Supabase o quello che usi)
-      // ESEMPIO con Supabase:
-      /*
-      const { error } = await supabase
+      const row = {
+        category_id: Number(category_id),
+        name: name.trim(),
+        description: description || '',
+        price: Number(String(price).replace(',', '.')) || 0,
+        sort_order: Number(sort_order) || 0,
+        is_available: !(is_available === 'false' || is_available === '0'),
+        image_url
+      };
+
+      const { data, error } = await supabase
         .from('menu_items')
-        .insert({
-          category_id: Number(category_id),
-          name,
-          description,
-          price: Number(price),
-          sort_order: Number(sort_order) || 0,
-          is_available: is_available === 'true',
-          image_url      // 👈 salva l'URL dell'immagine
-        });
+        .insert([row])
+        .select()
+        .single();
 
       if (error) {
-        console.error(error);
-        return res.status(500).json({ ok: false, error: error.message });
+        console.error('add-item error:', error);
+        return res.status(500).json({ ok: false, error: 'db_error' });
       }
-      */
 
-      // Se usi un altro metodo, qui fai il tuo insert, *includendo image_url*
-
-      return res.json({ ok: true });
+      return res.json({ ok: true, item: data });
     } catch (e) {
-      console.error(e);
+      console.error('add-item exception:', e);
       return res.status(500).json({ ok: false, error: 'server_error' });
     }
   }
