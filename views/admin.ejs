@@ -305,25 +305,26 @@ async function loadMenu() {
     if (!res.ok) throw new Error('bad_response');
 
     const { ok, categories, items } = await res.json();
-    MENU_CATEGORIES = categories || [];
-    MENU_ITEMS = items || [];
-    renderItemList();
     if (!ok) throw new Error('menu_not_ok');
+
+    MENU_CATEGORIES = categories || [];
+    MENU_ITEMS      = items || [];
 
     ul.innerHTML = '';
 
-    if (!categories || !categories.length) {
+    if (!MENU_CATEGORIES.length) {
       ul.innerHTML = '<li class="muted">Nessuna categoria ancora creata.</li>';
       if (catSelect) {
         catSelect.innerHTML = '<option value="">Nessuna categoria disponibile</option>';
       }
+      renderItemList();
       return;
     }
 
     // popola select prodotti
     if (catSelect) {
       catSelect.innerHTML = '<option value="">Seleziona categoria</option>';
-      categories.forEach(cat => {
+      MENU_CATEGORIES.forEach(cat => {
         const opt = document.createElement('option');
         opt.value = cat.id;
         opt.textContent = cat.name;
@@ -331,9 +332,9 @@ async function loadMenu() {
       });
     }
 
-    // lista categorie + piatti
-    categories.forEach(cat => {
-      const catItems   = (items || []).filter(it => it.category_id === cat.id);
+    // lista categorie in alto
+    MENU_CATEGORIES.forEach(cat => {
+      const catItems   = MENU_ITEMS.filter(it => it.category_id === cat.id);
       const total      = catItems.length;
       const available  = catItems.filter(it => it.is_available).length;
 
@@ -365,11 +366,15 @@ async function loadMenu() {
 
       ul.appendChild(li);
     });
-    MENU_CATEGORIES = categories || [];
-    MENU_ITEMS = items || [];
+
+    // lista prodotti in basso
+    renderItemList();
   } catch (e) {
     console.error('loadMenu error', e);
     ul.innerHTML = '<li class="muted">Errore nel caricamento del menù.</li>';
+    MENU_CATEGORIES = [];
+    MENU_ITEMS = [];
+    renderItemList();
   }
 }
 
@@ -586,7 +591,7 @@ async function deleteItem(id) {
     await loadMenu();
   } catch (e) {
     console.error(e);
-    if (msg) msg.textContent = 'Errore di rete durante l\'eliminazione.';
+    if (msg) msg.textContent = "Errore di rete durante l'eliminazione.";
   }
 }
 
@@ -651,13 +656,31 @@ async function addItem() {
       body: formData
     });
 
-async function addItem() {
-  ...   // la funzione
-}       // chiusa
-/* LISTENER MENU */
-$('#btnAddCat')?.addEventListener('click', addCategory);
-$('#btnAddItem')?.addEventListener('click', addItem);
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch (_) {}
 
+    if (!res.ok) {
+      console.error('HTTP error:', res.status, text);
+      msg.textContent = `Errore HTTP ${res.status}: ${text}`;
+      return;
+    }
+
+    if (!data || !data.ok) {
+      console.error('API error:', data);
+      msg.textContent = `Errore API: ${data && data.error ? data.error : 'sconosciuto'}`;
+      return;
+    }
+
+    msg.textContent = editingItemId ? 'Modifiche salvate ✅' : 'Prodotto salvato ✅';
+
+    resetItemForm();
+    await loadMenu();
+  } catch (e) {
+    console.error('fetch failed', e);
+    msg.textContent = 'Errore di rete durante il salvataggio del prodotto.';
+  }
+}
 
 /* LISTENER MENU */
 $('#btnAddCat')?.addEventListener('click', addCategory);
