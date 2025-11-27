@@ -261,9 +261,12 @@
               </div>
               <div class="actions">
                 <span class="pill ${badgeClass(s)}">${T[s]}</span>
-                <button class="btn" onclick='openModal(${JSON.stringify({id:t.id,name:t.name || ("Tavolo "+t.id)})})'>
-                  ${btnText}
-                </button>
+<button class="btn"
+        data-book-table="1"
+        data-table-id="${t.id}"
+        data-table-name="${t.name || ('Tavolo ' + t.id)}">
+  ${btnText}
+</button>
               </div>
             </div>
           `;
