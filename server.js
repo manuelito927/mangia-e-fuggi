@@ -532,7 +532,11 @@ app.post("/api/checkout", async (req, res) => {
     return res.status(400).json({ ok:false, error:"no_items" });
   }
   try {
-    const baseRow = { table_code: tableCode || null, total: Number(total)||0, status:"pending", ack:false, payment_status:"unpaid" };
+const baseRow = { 
+  table_code: tableCode || null, 
+  total: Number(total)||0, 
+  status:"pending"
+};
 
     const { data: order, error: oErr } = await supabase.from("orders").insert([baseRow]).select().single();
     if (oErr || !order) throw oErr || new Error("order_insert_failed");
