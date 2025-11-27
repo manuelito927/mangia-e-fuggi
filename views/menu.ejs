@@ -645,16 +645,17 @@ let splitMode = 'equal'; // 'equal' | 'custom'
 
 // apre il popup
 function openSplitModal(){
-  document.getElementById('split-total').textContent = euro(cartTotal());
-  document.getElementById('split-backdrop').style.display = 'flex';
-  splitMode = splitMode || 'equal';
-  if (splitMode === 'equal') {
-    renderEqual();
-  } else {
-    renderCustom();
-  }
-  resetCustom();
-  applyI18n();
+  const totalEl  = document.getElementById('split-total');
+  const backdrop = document.getElementById('split-backdrop');
+
+  if (totalEl)  totalEl.textContent = euro(cartTotal());
+  if (backdrop) backdrop.style.display = 'flex';
+
+  // ogni volta che apro parto da "Alla romana"
+  splitMode = 'equal';
+  resetCustom();        // prepara le righe per il custom
+  setSplitMode('equal'); // imposta tab attiva e renderEqual()
+  applyI18n();          // aggiorna i testi in base alla lingua
 }
 
 // chiude il popup (usato dalla X)
