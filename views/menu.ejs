@@ -586,7 +586,6 @@ async function createOrder(){
 
    // 💳 Ordina & paga online (intero)
 async function orderAndPayOnline(){
-  alert("CLICK ONLINE");   // 👈 DEBUG
   if(!PAY_ENABLED){ alert(t("pay_not_available")); return; }
   const saved = await createOrder();
   if(!saved) return;
