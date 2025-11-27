@@ -620,24 +620,37 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
     // ======= DIVIDI & PAGA =======
-    let splitMode = 'equal'; // 'equal' | 'custom'
-    function openSplitModal(){
-      document.getElementById('split-total').textContent = euro(cartTotal());
-      document.getElementById('split-backdrop').style.display = 'flex';
-      renderEqual();
-      resetCustom();
-      applyI18n();
-    }
-    function closeSplitModal(){ document.getElementById('split-backdrop').style.display='none'; }
+// ======= DIVIDI & PAGA =======
+let splitMode = 'equal'; // 'equal' | 'custom'
 
-    function setSplitMode(mode){
-      splitMode = mode;
-      document.getElementById('tab-equal').classList.toggle('active', mode==='equal');
-      document.getElementById('tab-custom').classList.toggle('active', mode==='custom');
-      document.getElementById('pane-equal').style.display = (mode==='equal')?'block':'none';
-      document.getElementById('pane-custom').style.display = (mode==='custom')?'block':'none';
-      (mode==='equal') ? renderEqual() : renderCustom();
-    }
+// apre il popup
+function openSplitModal(){
+  document.getElementById('split-total').textContent = euro(cartTotal());
+  document.getElementById('split-backdrop').style.display = 'flex';
+  splitMode = splitMode || 'equal';
+  if (splitMode === 'equal') {
+    renderEqual();
+  } else {
+    renderCustom();
+  }
+  resetCustom();
+  applyI18n();
+}
+
+// chiude il popup (usato dalla X)
+function closeSplitModal(){
+  const el = document.getElementById('split-backdrop');
+  if (el) el.style.display = 'none';
+}
+
+function setSplitMode(mode){
+  splitMode = mode;
+  document.getElementById('tab-equal').classList.toggle('active', mode==='equal');
+  document.getElementById('tab-custom').classList.toggle('active', mode==='custom');
+  document.getElementById('pane-equal').style.display = (mode==='equal')?'block':'none';
+  document.getElementById('pane-custom').style.display = (mode==='custom')?'block':'none';
+  (mode==='equal') ? renderEqual() : renderCustom();
+}
 
     // Alla romana
     // Alla romana
