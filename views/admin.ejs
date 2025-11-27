@@ -1093,6 +1093,17 @@ async function setTable(id, action) {
   }
 }
 
+// ✅ Click su "Libera" / "Siede" nella tabella tavoli
+$('#tablesBody').addEventListener('click', (ev) => {
+  const btn = ev.target.closest('[data-table-action]');
+  if (!btn) return;
+
+  const id = btn.getAttribute('data-table-id');
+  const action = btn.getAttribute('data-table-action');
+
+  setTable(id, action);
+});
+
 /* ========= BOOT ========= */
 (async()=>{
   const today=new Date();
