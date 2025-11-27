@@ -584,15 +584,31 @@ async function createOrder(){
   }
 }
 
-    // 💵 Ordina & paga in cassa (intero)
-    async function orderPayAtCounter(){
-      const saved = await createOrder();
-      if(!saved) return;
-      alert(t("order_sent_counter"));
-      cart.clear();
-      renderCart();
-      resetMenuQuantities(); // azzera menu e note
-    }
+   // 💳 Ordina & paga online (intero)
+async function orderAndPayOnline(){
+  alert("CLICK ONLINE");   // 👈 DEBUG
+  if(!PAY_ENABLED){ alert(t("pay_not_available")); return; }
+  const saved = await createOrder();
+  if(!saved) return;
+
+  const ok = await payAmount(saved.total, `Mangia & Fuggi - Ordine #${saved.order_id}`);
+  if(ok){
+    cart.clear();
+    renderCart();
+    resetMenuQuantities(); // azzera menu e note
+  }
+}
+
+// 💵 Ordina & paga in cassa (intero)
+async function orderPayAtCounter(){
+  alert("CLICK CASSA");    // 👈 DEBUG
+  const saved = await createOrder();
+  if(!saved) return;
+  alert(t("order_sent_counter"));
+  cart.clear();
+  renderCart();
+  resetMenuQuantities(); // azzera menu e note
+}
 
     // ======= DIVIDI & PAGA =======
     let splitMode = 'equal'; // 'equal' | 'custom'
