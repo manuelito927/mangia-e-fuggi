@@ -69,7 +69,6 @@
       border-radius:999px;
       box-shadow:0 4px 14px rgba(155,92,46,.35);
       transition:transform .1s ease, box-shadow .1s ease;
-      /* anti-aliasing migliorato */
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
@@ -114,10 +113,12 @@
     <div class="modal">
       <header>
         <strong id="bk-title">Prenota</strong>
-<div class="close">×</div>
+        <!-- X che chiude il popup -->
+        <div class="close" onclick="closeModal()">×</div>
       </header>
       <div class="body">
-<form id="bk-form">
+        <!-- form con onsubmit collegato alla funzione -->
+        <form id="bk-form" onsubmit="return submitBooking(event)">
           <input type="hidden" id="f-table-id" />
           <div class="field">
             <label for="f-name" id="lab-name">Nome</label>
@@ -261,12 +262,9 @@
               </div>
               <div class="actions">
                 <span class="pill ${badgeClass(s)}">${T[s]}</span>
-<button class="btn"
-        data-book-table="1"
-        data-table-id="${t.id}"
-        data-table-name="${t.name || ('Tavolo ' + t.id)}">
-  ${btnText}
-</button>
+                <button class="btn" onclick='openModal(${JSON.stringify({id:t.id,name:t.name || ("Tavolo "+t.id)})})'>
+                  ${btnText}
+                </button>
               </div>
             </div>
           `;
