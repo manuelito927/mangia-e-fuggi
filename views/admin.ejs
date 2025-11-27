@@ -755,16 +755,17 @@ async function counters(){
 
 async function fetchOrders(){
   try{
-    const t=await F('/api/tables').then(r=>r.json());
-    if(t.ok){
+    // ✅ prendiamo lo stato tavoli dalla stessa API usata dai clienti
+    const t = await F('/api/tables/status').then(r => r.json());
+    if (t.ok) {
       TABLES_MAP = {};
-      (t.tables||[]).forEach(tb=>{
-        TABLES_MAP[(tb.name||('Tavolo '+tb.id))] = tb.status;
+      (t.tables || []).forEach(tb => {
+        TABLES_MAP[(tb.name || ('Tavolo ' + tb.id))] = tb.status;
         TABLES_MAP[tb.id] = tb.status;
       });
     }
 
-    const q=$('#q').value.toLowerCase();
+    const q = $('#q').value.toLowerCase();
     const daySel = $('#dayOrders').value || isoLocalDateStr(new Date());
 
     let list = [];
