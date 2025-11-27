@@ -630,13 +630,28 @@ async function orderPayAtCounter(){
 
 // 🔗 Aggancio sicuro dei bottoni (anche se gli onclick inline vengono bloccati)
 document.addEventListener("DOMContentLoaded", () => {
+  // Bottoni principali nel carrello
   const btnOnline  = document.getElementById("btn-pay-online");
   const btnCashier = document.getElementById("btn-pay-cashier");
   const btnSplit   = document.getElementById("btn-split");
 
-  if (btnOnline)  btnOnline.addEventListener("click",  () => orderAndPayOnline());
-  if (btnCashier) btnCashier.addEventListener("click", () => orderPayAtCounter());
-  if (btnSplit)   btnSplit.addEventListener("click",   () => openSplitModal());
+  if (btnOnline)  btnOnline.addEventListener("click",  orderAndPayOnline);
+  if (btnCashier) btnCashier.addEventListener("click", orderPayAtCounter);
+  if (btnSplit)   btnSplit.addEventListener("click",   openSplitModal);
+
+  // ❌ X in alto nel popup
+  const btnClose = document.querySelector(".close-x");
+  if (btnClose) btnClose.addEventListener("click", closeSplitModal);
+
+  // Tab "Alla romana" / "Importi personalizzati"
+  const tabEqual  = document.getElementById("tab-equal");
+  const tabCustom = document.getElementById("tab-custom");
+
+  if (tabEqual)
+    tabEqual.addEventListener("click", () => setSplitMode('equal'));
+
+  if (tabCustom)
+    tabCustom.addEventListener("click", () => setSplitMode('custom'));
 });
 
     // ======= DIVIDI & PAGA =======
