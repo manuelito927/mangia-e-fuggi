@@ -610,6 +610,17 @@ async function orderPayAtCounter(){
   resetMenuQuantities(); // azzera menu e note
 }
 
+// 🔗 Aggancio sicuro dei bottoni (anche se gli onclick inline vengono bloccati)
+document.addEventListener("DOMContentLoaded", () => {
+  const btnOnline  = document.getElementById("btn-pay-online");
+  const btnCashier = document.getElementById("btn-pay-cashier");
+  const btnSplit   = document.getElementById("btn-split");
+
+  if (btnOnline)  btnOnline.addEventListener("click",  () => orderAndPayOnline());
+  if (btnCashier) btnCashier.addEventListener("click", () => orderPayAtCounter());
+  if (btnSplit)   btnSplit.addEventListener("click",   () => openSplitModal());
+});
+
     // ======= DIVIDI & PAGA =======
     let splitMode = 'equal'; // 'equal' | 'custom'
     function openSplitModal(){
