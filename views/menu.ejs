@@ -641,11 +641,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Alla romana
-    function renderEqual(){
+    // Alla romana
+function renderEqual(){
   const n   = Math.max(2, Number(document.getElementById('equal-n').value || 2));
   const tot = cartTotal();
   const quota = Math.round((tot/n)*100)/100;
-  const list = document.getElementById('equal-quotas'); list.innerHTML = "";
+  const list = document.getElementById('equal-quotas');
+  list.innerHTML = "";
 
   const amountStr = euro(quota).replace('€ ','').trim();
 
@@ -665,9 +667,9 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
       <div class="quota-actions">
         <button class="btn" type="button" ${!PAY_ENABLED?'disabled':''}
-          onclick="payQuota(${quota.toFixed(2)})">${t("pay_share_online_n")(i)}</button>
+          data-pay-quota-online="${quota.toFixed(2)}">${t("pay_share_online_n")(i)}</button>
         <button class="btn btn-ghost" type="button"
-          onclick="payQuotaAtCounter(${quota.toFixed(2)})">${t("pay_share_counter_n")(i)}</button>
+          data-pay-quota-counter="${quota.toFixed(2)}">${t("pay_share_counter_n")(i)}</button>
       </div>
     `;
     list.appendChild(div);
