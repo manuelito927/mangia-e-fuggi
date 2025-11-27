@@ -1055,12 +1055,33 @@ async function loadTables(){
   }
 }
 
-async function setTable(id,action){
-  try{
-    await F(`/api/tables/${id}/${action}`,{method:'POST'});
+async function setTable(id, action) {
+  try {
+    console.log("setTable chiamato con", id, action);
+
+    const res = await F(`/api/tables/${id}/${action}`, {
+      method: "POST"
+    });
+
+    // proviamo a leggere la risposta come testo per vedere eventuali errori
+    const text = await res.text();
+    console.log("Risposta API tavolo:", res.status, text);
+
+    if (!res.ok) {
+      // qui vediamo immediatamente se è 403, 500, ecc.
+      showErr(`Errore tavolo: HTTP ${res.status} - ${text}`);
+      alert(`Errore tavolo: HTTP ${res.status}\n\n${text}`);
+      return;
+    }
+
+    // se ok, ricarichiamo
     await loadTables();
     await fetchOrders();
-  }catch(e){ showErr('Aggiornamento tavolo fallito.'); }
+  } catch (e) {
+    console.error("setTable exception", e);
+    showErr("Aggiornamento tavolo fallito (JS).");
+    alert("Errore JS setTable: " + (e.message || e));
+  }
 }
 
 /* ========= BOOT ========= */
