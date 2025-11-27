@@ -799,8 +799,8 @@ app.post(
   }
 );
 
-// === MODIFICA PRODOTTO ESISTENTE ===
-app.post("/admin/menu-json/update-item", async (req, res) => {
+// UPDATE PRODOTTO (con immagine opzionale)
+app.post('/admin/menu-json/update-item', upload.single('image'), async (req, res) => {
   try {
     const {
       id,
@@ -809,42 +809,42 @@ app.post("/admin/menu-json/update-item", async (req, res) => {
       description,
       price,
       sort_order,
-      is_available,
-      image_url
-    } = req.body || {};
+      is_available
+    } = req.body;
 
-    const itemId = Number(id);
-    if (!itemId || !name) {
-      return res.status(400).json({ ok: false, error: "missing_id_or_name" });
+    if (!id || !name) {
+      return res.status(400).json({ ok: false, error: 'missing_id_or_name' });
     }
 
-    const patch = {
+    // prepara i campi da aggiornare
+    const updateData = {
+      category_id: category_id ? Number(category_id) : null,
       name,
-      description: description || "",
-      price: Number(String(price).replace(",", ".")) || 0,
-      sort_order: Number(sort_order) || 0,
-      is_available: is_available !== false
+      description: description || '',
+      price: price ? Number(price) : 0,
+      sort_order: sort_order ? Number(sort_order) : 0,
+      is_available: is_available === 'true'
     };
 
-    if (category_id) patch.category_id = Number(category_id);
-
-    // immagine: se arriva stringa → aggiorna, se stringa vuota → null
-    if (typeof image_url === "string") {
-      patch.image_url = image_url.trim() || null;
+    // se è stato caricato un nuovo file, aggiorna anche l'immagine
+    if (req.file) {
+      updateData.image_url = '/uploads/' + req.file.filename;
     }
 
-    const { data, error } = await supabase
-      .from("menu_items")
-      .update(patch)
-      .eq("id", itemId)
-      .select()
-      .single();
+    const { error } = await supabase
+      .from('menu_items')
+      .update(updateData)
+      .eq('id', id);
 
-    if (error) throw error;
-    res.json({ ok: true, item: data });
-  } catch (e) {
-    console.error("update-item error:", e);
-    res.status(500).json({ ok: false, error: "update_item_failed" });
+    if (error) {
+      console.error('supabase update error', error);
+      return res.status(500).json({ ok: false, error: 'supabase_update_failed' });
+    }
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('update-item exception', err);
+    return res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
 
