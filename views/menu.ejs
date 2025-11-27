@@ -755,6 +755,22 @@ function renderCustom(){
       await payAmount(Number(amount), `Mangia & Fuggi - Quota ordine #${saved.order_id}`);
     }
 
+// 🎯 Gestione click sui bottoni di quota (anche su iPhone)
+document.addEventListener("click", (ev) => {
+  const onlineBtn = ev.target.closest("[data-pay-quota-online]");
+  if (onlineBtn) {
+    const amount = Number(onlineBtn.getAttribute("data-pay-quota-online") || "0");
+    if (amount > 0) payQuota(amount);
+    return;
+  }
+
+  const counterBtn = ev.target.closest("[data-pay-quota-counter]");
+  if (counterBtn) {
+    const amount = Number(counterBtn.getAttribute("data-pay-quota-counter") || "0");
+    if (amount > 0) payQuotaAtCounter(amount);
+  }
+});
+
     // — Quota pagata in cassa (nessun redirect, non svuota carrello)
     async function payQuotaAtCounter(amount){
       const saved = await createOrder(); // crea l'ordine con riepilogo
