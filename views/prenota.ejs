@@ -57,7 +57,7 @@
     .field{display:flex;flex-direction:column;gap:4px;margin:8px 0}
     input,select{padding:10px;border:1px solid #e6e2df;border-radius:10px}
 
-    /* 🔸 Pulsante Home nitido e brand-consistent */
+    /* 🔸 Pulsante Home */
     .top-home{ margin-left:auto; }
     .home-btn{
       display:inline-block;
@@ -100,7 +100,11 @@
 
     <aside class="card">
       <h3 id="legend">Legenda</h3>
-      <p><span class="pill ok" id="lab-free">libero</span> <span class="pill pend" id="lab-reserved">riservato</span> <span class="pill bad" id="lab-occupied">occupato</span></p>
+      <p>
+        <span class="pill ok" id="lab-free">libero</span>
+        <span class="pill pend" id="lab-reserved">riservato</span>
+        <span class="pill bad" id="lab-occupied">occupato</span>
+      </p>
       <p id="legend-text" class="muted" style="font-size:13px">
         • Se un tavolo è occupato o riservato puoi comunque prenotare: verrai confermato automaticamente appena si libera.<br/>
         • Se è libero la prenotazione parte subito.
@@ -113,12 +117,10 @@
     <div class="modal">
       <header>
         <strong id="bk-title">Prenota</strong>
-        <!-- X che chiude il popup -->
-        <div class="close" onclick="closeModal()">×</div>
+        <div class="close" data-close-modal="1">×</div>
       </header>
       <div class="body">
-        <!-- form con onsubmit collegato alla funzione -->
-        <form id="bk-form" onsubmit="return submitBooking(event)">
+        <form id="bk-form">
           <input type="hidden" id="f-table-id" />
           <div class="field">
             <label for="f-name" id="lab-name">Nome</label>
@@ -138,10 +140,12 @@
           <div class="field">
             <label for="f-when" id="lab-when">Quando</label>
             <input id="f-when" type="datetime-local" />
-            <small id="note-when" class="muted">Lascia vuoto per “appena possibile” (subito se libero, in coda se riservato).</small>
+            <small id="note-when" class="muted">
+              Lascia vuoto per “appena possibile” (subito se libero, in coda se riservato).
+            </small>
           </div>
           <div class="row" style="justify-content:flex-end;gap:8px;margin-top:10px">
-            <button type="button" class="btn ghost" onclick="closeModal()" id="btn-cancel">Annulla</button>
+            <button type="button" class="btn ghost" id="btn-cancel">Annulla</button>
             <button type="submit" class="btn" id="btn-confirm">Conferma</button>
           </div>
           <p id="bk-msg" class="pill ok" style="display:none"></p>
@@ -198,11 +202,12 @@
       const stored = localStorage.getItem("lang");
       return stored && LANG[stored] ? stored : "it";
     }
+
     const lang = getLang();
     const T = LANG[lang];
     document.documentElement.lang = lang;
 
-    // Applica testo statico
+    // Testo statico
     document.getElementById("title-main").textContent = T.titleMain;
     document.getElementById("subtitle").textContent = T.subtitle;
     document.getElementById("legend").textContent = T.legend;
@@ -237,9 +242,21 @@
       try{
         const r = await fetch("/api/tables/status", { cache:"no-store" });
         const js = await r.json();
-        if(!js.ok) throw new Error("Errore caricamento tavoli");
+        if(!js.ok){
+          throw new Error("Errore caricamento tavoli");
+        }
 
         elList.innerHTML = "";
+
+        // ⚠ se non ci sono tavoli, mostro un messaggio
+        if(!js.tables || !js.tables.length){
+          const p = document.createElement("p");
+          p.className = "muted";
+          p.textContent = "Nessun tavolo configurato. Aggiungili dal pannello Admin.";
+          elList.appendChild(p);
+          return;
+        }
+
         for(const t of js.tables){
           const s   = t.status;
           const eta = (t.eta_minutes!=null) ? `${t.eta_minutes} min` : (s==='free'?'—':'n.d.');
@@ -258,11 +275,17 @@
                   <h3><strong>${t.name || ('Tavolo ' + t.id)}</strong></h3>
                   <span class="muted sub">· ${t.seats ?? '-'} posti</span>
                 </div>
-                <div class="muted sub">Media sosta: <span class="eta">${avg}</span> · ETA: <span class="eta">${eta}</span></div>
+                <div class="muted sub">
+                  Media sosta: <span class="eta">${avg}</span> · ETA: <span class="eta">${eta}</span>
+                </div>
               </div>
               <div class="actions">
                 <span class="pill ${badgeClass(s)}">${T[s]}</span>
-                <button class="btn" onclick='openModal(${JSON.stringify({id:t.id,name:t.name || ("Tavolo "+t.id)})})'>
+                <button
+                  class="btn"
+                  data-book-table="1"
+                  data-table-id="${t.id}"
+                  data-table-name="${t.name || ('Tavolo ' + t.id)}">
                   ${btnText}
                 </button>
               </div>
@@ -291,7 +314,10 @@
       document.getElementById('bk-msg').style.display = 'none';
       document.getElementById('bk-err').style.display = 'none';
     }
-    function closeModal(){ document.getElementById('bk-backdrop').style.display='none'; }
+
+    function closeModal(){
+      document.getElementById('bk-backdrop').style.display='none';
+    }
 
     async function submitBooking(e){
       e.preventDefault();
@@ -326,8 +352,31 @@
       return false;
     }
 
-    load();
-    startAutoRefresh();
+    // 🔗 Aggancio eventi una volta che il DOM è pronto
+    document.addEventListener("DOMContentLoaded", () => {
+      // apri modal cliccando "Prenota subito"
+      document.addEventListener("click", (ev) => {
+        const btn = ev.target.closest("[data-book-table]");
+        if(!btn) return;
+        const id = Number(btn.dataset.tableId);
+        const name = btn.dataset.tableName || ("Tavolo " + id);
+        openModal({id, name});
+      });
+
+      // chiudi modal con X o Annulla
+      const closeX = document.querySelector("[data-close-modal]");
+      if(closeX) closeX.addEventListener("click", closeModal);
+      const btnCancel = document.getElementById("btn-cancel");
+      if(btnCancel) btnCancel.addEventListener("click", closeModal);
+
+      // submit form
+      const form = document.getElementById("bk-form");
+      if(form) form.addEventListener("submit", submitBooking);
+
+      // carica tavoli
+      load();
+      startAutoRefresh();
+    });
   </script>
 </body>
 </html>
