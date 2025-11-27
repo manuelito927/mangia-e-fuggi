@@ -257,7 +257,10 @@ function showErr(msg){
 }
 
 // fetch con gestione base errori auth
-async function F(url, opts){
+async function F(url, opts = {}){
+  opts = opts || {};
+  if (!opts.credentials) opts.credentials = 'same-origin';
+
   const r = await fetch(url, opts);
   if(r.status === 401){
     showErr('Sessione non autenticata. Ricarica la pagina e reinserisci la password.');
