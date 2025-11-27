@@ -1008,34 +1008,47 @@ async function loadRange(){
 /* ========= TAVOLI ========= */
 async function loadTables(){
   try{
-    const r=await F('/api/tables');
-    const j=await r.json();
-    if(!j.ok) return;
-    const tbody=$('#tablesBody');
-    tbody.innerHTML='';
-    j.tables.forEach(t=>{
-      const state = t.status==='reserved'
-        ? '🟡 Prenotato'
-        : (t.status==='occupied' ? '🔴 Occupato' : '🟢 Libero');
-      const tr=document.createElement('tr');
-      tr.innerHTML=`
-        <td>${t.name||'Tavolo '+t.id}</td>
-        <td>${t.seats??'-'}</td>
-        <td>${state}</td>
-        <td>${t.updated_at ? formatRome(t.updated_at) : '-'}</td>
+    // ✅ stessa API della pagina di prenotazione clienti
+    const r = await F('/api/tables/status');
+    const j = await r.json();
+    if (!j.ok) return;
+
+    const tbody = $('#tablesBody');
+    tbody.innerHTML = '';
+
+    if (!j.tables || !j.tables.length) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td colspan="5" class="muted">Nessun tavolo configurato.</td>';
+      tbody.appendChild(tr);
+      TABLES_MAP = {};
+      return;
+    }
+
+    TABLES_MAP = {};
+    j.tables.forEach(t => {
+      TABLES_MAP[(t.name || ('Tavolo ' + t.id))] = t.status;
+      TABLES_MAP[t.id] = t.status;
+
+      const stateText =
+        t.status === 'reserved'
+          ? '🟡 Prenotato'
+          : (t.status === 'occupied' ? '🔴 Occupato' : '🟢 Libero');
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${t.name || 'Tavolo ' + t.id}</td>
+        <td>${t.seats ?? '-'}</td>
+        <td>${stateText}</td>
+        <td>-</td>
         <td>
           <button class="btn ok" onclick="setTable(${t.id},'free')">Libera</button>
           <button class="btn danger" onclick="setTable(${t.id},'seat')">Siede</button>
         </td>`;
       tbody.appendChild(tr);
     });
-
-    TABLES_MAP = {};
-    (j.tables||[]).forEach(tb=>{
-      TABLES_MAP[(tb.name||('Tavolo '+tb.id))] = tb.status;
-      TABLES_MAP[tb.id] = tb.status;
-    });
-  }catch(e){ showErr('Errore caricamento tavoli.'); }
+  }catch(e){
+    showErr('Errore caricamento tavoli.');
+  }
 }
 
 async function setTable(id,action){
