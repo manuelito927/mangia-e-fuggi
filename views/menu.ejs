@@ -697,14 +697,16 @@ function renderEqual(){
       wrap.appendChild(row);
       renderCustom();
     }
-    function renderCustom(){
+function renderCustom(){
   const rows = [...document.querySelectorAll('#custom-rows .row')];
   const quotas = [];
+
   for(const r of rows){
     const name = r.querySelector('input[type="text"]').value.trim() || t('person_generic');
     const val  = Number(r.querySelector('input[type="number"]').value || 0);
     if(val>0) quotas.push({name, amount: Math.round(val*100)/100});
   }
+
   const sum = quotas.reduce((s,q)=>s+q.amount,0);
   const tot = Math.round(cartTotal()*100)/100;
 
@@ -716,7 +718,9 @@ function renderEqual(){
     err.style.display = "none";
   }
 
-  const list = document.getElementById('custom-quotas'); list.innerHTML="";
+  const list = document.getElementById('custom-quotas');
+  list.innerHTML="";
+
   quotas.forEach((q, i)=>{
     const amountStr = euro(q.amount).replace('€ ','').trim();
     const div = document.createElement('div');
@@ -734,9 +738,9 @@ function renderEqual(){
       </div>
       <div class="quota-actions">
         <button class="btn" type="button" ${(sum!==tot || !PAY_ENABLED)?'disabled':''}
-          onclick="payQuota(${q.amount.toFixed(2)})">${t("pay_share_online_n")(i+1)}</button>
+          data-pay-quota-online="${q.amount.toFixed(2)}">${t("pay_share_online_n")(i+1)}</button>
         <button class="btn btn-ghost" type="button" ${sum!==tot?'disabled':''}
-          onclick="payQuotaAtCounter(${q.amount.toFixed(2)})">${t("pay_share_counter_n")(i+1)}</button>
+          data-pay-quota-counter="${q.amount.toFixed(2)}">${t("pay_share_counter_n")(i+1)}</button>
       </div>
     `;
     list.appendChild(div);
