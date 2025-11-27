@@ -600,7 +600,6 @@ async function orderAndPayOnline(){
 
 // 💵 Ordina & paga in cassa (intero)
 async function orderPayAtCounter(){
-  alert("CLICK CASSA");    // 👈 DEBUG
   const saved = await createOrder();
   if(!saved) return;
   alert(t("order_sent_counter"));
