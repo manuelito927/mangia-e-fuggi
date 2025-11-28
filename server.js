@@ -819,8 +819,8 @@ app.post(
   }
 );
 
-// === MODIFICA PRODOTTO ESISTENTE ===
-app.post("/admin/menu-json/update-item", upload.single("image"), async (req, res) => {
+// === MODIFICA PRODOTTO ESISTENTE (usa /public/uploads come add-item) ===
+app.post('/admin/menu-json/update-item', upload.single('image'), async (req, res) => {
   try {
     const {
       id,
@@ -834,44 +834,39 @@ app.post("/admin/menu-json/update-item", upload.single("image"), async (req, res
 
     const itemId = Number(id);
     if (!itemId || !name) {
-      return res.status(400).json({ ok: false, error: "missing_id_or_name" });
+      return res.status(400).json({ ok: false, error: 'missing_id_or_name' });
     }
 
-    // 1) Leggo l'immagine attuale dal DB
-    let currentImage = null;
+    // 1) prendo l'immagine già salvata, se esiste
+    let image_url = null;
     const { data: existing, error: exErr } = await supabase
-      .from("menu_items")
-      .select("image_url")
-      .eq("id", itemId)
+      .from('menu_items')
+      .select('image_url')
+      .eq('id', itemId)
       .single();
 
     if (!exErr && existing) {
-      currentImage = existing.image_url || null;
+      image_url = existing.image_url || null;
     }
 
-    let image_url = currentImage;
-
-    // 2) Se carichi una NUOVA immagine, la salvo in /public/uploads
+    // 2) se l'utente ha caricato UNA NUOVA immagine, la salvo in /public/uploads
     if (req.file) {
-      const ext = path.extname(req.file.originalname || "");
-      const finalName = req.file.filename + ext;      // es: abc123.jpg
+      const ext = path.extname(req.file.originalname || '');
+      const finalName = req.file.filename + ext;       // es: abc123.jpg
       const finalPath = path.join(uploadDir, finalName);
+      fs.renameSync(req.file.path, finalPath);         // sposta il file e aggiunge estensione
 
-      // sposto il file nella cartella definitiva
-      fs.renameSync(req.file.path, finalPath);
-
-      // URL che salvo nel DB
-      image_url = "/uploads/" + finalName;
+      image_url = '/uploads/' + finalName;             // nuovo URL da salvare nel DB
     }
 
-    // 3) Campi da aggiornare
+    // 3) preparo i dati da aggiornare
     const patch = {
-      name,
-      description: description || "",
-      price: Number(String(price).replace(",", ".")) || 0,
+      name: name.trim(),
+      description: description || '',
+      price: Number(String(price).replace(',', '.')) || 0,
       sort_order: Number(sort_order) || 0,
-      is_available: !(is_available === "false" || is_available === "0"),
-      image_url    // 👉 qui mettiamo SEMPRE l'immagine che abbiamo deciso sopra
+      is_available: !(is_available === 'false' || is_available === '0'),
+      image_url
     };
 
     if (category_id) {
@@ -879,21 +874,21 @@ app.post("/admin/menu-json/update-item", upload.single("image"), async (req, res
     }
 
     const { data, error } = await supabase
-      .from("menu_items")
+      .from('menu_items')
       .update(patch)
-      .eq("id", itemId)
+      .eq('id', itemId)
       .select()
       .single();
 
     if (error) {
-      console.error("update-item error:", error);
-      return res.status(500).json({ ok: false, error: "db_error" });
+      console.error('update-item error:', error);
+      return res.status(500).json({ ok: false, error: 'db_error' });
     }
 
-    res.json({ ok: true, item: data });
+    return res.json({ ok: true, item: data });
   } catch (e) {
-    console.error("update-item exception:", e);
-    res.status(500).json({ ok: false, error: "server_error" });
+    console.error('update-item exception:', e);
+    return res.status(500).json({ ok: false, error: 'server_error' });
   }
 });
 
