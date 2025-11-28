@@ -755,81 +755,64 @@ app.post("/admin/menu-json/add-category", async (req, res) => {
   }
 });
 
-// === AGGIUNGI PRODOTTO (con salvataggio immagine) ===
-// === AGGIUNGI PRODOTTO (con upload su Supabase Storage) ===
-app.post(
-  "/admin/menu-json/add-item",
-  upload.single("image"),
-  async (req, res) => {
-    try {
-      const {
-        category_id,
-        name,
-        description,
-        price,
-        sort_order,
-        is_available
-      } = req.body || {};
+// === AGGIUNGI PRODOTTO (salva immagine in /public/uploads) ===
+app.post("/admin/menu-json/add-item", upload.single("image"), async (req, res) => {
+  try {
+    const {
+      category_id,
+      name,
+      description,
+      price,
+      sort_order,
+      is_available
+    } = req.body || {};
 
-      if (!category_id || !name) {
-        return res.status(400).json({ ok: false, error: "missing_category_or_name" });
-      }
-
-      let image_url = null;
-
-      // Se il ristoratore ha caricato una foto
-      if (req.file) {
-        const file = req.file;
-        const ext  = (file.originalname.split(".").pop() || "jpg").toLowerCase();
-        const pathKey = `items/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-
-        const { error: upErr } = await supabase.storage
-          .from("menu-images") // 👈 NOME DEL BUCKET
-          .upload(pathKey, file.buffer, {
-            contentType: file.mimetype,
-            cacheControl: "3600",
-            upsert: false
-          });
-
-        if (upErr) {
-          console.error("Errore upload immagine:", upErr);
-        } else {
-          const { data: pub } = supabase.storage
-            .from("menu-images")
-            .getPublicUrl(pathKey);
-          image_url = pub?.publicUrl || null;
-        }
-      }
-
-      const row = {
-        category_id: Number(category_id),
-        name: name.trim(),
-        description: description || "",
-        price: Number(String(price).replace(",", ".")) || 0,
-        sort_order: Number(sort_order) || 0,
-        is_available: !(is_available === "false" || is_available === "0"),
-        image_url    // 👈 URL completo su Supabase
-      };
-
-      const { data, error } = await supabase
-        .from("menu_items")
-        .insert([row])
-        .select()
-        .single();
-
-      if (error) {
-        console.error("add-item error:", error);
-        return res.status(500).json({ ok: false, error: "db_error" });
-      }
-
-      return res.json({ ok: true, item: data });
-    } catch (e) {
-      console.error("add-item exception:", e);
-      return res.status(500).json({ ok: false, error: "server_error" });
+    if (!category_id || !name) {
+      return res.status(400).json({ ok: false, error: "missing_category_or_name" });
     }
-  }
-);
 
+    let image_url = null;
+
+    // Se è stata caricata un'immagine, la rinominiamo aggiungendo l'estensione
+    if (req.file) {
+      const ext = path.extname(req.file.originalname || "");
+      const finalName = req.file.filename + ext;          // es: abc123.jpg
+      const finalPath = path.join(uploadDir, finalName);  // /public/uploads/abc123.jpg
+
+      // sposta/ritaglia il file al nome definitivo
+      fs.renameSync(req.file.path, finalPath);
+
+      // URL che il browser userà per caricare l'immagine
+      image_url = "/uploads/" + finalName;
+    }
+
+    const row = {
+      category_id: Number(category_id),
+      name: name.trim(),
+      description: description || "",
+      price: Number(String(price).replace(",", ".")) || 0,
+      sort_order: Number(sort_order) || 0,
+      is_available: !(is_available === "false" || is_available === "0"),
+      image_url
+    };
+
+    const { data, error } = await supabase
+      .from("menu_items")
+      .insert([row])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("add-item error:", error);
+      return res.status(500).json({ ok: false, error: "db_error" });
+    }
+
+    return res.json({ ok: true, item: data });
+  } catch (e) {
+    console.error("add-item exception:", e);
+    return res.status(500).json({ ok: false, error: "server_error" });
+  }
+});
 // === MODIFICA PRODOTTO ESISTENTE (usa /public/uploads come add-item) ===
 app.post('/admin/menu-json/update-item', upload.single('image'), async (req, res) => {
   try {
