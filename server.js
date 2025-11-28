@@ -745,9 +745,10 @@ app.post("/admin/menu-json/add-category", async (req, res) => {
 });
 
 // === AGGIUNGI PRODOTTO (con salvataggio immagine) ===
+// === AGGIUNGI PRODOTTO (con upload su Supabase Storage) ===
 app.post(
-  '/admin/menu-json/add-item',
-  upload.single('image'),
+  "/admin/menu-json/add-item",
+  upload.single("image"),
   async (req, res) => {
     try {
       const {
@@ -760,47 +761,60 @@ app.post(
       } = req.body || {};
 
       if (!category_id || !name) {
-        return res.status(400).json({ ok: false, error: 'missing_category_or_name' });
+        return res.status(400).json({ ok: false, error: "missing_category_or_name" });
       }
 
       let image_url = null;
 
       // Se il ristoratore ha caricato una foto
       if (req.file) {
-        const ext = path.extname(req.file.originalname || '');
-        const finalName = req.file.filename + ext;       // es: abc123.jpg
-        const finalPath = path.join(uploadDir, finalName);
-        fs.renameSync(req.file.path, finalPath);         // rinomina file con estensione
+        const file = req.file;
+        const ext  = (file.originalname.split(".").pop() || "jpg").toLowerCase();
+        const pathKey = `items/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
-        // URL che salviamo nel DB e che il frontend userà
-        image_url = '/uploads/' + finalName;
+        const { error: upErr } = await supabase.storage
+          .from("menu-images") // 👈 NOME DEL BUCKET
+          .upload(pathKey, file.buffer, {
+            contentType: file.mimetype,
+            cacheControl: "3600",
+            upsert: false
+          });
+
+        if (upErr) {
+          console.error("Errore upload immagine:", upErr);
+        } else {
+          const { data: pub } = supabase.storage
+            .from("menu-images")
+            .getPublicUrl(pathKey);
+          image_url = pub?.publicUrl || null;
+        }
       }
 
       const row = {
         category_id: Number(category_id),
         name: name.trim(),
-        description: description || '',
-        price: Number(String(price).replace(',', '.')) || 0,
+        description: description || "",
+        price: Number(String(price).replace(",", ".")) || 0,
         sort_order: Number(sort_order) || 0,
-        is_available: !(is_available === 'false' || is_available === '0'),
-        image_url
+        is_available: !(is_available === "false" || is_available === "0"),
+        image_url    // 👈 URL completo su Supabase
       };
 
       const { data, error } = await supabase
-        .from('menu_items')
+        .from("menu_items")
         .insert([row])
         .select()
         .single();
 
       if (error) {
-        console.error('add-item error:', error);
-        return res.status(500).json({ ok: false, error: 'db_error' });
+        console.error("add-item error:", error);
+        return res.status(500).json({ ok: false, error: "db_error" });
       }
 
       return res.json({ ok: true, item: data });
     } catch (e) {
-      console.error('add-item exception:', e);
-      return res.status(500).json({ ok: false, error: 'server_error' });
+      console.error("add-item exception:", e);
+      return res.status(500).json({ ok: false, error: "server_error" });
     }
   }
 );
