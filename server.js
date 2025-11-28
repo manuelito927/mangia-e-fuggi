@@ -27,7 +27,7 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // multer salverà i file dentro /public/uploads
-mconst upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage() });
 
 // rende raggiungibili le immagini come /uploads/filename.jpg
 app.use("/uploads", express.static(uploadDir));
