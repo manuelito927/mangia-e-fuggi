@@ -20,15 +20,26 @@ const __dirname  = path.dirname(__filename);
 const app = express();
 
 // ===== Upload immagini prodotti =====
+// ===== Upload immagini prodotti =====
 const uploadDir = path.join(__dirname, "public", "uploads");
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// multer salverà i file dentro /public/uploads
-const upload = multer({ storage: multer.memoryStorage() });
+// multer salverà i file su disco in /public/uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // nome file casuale, senza spazi
+    const unique = Date.now() + "_" + Math.random().toString(36).slice(2);
+    cb(null, unique);
+  }
+});
 
+const upload = multer({ storage });
 // rende raggiungibili le immagini come /uploads/filename.jpg
 app.use("/uploads", express.static(uploadDir));
 
