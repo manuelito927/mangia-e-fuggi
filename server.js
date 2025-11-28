@@ -912,27 +912,6 @@ app.post("/admin/menu-json/delete-item", async (req, res) => {
   }
 });
 
-// === ELIMINA SOLO UN PRODOTTO ===
-app.post("/admin/menu-json/delete-item", async (req, res) => {
-  try {
-    const { id } = req.body || {};
-    const itemId = Number(id);
-    if (!itemId) {
-      return res.status(400).json({ ok: false, error: "missing_id" });
-    }
-
-    const { error } = await supabase
-      .from("menu_items")
-      .delete()
-      .eq("id", itemId);
-
-    if (error) throw error;
-    res.json({ ok: true });
-  } catch (e) {
-    console.error("delete-item error:", e);
-    res.status(500).json({ ok: false, error: "delete_item_failed" });
-  }
-});
 
 // ====== MENU PUBBLICO PER LA PAGINA CLIENTE ======
 app.get("/api/menu", async (_req, res) => {
