@@ -813,8 +813,8 @@ app.post("/admin/menu-json/add-item", upload.single("image"), async (req, res) =
     return res.status(500).json({ ok: false, error: "server_error" });
   }
 });
-// === MODIFICA PRODOTTO ESISTENTE (usa /public/uploads come add-item) ===
-app.post('/admin/menu-json/update-item', upload.single('image'), async (req, res) => {
+// === MODIFICA PRODOTTO ESISTENTE (Supabase Storage) ===
+app.post("/admin/menu-json/update-item", upload.single("image"), async (req, res) => {
   try {
     const {
       id,
@@ -828,38 +828,52 @@ app.post('/admin/menu-json/update-item', upload.single('image'), async (req, res
 
     const itemId = Number(id);
     if (!itemId || !name) {
-      return res.status(400).json({ ok: false, error: 'missing_id_or_name' });
+      return res.status(400).json({ ok: false, error: "missing_id_or_name" });
     }
 
     // 1) prendo l'immagine già salvata, se esiste
     let image_url = null;
     const { data: existing, error: exErr } = await supabase
-      .from('menu_items')
-      .select('image_url')
-      .eq('id', itemId)
+      .from("menu_items")
+      .select("image_url")
+      .eq("id", itemId)
       .single();
 
     if (!exErr && existing) {
       image_url = existing.image_url || null;
     }
 
-    // 2) se l'utente ha caricato UNA NUOVA immagine, la salvo in /public/uploads
+    // 2) se l'utente ha caricato UNA NUOVA immagine, la mando su Supabase Storage
     if (req.file) {
-      const ext = path.extname(req.file.originalname || '');
-      const finalName = req.file.filename + ext;       // es: abc123.jpg
-      const finalPath = path.join(uploadDir, finalName);
-      fs.renameSync(req.file.path, finalPath);         // sposta il file e aggiunge estensione
+      const file = req.file;
+      const ext  = (file.originalname.split(".").pop() || "jpg").toLowerCase();
+      const pathKey = `items/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
-      image_url = '/uploads/' + finalName;             // nuovo URL da salvare nel DB
+      const { error: upErr } = await supabase.storage
+        .from("menu-images")   // stesso bucket di add-item
+        .upload(pathKey, file.buffer, {
+          contentType: file.mimetype,
+          cacheControl: "3600",
+          upsert: false
+        });
+
+      if (upErr) {
+        console.error("Errore upload immagine (update):", upErr);
+      } else {
+        const { data: pub } = supabase.storage
+          .from("menu-images")
+          .getPublicUrl(pathKey);
+        image_url = pub?.publicUrl || image_url;
+      }
     }
 
     // 3) preparo i dati da aggiornare
     const patch = {
       name: name.trim(),
-      description: description || '',
-      price: Number(String(price).replace(',', '.')) || 0,
+      description: description || "",
+      price: Number(String(price).replace(",", ".")) || 0,
       sort_order: Number(sort_order) || 0,
-      is_available: !(is_available === 'false' || is_available === '0'),
+      is_available: !(is_available === "false" || is_available === "0"),
       image_url
     };
 
@@ -868,24 +882,23 @@ app.post('/admin/menu-json/update-item', upload.single('image'), async (req, res
     }
 
     const { data, error } = await supabase
-      .from('menu_items')
+      .from("menu_items")
       .update(patch)
-      .eq('id', itemId)
+      .eq("id", itemId)
       .select()
       .single();
 
     if (error) {
-      console.error('update-item error:', error);
-      return res.status(500).json({ ok: false, error: 'db_error' });
+      console.error("update-item error:", error);
+      return res.status(500).json({ ok: false, error: "db_error" });
     }
 
     return res.json({ ok: true, item: data });
   } catch (e) {
-    console.error('update-item exception:', e);
-    return res.status(500).json({ ok: false, error: 'server_error' });
+    console.error("update-item exception:", e);
+    return res.status(500).json({ ok: false, error: "server_error" });
   }
 });
-
 // === ELIMINA SOLO UN PRODOTTO ===
 app.post("/admin/menu-json/delete-item", async (req, res) => {
   try {
