@@ -813,7 +813,7 @@ app.post("/admin/menu-json/add-item", upload.single("image"), async (req, res) =
     return res.status(500).json({ ok: false, error: "server_error" });
   }
 });
-// === MODIFICA PRODOTTO ESISTENTE (Supabase Storage) ===
+// === MODIFICA PRODOTTO ESISTENTE (upload su Supabase Storage) ===
 app.post("/admin/menu-json/update-item", upload.single("image"), async (req, res) => {
   try {
     const {
@@ -831,26 +831,27 @@ app.post("/admin/menu-json/update-item", upload.single("image"), async (req, res
       return res.status(400).json({ ok: false, error: "missing_id_or_name" });
     }
 
-    // 1) prendo l'immagine già salvata, se esiste
-    let image_url = null;
+    // prendo eventuale immagine già salvata
+    let currentImage = null;
     const { data: existing, error: exErr } = await supabase
       .from("menu_items")
       .select("image_url")
       .eq("id", itemId)
-      .single();
-
+      .maybeSingle();
     if (!exErr && existing) {
-      image_url = existing.image_url || null;
+      currentImage = existing.image_url || null;
     }
 
-    // 2) se l'utente ha caricato UNA NUOVA immagine, la mando su Supabase Storage
+    let image_url = currentImage;
+
+    // se c'è un nuovo file, lo carico su Supabase e sostituisco
     if (req.file) {
       const file = req.file;
       const ext  = (file.originalname.split(".").pop() || "jpg").toLowerCase();
       const pathKey = `items/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
       const { error: upErr } = await supabase.storage
-        .from("menu-images")   // stesso bucket di add-item
+        .from("menu-images") // stesso bucket di add-item
         .upload(pathKey, file.buffer, {
           contentType: file.mimetype,
           cacheControl: "3600",
@@ -858,7 +859,7 @@ app.post("/admin/menu-json/update-item", upload.single("image"), async (req, res
         });
 
       if (upErr) {
-        console.error("Errore upload immagine (update):", upErr);
+        console.error("Errore upload immagine update:", upErr);
       } else {
         const { data: pub } = supabase.storage
           .from("menu-images")
@@ -867,7 +868,6 @@ app.post("/admin/menu-json/update-item", upload.single("image"), async (req, res
       }
     }
 
-    // 3) preparo i dati da aggiornare
     const patch = {
       name: name.trim(),
       description: description || "",
