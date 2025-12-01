@@ -564,7 +564,7 @@ btnEdit.onclick = () => startEditItem(it.id, row);
   }
 }
 
-function startEditItem(id) {
+function startEditItem(id, rowEl) {
   const it = MENU_ITEMS.find(x => x.id === id);
   if (!it) return;
 
@@ -583,6 +583,12 @@ function startEditItem(id) {
   }
   const btn = $('#btnAddItem');
   if (btn) btn.textContent = '💾 Salva modifiche';
+
+  // 👇 sposta il form sotto la riga che hai cliccato
+  if (rowEl) {
+    moveEditorBelowRow(rowEl);
+    rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 function resetItemForm() {
