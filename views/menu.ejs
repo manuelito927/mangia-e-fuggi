@@ -516,26 +516,6 @@
       renderCart();
     }
 
-// ❌ Rimuove completamente un prodotto dal carrello
-  const key = String(name);
-
-  // 1) togli il prodotto dalla mappa
-  cart.delete(key);
-
-  // 2) azzera il numerino nel menu
-  const qEl = document.getElementById('q-' + cssId(name));
-  if (qEl) qEl.textContent = '0';
-
-  // 3) svuota la nota del prodotto nel menu
-  document.querySelectorAll('.note-inline').forEach(input => {
-    if (input.dataset.itemName === name) {
-      input.value = '';
-    }
-  });
-
-  // 4) ridisegna il carrello (aggiorna totale + bottoni)
-  renderCart();
-}
 
 // Render carrello (mostra la nota e aggiunge il bottone ❌)
 function renderCart(){
