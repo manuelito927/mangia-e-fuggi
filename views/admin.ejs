@@ -605,6 +605,9 @@ function resetItemForm() {
   if (msg) msg.textContent = '';
   const btn = $('#btnAddItem');
   if (btn) btn.textContent = '+ Aggiungi prodotto';
+
+  // 👇 rimetti l'editor in alto nella card Prodotti
+  resetEditorPosition();
 }
 
 async function deleteItem(id) {
