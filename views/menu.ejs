@@ -794,6 +794,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (tabCustom)
     tabCustom.addEventListener("click", () => setSplitMode('custom'));
+
+  // 🔀 Modalità ordine: Al tavolo / Da casa
+  document.querySelectorAll('.mode-btn').forEach(btn=>{
+    btn.addEventListener('click', () => {
+      setOrderMode(btn.dataset.mode);
+    });
+  });
+
+  // Stato grafico iniziale (di default "al tavolo")
+  updateOrderModeUI();
 });
 
     // ======= DIVIDI & PAGA =======
