@@ -692,11 +692,39 @@ async function createOrder(){
 
   const total = items.reduce((s,i)=>s+i.price*i.qty,0);
 
+  let tableCode = null;
+  const payload = { items, total, mode: ORDER_MODE };
+
+  if(ORDER_MODE === 'home'){
+    const name  = document.getElementById('homeName')?.value.trim();
+    const phone = document.getElementById('homePhone')?.value.trim();
+    const note  = document.getElementById('homeNote')?.value.trim();
+
+    if(!name || !phone){
+      alert('Per ordinare da casa inserisci almeno nome e telefono.');
+      return null;
+    }
+
+    // Etichetta che vedrai in dashboard al posto del tavolo
+    tableCode = 'ASPORTO';
+
+    payload.customer = {
+      name,
+      phone,
+      note: note || null
+    };
+  } else {
+    // per ora, dal tavolo generico senza codice (se hai già QR per tavolo, poi lo metti qui)
+    tableCode = null;
+  }
+
+  payload.tableCode = tableCode;
+
   try {
     const r = await fetch("/api/checkout",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ tableCode:null, items, total })
+      body:JSON.stringify(payload)
     });
 
     const text = await r.text();
