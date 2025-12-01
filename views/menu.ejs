@@ -1014,9 +1014,13 @@ document.addEventListener("click", (ev) => {
             controls.appendChild(btnPlus);
 
             const noteInput = document.createElement('input');
-            noteInput.className = 'note-inline';
-            noteInput.placeholder = 'Nota (es. senza cipolla)';
-            noteInput.addEventListener('input', () => setNote(it.name, noteInput.value));
+noteInput.className = 'note-inline';
+noteInput.placeholder = 'Nota (es. senza cipolla)';
+
+// 👇 NUOVA RIGA
+noteInput.dataset.itemName = it.name;
+
+noteInput.addEventListener('input', () => setNote(it.name, noteInput.value));
 
             qtyBox.appendChild(controls);
             qtyBox.appendChild(noteInput);
