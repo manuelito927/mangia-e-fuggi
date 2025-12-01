@@ -919,7 +919,7 @@ document.addEventListener("click", (ev) => {
     }
   </script>
 
-  <script>
+   <script>
     async function loadPublicMenu() {
       const root = document.getElementById('menu-app');
       if (!root) return;
@@ -929,27 +929,29 @@ document.addEventListener("click", (ev) => {
       try {
         const res = await fetch('/api/menu');
         if (!res.ok) throw new Error('bad_response');
-        const { ok, categories, items } = await res.json();
-        if (!ok) throw new Error('menu_not_ok');
 
-        if (!categories || !categories.length) {
+        const data = await res.json();
+        if (!data.ok) throw new Error('menu_not_ok');
+
+        const categories = Array.isArray(data.categories) ? data.categories : [];
+        const items      = Array.isArray(data.items)      ? data.items      : [];
+
+        if (!categories.length) {
           root.innerHTML = '<p class="muted">Menù non ancora configurato.</p>';
           return;
         }
 
-        // Ordina le categorie per sort_order (vuote in fondo) e poi per id
-        categories.sort((a, b) => {
-          const sa = (a.sort_order == null ? 9999 : a.sort_order);
-          const sb = (b.sort_order == null ? 9999 : b.sort_order);
-          if (sa !== sb) return sa - sb;
-          return (a.id || 0) - (b.id || 0);
-        });
+        // ordina e filtra categorie attive
+        const cats = categories
+          .filter(c => c && c.is_active !== false)
+          .sort((a, b) => {
+            const sa = (a.sort_order == null ? 9999 : a.sort_order);
+            const sb = (b.sort_order == null ? 9999 : b.sort_order);
+            if (sa !== sb) return sa - sb;
+            return (a.id || 0) - (b.id || 0);
+          });
 
-        const cats = [...categories]
-          .filter(c => c.is_active !== false)
-          .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-
-        root.innerHTML = '';
+        root.innerHTML = "";
 
         cats.forEach(cat => {
           const section = document.createElement('section');
@@ -960,7 +962,7 @@ document.addEventListener("click", (ev) => {
           h2.textContent = cat.name;
           section.appendChild(h2);
 
-          const catItems = (items || []).filter(
+          const catItems = items.filter(
             it => it.category_id === cat.id && (it.is_available !== false)
           );
 
@@ -973,7 +975,6 @@ document.addEventListener("click", (ev) => {
             return;
           }
 
-          // ------- RIGHE PRODOTTI (con immagine opzionale) -------
           catItems.forEach(it => {
             const row = document.createElement('div');
             row.className = 'menu-row';
@@ -984,13 +985,13 @@ document.addEventListener("click", (ev) => {
             row.style.padding = '8px 0';
             row.style.borderTop = '1px solid #eee';
 
-            // SINISTRA: immagine (se c'è) + testo
+            // SINISTRA: immagine + testo
             const left = document.createElement('div');
             left.style.display = 'flex';
             left.style.gap = '10px';
             left.style.alignItems = 'flex-start';
 
-            // immagine prodotto
+            // immagine, se presente
             if (it.image_url) {
               const imgBox = document.createElement('div');
               imgBox.style.flexShrink = '0';
@@ -1012,7 +1013,6 @@ document.addEventListener("click", (ev) => {
               left.appendChild(imgBox);
             }
 
-            // testo (nome + descrizione)
             const textBox = document.createElement('div');
             textBox.style.flex = '1';
 
@@ -1037,7 +1037,7 @@ document.addEventListener("click", (ev) => {
 
             left.appendChild(textBox);
 
-            // DESTRA: pulsanti quantità + nota
+            // DESTRA: +/– e nota
             const qtyBox = document.createElement('div');
             qtyBox.className = 'i-qty';
             qtyBox.style.display = 'flex';
@@ -1073,13 +1073,9 @@ document.addEventListener("click", (ev) => {
             controls.appendChild(btnPlus);
 
             const noteInput = document.createElement('input');
-noteInput.className = 'note-inline';
-noteInput.placeholder = 'Nota (es. senza cipolla)';
-
-// 👇 NUOVA RIGA
-noteInput.dataset.itemName = it.name;
-
-noteInput.addEventListener('input', () => setNote(it.name, noteInput.value));
+            noteInput.className = 'note-inline';
+            noteInput.placeholder = 'Nota (es. senza cipolla)';
+            noteInput.addEventListener('input', () => setNote(it.name, noteInput.value));
 
             qtyBox.appendChild(controls);
             qtyBox.appendChild(noteInput);
@@ -1092,11 +1088,12 @@ noteInput.addEventListener('input', () => setNote(it.name, noteInput.value));
           root.appendChild(section);
         });
 
+        // traduzioni nomi/descrizioni
         if (typeof applyI18n === 'function') {
           applyI18n();
         }
       } catch (e) {
-        console.error(e);
+        console.error('loadPublicMenu error', e);
         root.innerHTML = '<p class="muted">Errore nel caricamento del menù.</p>';
       }
     }
