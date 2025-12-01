@@ -300,6 +300,23 @@ let MENU_CATEGORIES = [];
 let MENU_ITEMS = [];
 let editingItemId = null;
 
+// 🔁 Gestione editor prodotti "mobile"
+const productEditor = document.getElementById('productEditor');
+let productEditorHomeParent = productEditor ? productEditor.parentElement : null;
+let productEditorHomeNextSibling = productEditor ? productEditor.nextElementSibling : null;
+
+// sposta il blocco editor subito sotto la riga passata
+function moveEditorBelowRow(rowEl){
+  if (!productEditor || !rowEl) return;
+  rowEl.insertAdjacentElement('afterend', productEditor);
+}
+
+// rimette l'editor al suo posto originale in alto
+function resetEditorPosition(){
+  if (!productEditor || !productEditorHomeParent) return;
+  productEditorHomeParent.insertBefore(productEditor, productEditorHomeNextSibling);
+}
+
 async function loadMenu() {
   const ul        = $('#menuCategories');
   const catSelect = $('#itemCategory');
