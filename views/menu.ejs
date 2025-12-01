@@ -484,6 +484,39 @@ let ORDER_MODE = 'table';
         : `<span class="warn">${t("pay_disabled_note")}</span>`;
     }
 
+function updateOrderModeUI(){
+  const help    = document.getElementById('mode-help');
+  const homeBox = document.getElementById('home-fields');
+  const btns    = document.querySelectorAll('.mode-btn');
+
+  btns.forEach(b=>{
+    b.classList.toggle('active', b.dataset.mode === ORDER_MODE);
+  });
+
+  if(help){
+    if(ORDER_MODE === 'table'){
+      help.innerHTML = 'Stai ordinando <b>al tavolo</b>. Il personale porterà l’ordine dove sei seduto.';
+    }else{
+      help.innerHTML = 'Stai ordinando <b>da casa</b>. Indica i tuoi dati per il ritiro/pagamento.';
+    }
+  }
+
+  if(homeBox){
+    homeBox.style.display = (ORDER_MODE === 'home') ? 'block' : 'none';
+  }
+
+  // opzionale: nascondi "Dividi & paga" se da casa non ti serve
+  const btnSplit = document.getElementById('btn-split');
+  if(btnSplit){
+    btnSplit.style.display = (ORDER_MODE === 'home') ? 'none' : 'block';
+  }
+}
+
+function setOrderMode(mode){
+  ORDER_MODE = (mode === 'home') ? 'home' : 'table';
+  updateOrderModeUI();
+}
+
     // Utils
     function cssId(s){
       return String(s).toLowerCase().replace(/[^a-z0-9]+/gi,'_');
