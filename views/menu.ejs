@@ -588,7 +588,7 @@ function renderCart(){
     btn.type = "button";
     btn.className = "btn btn-ghost";
     btn.textContent = "✕";
-    btn.addEventListener('click', () => removeFromCart(n));
+btn.addEventListener('click', () => dec(n));
 
     rightBox.appendChild(priceEl);
     rightBox.appendChild(btn);
