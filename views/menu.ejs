@@ -919,187 +919,186 @@ document.addEventListener("click", (ev) => {
     }
   </script>
 
-   <script>
-    async function loadPublicMenu() {
-      const root = document.getElementById('menu-app');
-      if (!root) return;
+<script>
+  async function loadPublicMenu() {
+    const root = document.getElementById('menu-app');
+    if (!root) return;
 
-      root.innerHTML = '<p class="muted">Caricamento menù…</p>';
+    root.innerHTML = '<p class="muted">Caricamento menù…</p>';
 
-      try {
-        const res = await fetch('/api/menu');
-        if (!res.ok) throw new Error('bad_response');
+    try {
+      const res = await fetch('/api/menu');
+      if (!res.ok) throw new Error('bad_response');
+      const { ok, categories, items } = await res.json();
+      if (!ok) throw new Error('menu_not_ok');
 
-        const data = await res.json();
-        if (!data.ok) throw new Error('menu_not_ok');
+      if (!categories || !categories.length) {
+        root.innerHTML = '<p class="muted">Menù non ancora configurato.</p>';
+        return;
+      }
 
-        const categories = Array.isArray(data.categories) ? data.categories : [];
-        const items      = Array.isArray(data.items)      ? data.items      : [];
+      // Ordina le categorie per sort_order (vuote in fondo) e poi per id
+      categories.sort((a, b) => {
+        const sa = (a.sort_order == null ? 9999 : a.sort_order);
+        const sb = (b.sort_order == null ? 9999 : b.sort_order);
+        if (sa !== sb) return sa - sb;
+        return (a.id || 0) - (b.id || 0);
+      });
 
-        if (!categories.length) {
-          root.innerHTML = '<p class="muted">Menù non ancora configurato.</p>';
+      const cats = [...categories]
+        .filter(c => c.is_active !== false)
+        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+      root.innerHTML = '';
+
+      cats.forEach(cat => {
+        const section = document.createElement('section');
+        section.className = 'card';
+        section.style.marginBottom = '12px';
+
+        const h2 = document.createElement('h2');
+        h2.textContent = cat.name;
+        section.appendChild(h2);
+
+        const catItems = (items || []).filter(
+          it => it.category_id === cat.id && (it.is_available !== false)
+        );
+
+        if (!catItems.length) {
+          const p = document.createElement('p');
+          p.className = 'muted';
+          p.textContent = 'Nessun prodotto disponibile in questa categoria.';
+          section.appendChild(p);
+          root.appendChild(section);
           return;
         }
 
-        // ordina e filtra categorie attive
-        const cats = categories
-          .filter(c => c && c.is_active !== false)
-          .sort((a, b) => {
-            const sa = (a.sort_order == null ? 9999 : a.sort_order);
-            const sb = (b.sort_order == null ? 9999 : b.sort_order);
-            if (sa !== sb) return sa - sb;
-            return (a.id || 0) - (b.id || 0);
-          });
+        // ------- RIGHE PRODOTTI (con immagine opzionale) -------
+        catItems.forEach(it => {
+          const row = document.createElement('div');
+          row.className = 'menu-row';
+          row.style.display = 'flex';
+          row.style.justifyContent = 'space-between';
+          row.style.gap = '10px';
+          row.style.alignItems = 'flex-start';
+          row.style.padding = '8px 0';
+          row.style.borderTop = '1px solid #eee';
 
-        root.innerHTML = "";
+          // SINISTRA: immagine (se c'è) + testo
+          const left = document.createElement('div');
+          left.style.display = 'flex';
+          left.style.gap = '10px';
+          left.style.alignItems = 'flex-start';
 
-        cats.forEach(cat => {
-          const section = document.createElement('section');
-          section.className = 'card';
-          section.style.marginBottom = '12px';
+          // immagine prodotto
+          if (it.image_url) {
+            const imgBox = document.createElement('div');
+            imgBox.style.flexShrink = '0';
 
-          const h2 = document.createElement('h2');
-          h2.textContent = cat.name;
-          section.appendChild(h2);
+            const img = document.createElement('img');
+            img.src = it.image_url;
+            img.alt = it.name;
+            img.loading = 'lazy';
+            img.style.width = '72px';
+            img.style.height = '72px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '10px';
+            img.style.border = '1px solid #eee';
+            img.onerror = function () {
+              this.style.display = 'none';
+            };
 
-          const catItems = items.filter(
-            it => it.category_id === cat.id && (it.is_available !== false)
-          );
-
-          if (!catItems.length) {
-            const p = document.createElement('p');
-            p.className = 'muted';
-            p.textContent = 'Nessun prodotto disponibile in questa categoria.';
-            section.appendChild(p);
-            root.appendChild(section);
-            return;
+            imgBox.appendChild(img);
+            left.appendChild(imgBox);
           }
 
-          catItems.forEach(it => {
-            const row = document.createElement('div');
-            row.className = 'menu-row';
-            row.style.display = 'flex';
-            row.style.justifyContent = 'space-between';
-            row.style.gap = '10px';
-            row.style.alignItems = 'flex-start';
-            row.style.padding = '8px 0';
-            row.style.borderTop = '1px solid #eee';
+          // testo (nome + descrizione)
+          const textBox = document.createElement('div');
+          textBox.style.flex = '1';
 
-            // SINISTRA: immagine + testo
-            const left = document.createElement('div');
-            left.style.display = 'flex';
-            left.style.gap = '10px';
-            left.style.alignItems = 'flex-start';
+          const nameEl = document.createElement('div');
+          nameEl.className = 'item-name';
+          nameEl.textContent = it.name;
+          nameEl.setAttribute('data-i18n-name', it.name);
+          textBox.appendChild(nameEl);
 
-            // immagine, se presente
-            if (it.image_url) {
-              const imgBox = document.createElement('div');
-              imgBox.style.flexShrink = '0';
+          if (it.description) {
+            const descWrap = document.createElement('div');
+            descWrap.className = 'item-desc';
 
-              const img = document.createElement('img');
-              img.src = it.image_url;
-              img.alt = it.name;
-              img.loading = 'lazy';
-              img.style.width = '72px';
-              img.style.height = '72px';
-              img.style.objectFit = 'cover';
-              img.style.borderRadius = '10px';
-              img.style.border = '1px solid #eee';
-              img.onerror = function () {
-                this.style.display = 'none';
-              };
+            const em = document.createElement('em');
+            const flatDesc = String(it.description).replace(/\s*\n\s*/g, ', ');
+            em.textContent = flatDesc;
+            em.setAttribute('data-i18n-desc', it.description);
 
-              imgBox.appendChild(img);
-              left.appendChild(imgBox);
-            }
+            descWrap.appendChild(em);
+            textBox.appendChild(descWrap);
+          }
 
-            const textBox = document.createElement('div');
-            textBox.style.flex = '1';
+          left.appendChild(textBox);
 
-            const nameEl = document.createElement('div');
-            nameEl.className = 'item-name';
-            nameEl.textContent = it.name;
-            nameEl.setAttribute('data-i18n-name', it.name);
-            textBox.appendChild(nameEl);
+          // DESTRA: pulsanti quantità + nota
+          const qtyBox = document.createElement('div');
+          qtyBox.className = 'i-qty';
+          qtyBox.style.display = 'flex';
+          qtyBox.style.flexDirection = 'column';
+          qtyBox.style.alignItems = 'flex-end';
+          qtyBox.style.gap = '4px';
 
-            if (it.description) {
-              const descWrap = document.createElement('div');
-              descWrap.className = 'item-desc';
+          const controls = document.createElement('div');
+          controls.style.display = 'flex';
+          controls.style.alignItems = 'center';
+          controls.style.gap = '6px';
 
-              const em = document.createElement('em');
-              const flatDesc = String(it.description).replace(/\s*\n\s*/g, ', ');
-              em.textContent = flatDesc;
-              em.setAttribute('data-i18n-desc', it.description);
+          const btnMinus = document.createElement('button');
+          btnMinus.type = 'button';
+          btnMinus.className = 'btn btn-ghost';
+          btnMinus.textContent = '−';
+          btnMinus.addEventListener('click', () => dec(it.name));
 
-              descWrap.appendChild(em);
-              textBox.appendChild(descWrap);
-            }
+          const qtySpan = document.createElement('span');
+          qtySpan.className = 'qv';
+          const idSafe = cssId(it.name);
+          qtySpan.id = 'q-' + idSafe;
+          qtySpan.textContent = '0';
 
-            left.appendChild(textBox);
+          const btnPlus = document.createElement('button');
+          btnPlus.type = 'button';
+          btnPlus.className = 'btn';
+          btnPlus.textContent = '+';
+          btnPlus.addEventListener('click', () => inc(it.name, it.price));
 
-            // DESTRA: +/– e nota
-            const qtyBox = document.createElement('div');
-            qtyBox.className = 'i-qty';
-            qtyBox.style.display = 'flex';
-            qtyBox.style.flexDirection = 'column';
-            qtyBox.style.alignItems = 'flex-end';
-            qtyBox.style.gap = '4px';
+          controls.appendChild(btnMinus);
+          controls.appendChild(qtySpan);
+          controls.appendChild(btnPlus);
 
-            const controls = document.createElement('div');
-            controls.style.display = 'flex';
-            controls.style.alignItems = 'center';
-            controls.style.gap = '6px';
+          const noteInput = document.createElement('input');
+          noteInput.className = 'note-inline';
+          noteInput.placeholder = 'Nota (es. senza cipolla)';
+          noteInput.addEventListener('input', () => setNote(it.name, noteInput.value));
 
-            const btnMinus = document.createElement('button');
-            btnMinus.type = 'button';
-            btnMinus.className = 'btn btn-ghost';
-            btnMinus.textContent = '−';
-            btnMinus.addEventListener('click', () => dec(it.name));
+          qtyBox.appendChild(controls);
+          qtyBox.appendChild(noteInput);
 
-            const qtySpan = document.createElement('span');
-            qtySpan.className = 'qv';
-            const idSafe = cssId(it.name);
-            qtySpan.id = 'q-' + idSafe;
-            qtySpan.textContent = '0';
-
-            const btnPlus = document.createElement('button');
-            btnPlus.type = 'button';
-            btnPlus.className = 'btn';
-            btnPlus.textContent = '+';
-            btnPlus.addEventListener('click', () => inc(it.name, it.price));
-
-            controls.appendChild(btnMinus);
-            controls.appendChild(qtySpan);
-            controls.appendChild(btnPlus);
-
-            const noteInput = document.createElement('input');
-            noteInput.className = 'note-inline';
-            noteInput.placeholder = 'Nota (es. senza cipolla)';
-            noteInput.addEventListener('input', () => setNote(it.name, noteInput.value));
-
-            qtyBox.appendChild(controls);
-            qtyBox.appendChild(noteInput);
-
-            row.appendChild(left);
-            row.appendChild(qtyBox);
-            section.appendChild(row);
-          });
-
-          root.appendChild(section);
+          row.appendChild(left);
+          row.appendChild(qtyBox);
+          section.appendChild(row);
         });
 
-        // traduzioni nomi/descrizioni
-        if (typeof applyI18n === 'function') {
-          applyI18n();
-        }
-      } catch (e) {
-        console.error('loadPublicMenu error', e);
-        root.innerHTML = '<p class="muted">Errore nel caricamento del menù.</p>';
-      }
-    }
+        root.appendChild(section);
+      });
 
-    document.addEventListener('DOMContentLoaded', loadPublicMenu);
-  </script>
+      if (typeof applyI18n === 'function') {
+        applyI18n();
+      }
+    } catch (e) {
+      console.error(e);
+      root.innerHTML = '<p class="muted">Errore nel caricamento del menù.</p>';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadPublicMenu);
+</script>
 
 </body>
 </html>
