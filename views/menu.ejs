@@ -538,34 +538,72 @@ function removeFromCart(name){
   renderCart();
 }
 
-    // Render carrello (mostra la nota sotto al nome se presente)
-    function renderCart(){
-      const ul = document.getElementById('cart'); if(!ul) return;
-      ul.innerHTML = "";
-      let tot = 0;
-      for(const [n,it] of cart.entries()){
-        if(!it.qty) continue;
-        tot += it.qty * it.price;
-        const li = document.createElement('li');
+// Render carrello (mostra la nota e aggiunge il bottone ❌)
+function renderCart(){
+  const ul = document.getElementById('cart');
+  if (!ul) return;
 
-        const noteHtml = it.note ? `<div class="muted" style="font-size:12px;margin-top:2px">• Nota: <em>${it.note}</em></div>` : "";
-        li.innerHTML = `
-          <div>
-            <strong>${it.qty} × ${n}</strong>
-            ${noteHtml}
-          </div>
-          <div>${euro(it.qty*it.price)}</div>
-        `;
-        li.style.display = "flex";
-        li.style.alignItems = "flex-start";
-        li.style.justifyContent = "space-between";
-        li.style.gap = "8px";
-        ul.appendChild(li);
-      }
-      const totEl = document.getElementById('total');
-      if(totEl) totEl.textContent = euro(tot);
-      updateButtons();
+  ul.innerHTML = "";
+  let tot = 0;
+
+  for (const [n, it] of cart.entries()) {
+    if (!it.qty) continue;
+
+    const lineTotal = it.qty * it.price;
+    tot += lineTotal;
+
+    const li = document.createElement('li');
+    li.className = "cart-row";
+    li.style.display = "flex";
+    li.style.alignItems = "flex-start";
+    li.style.justifyContent = "space-between";
+    li.style.gap = "8px";
+
+    // ---- parte sinistra: nome + eventuale nota
+    const leftBox = document.createElement('div');
+
+    const title = document.createElement('strong');
+    title.textContent = `${it.qty} × ${n}`;
+    leftBox.appendChild(title);
+
+    if (it.note) {
+      const noteDiv = document.createElement('div');
+      noteDiv.className = "muted";
+      noteDiv.style.fontSize = "12px";
+      noteDiv.style.marginTop = "2px";
+      noteDiv.innerHTML = `• Nota: <em>${it.note}</em>`;
+      leftBox.appendChild(noteDiv);
     }
+
+    // ---- parte destra: prezzo + bottone ❌
+    const rightBox = document.createElement('div');
+    rightBox.style.display = "flex";
+    rightBox.style.alignItems = "center";
+    rightBox.style.gap = "6px";
+
+    const priceEl = document.createElement('div');
+    priceEl.textContent = euro(lineTotal);
+
+    const btn = document.createElement('button');
+    btn.type = "button";
+    btn.className = "btn btn-ghost";
+    btn.textContent = "✕";
+    btn.addEventListener('click', () => removeFromCart(n));
+
+    rightBox.appendChild(priceEl);
+    rightBox.appendChild(btn);
+
+    li.appendChild(leftBox);
+    li.appendChild(rightBox);
+
+    ul.appendChild(li);
+  }
+
+  const totEl = document.getElementById('total');
+  if (totEl) totEl.textContent = euro(tot);
+
+  updateButtons();
+}
 
     // —— RESET delle quantità nel menu + pulizia note
     function resetMenuQuantities(){
