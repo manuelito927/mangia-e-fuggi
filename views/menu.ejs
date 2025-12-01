@@ -162,18 +162,59 @@
     </main>
 
     <aside class="card cart">
-      <h3 data-i18n="cart_title">Carrello</h3>
-      <ul id="cart"></ul>
-      <div class="tot"><span data-i18n="cart_total">Totale</span><span id="total">€ 0,00</span></div>
+  <h3 data-i18n="cart_title">Carrello</h3>
 
-      <div class="btn-row" style="margin-top:10px">
-        <button id="btn-pay-online" class="btn" onclick="orderAndPayOnline()" disabled data-i18n="btn_pay_online">💳 Ordina &amp; paga online</button>
-        <button id="btn-pay-cashier" class="btn btn-ghost" onclick="orderPayAtCounter()" disabled data-i18n="btn_pay_counter">💵 Ordina &amp; paga in cassa</button>
-        <button id="btn-split" class="btn btn-ghost" onclick="openSplitModal()" disabled data-i18n="btn_split_pay">➗ Dividi &amp; paga</button>
-      </div>
-      <div id="pay-note" class="note"></div>
-    </aside>
+  <!-- 🔀 Modalità ordine -->
+  <div class="order-mode">
+    <button type="button"
+            class="mode-btn active"
+            data-mode="table">
+      Al tavolo
+    </button>
+    <button type="button"
+            class="mode-btn"
+            data-mode="home">
+      Da casa
+    </button>
   </div>
+
+  <p id="mode-help" class="note">
+    Stai ordinando <b>al tavolo</b>. Il personale porterà l’ordine dove sei seduto.
+  </p>
+
+  <!-- 🏠 Campi visibili solo in modalità "Da casa" -->
+  <div id="home-fields" class="home-fields" style="display:none">
+    <input id="homeName" class="input"
+           style="width:100%;margin-bottom:6px"
+           placeholder="Nome e cognome" />
+    <input id="homePhone" class="input"
+           style="width:100%;margin-bottom:6px"
+           placeholder="Telefono" />
+    <textarea id="homeNote" class="input" rows="2"
+              style="width:100%;margin-bottom:6px"
+              placeholder="Nota (es. ritiro alle 21:00, senza consegna a domicilio)"></textarea>
+  </div>
+
+  <ul id="cart"></ul>
+  <div class="tot">
+    <span data-i18n="cart_total">Totale</span>
+    <span id="total">€ 0,00</span>
+  </div>
+
+  <div class="btn-row" style="margin-top:10px">
+    <button id="btn-pay-online" class="btn" disabled data-i18n="btn_pay_online">
+      💳 Ordina &amp; paga online
+    </button>
+    <button id="btn-pay-cashier" class="btn btn-ghost" disabled data-i18n="btn_pay_counter">
+      💵 Ordina &amp; paga in cassa
+    </button>
+    <button id="btn-split" class="btn btn-ghost" disabled data-i18n="btn_split_pay">
+      ➗ Dividi &amp; paga
+    </button>
+  </div>
+
+  <div id="pay-note" class="note"></div>
+</aside>
 
   <!-- ===== Modal DIVIDI & PAGA ===== -->
   <div id="split-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
