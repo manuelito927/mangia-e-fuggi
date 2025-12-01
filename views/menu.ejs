@@ -464,7 +464,8 @@
     // ======= Stato carrello / pagamenti (CON NOTE) =======
     const cart = new Map();         // mappa: name -> { price, qty, note? }
     let PAY_ENABLED = false;
-
+// 'table' = in locale; 'home' = ordini da casa
+let ORDER_MODE = 'table';
     (async () => {
       try{
         const r = await fetch("/api/pay-config");
