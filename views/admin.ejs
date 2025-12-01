@@ -537,10 +537,10 @@ function renderItemList() {
         right.style.gap = '4px';
 
         const btnEdit = document.createElement('button');
-        btnEdit.type = 'button';
-        btnEdit.className = 'btn btn-ghost';
-        btnEdit.textContent = '✏️ Modifica';
-        btnEdit.onclick = () => startEditItem(it.id);
+btnEdit.type = 'button';
+btnEdit.className = 'btn btn-ghost';
+btnEdit.textContent = '✏️ Modifica';
+btnEdit.onclick = () => startEditItem(it.id, row);
 
         const btnDel = document.createElement('button');
         btnDel.type = 'button';
