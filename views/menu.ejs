@@ -709,10 +709,31 @@ btn.addEventListener('click', () => dec(n));
 
 // —— Core: salva ordine e ritorna order_id
 async function createOrder(){
+  // 1) Leggo i campi "da casa" (se non ci sono o sono vuoti, non succede nulla)
+  const nameInput   = document.getElementById('take-name');
+  const phoneInput  = document.getElementById('take-phone');
+  const pickupInput = document.getElementById('take-note');
+
+  const extraParts = [];
+  if (nameInput && nameInput.value.trim()) {
+    extraParts.push(nameInput.value.trim());
+  }
+  if (phoneInput && phoneInput.value.trim()) {
+    extraParts.push(phoneInput.value.trim());
+  }
+  if (pickupInput && pickupInput.value.trim()) {
+    extraParts.push(pickupInput.value.trim());
+  }
+
+  // es. "[Manuel stendardo · 392... · Ritiro ore 21:00]"
+  const extraLabel = extraParts.length ? ` [${extraParts.join(' · ')}]` : '';
+
+  // 2) Costruisco gli items del carrello COME PRIMA
+  //    ma aggiungendo extraLabel alla fine del nome
   const items = Array.from(cart.entries())
     .filter(([_,it]) => it.qty > 0)
     .map(([n,it])=>({
-      name: it.note ? `${n} — Note: ${it.note}` : n,
+      name: (it.note ? `${n} — Note: ${it.note}` : n) + extraLabel,
       price: it.price,
       qty: it.qty
     }));
@@ -724,39 +745,11 @@ async function createOrder(){
 
   const total = items.reduce((s,i)=>s+i.price*i.qty,0);
 
-  let tableCode = null;
-  const payload = { items, total, mode: ORDER_MODE };
-
-  if(ORDER_MODE === 'home'){
-    const name  = document.getElementById('homeName')?.value.trim();
-    const phone = document.getElementById('homePhone')?.value.trim();
-    const note  = document.getElementById('homeNote')?.value.trim();
-
-    if(!name || !phone){
-      alert('Per ordinare da casa inserisci almeno nome e telefono.');
-      return null;
-    }
-
-    // Etichetta che vedrai in dashboard al posto del tavolo
-    tableCode = 'ASPORTO';
-
-    payload.customer = {
-      name,
-      phone,
-      note: note || null
-    };
-  } else {
-    // per ora, dal tavolo generico senza codice (se hai già QR per tavolo, poi lo metti qui)
-    tableCode = null;
-  }
-
-  payload.tableCode = tableCode;
-
   try {
     const r = await fetch("/api/checkout",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(payload)
+      body:JSON.stringify({ tableCode:null, items, total })
     });
 
     const text = await r.text();
