@@ -891,7 +891,10 @@ function renderOrders(q){
       <div class="head">
         <div>
           <div class="muted">ID: ${o.id}</div>
-          <div class="muted">Tavolo: <b>${o.table_code||'-'}</b></div>
+          <div class="muted">
+            Tavolo: <b>${o.table_code || 'ASPORTO'}</b>
+            ${isAsporto ? '<span class="pill takeaway">asporto</span>' : ''}
+          </div>
           <div class="muted">Data: ${when}</div>
         </div>
         <div class="badge">${bell}<span class="pill">Totale: ${euro(o.total)}</span></div>
