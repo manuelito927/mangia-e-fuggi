@@ -851,12 +851,15 @@ function renderOrders(q){
 
   for(const o of filtered){
     const when = formatRome(o.created_at);
-    const isAsporto = !o.table_code;
-    const rows=(o.items||[]).map(it=>`
-      <div class="row" style="padding:4px 0">
-        <div>${it.qty}× ${it.name} <span class="muted">(€ ${Number(it.price).toFixed(2)})</span></div>
-        <div><b>€ ${(Number(it.qty)*Number(it.price)).toFixed(2)}</b></div>
-      </div>`).join("");
+const isHome    = o.order_mode === "home";
+const isAsporto = !o.table_code && !isHome;
+
+const rows = (o.items || []).map(it => `
+  <div class="row" style="padding:4px 0">
+    <div>${it.qty}× ${it.name} <span class="muted">(€ ${Number(it.price).toFixed(2)})</span></div>
+    <div><b>€ ${(Number(it.qty) * Number(it.price)).toFixed(2)}</b></div>
+  </div>
+`).join("");
 
     const bell = (!o.ack && o.status==='pending')
       ? `<span class="bell new" data-act="ack" data-id="${o.id}" title="Nuovo">🔔</span>`
