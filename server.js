@@ -517,24 +517,36 @@ app.get("/pagamento/annullato", (_req,res)=> res.send("Pagamento annullato. Puoi
 // =====================================================================================
 // API ORDINI (cliente + admin)
 // =====================================================================================
+app.post("/api/checkout", async (req, res) => {
+  const {
+    tableCode,
+    items,
+    total,
+    orderMode,
+    customerName,
+    customerPhone,
+    customerNote,
+  } = req.body || {};
+
+  if (!Array.isArray(items) || !items.length) {
+    return res.status(400).json({ ok:false, error:"no_items" });
+  }
+
   try {
     // 👉 se non arriva nessun tableCode, ma la modalità è "table",
-    // usa un nome generico, es. "SALA". Più avanti il QR metterà "1", "2", ecc.
+    // usa un nome generico (es. SALA). In futuro il QR metterà il numero.
     const effectiveTableCode =
-      tableCode ||
-      (orderMode === "table" ? "SALA" : null);
+      tableCode || (orderMode === "table" ? "SALA" : null);
 
     const baseRow = { 
       table_code: effectiveTableCode,
       total: Number(total) || 0,
       status: "pending",
-      // modalità ordine:
-      // - "table" se è al tavolo (anche senza numero)
-      // - "home"/"takeaway" altrimenti
+      // "table" se è al tavolo, altrimenti "takeaway"/"home"
       order_mode: orderMode || (effectiveTableCode ? "table" : "takeaway"),
-      customer_name: customerName || null,
+      customer_name:  customerName  || null,
       customer_phone: customerPhone || null,
-      customer_note: customerNote || null,
+      customer_note:  customerNote  || null,
     };
 
     const { data: order, error: oErr } = await supabase
