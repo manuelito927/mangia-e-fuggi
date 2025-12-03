@@ -533,16 +533,20 @@ app.post("/api/checkout", async (req, res) => {
   }
 
   try {
-    const baseRow = { 
-      table_code: tableCode || null,
-      total: Number(total) || 0,
-      status: "pending",
-      // 👇 nuovo: modalità e dati cliente
-order_mode: tableCode ? "table" : (orderMode || "takeaway"),
-      customer_name: customerName || null,
-      customer_phone: customerPhone || null,
-      customer_note: customerNote || null,
-    };
+    // normalizza la modalità ordine
+let mode = (orderMode === "table" || orderMode === "home")
+  ? orderMode
+  : "takeaway";
+
+const baseRow = {
+  table_code: tableCode || null,          // può essere null, ma il mode resta "table"
+  total: Number(total) || 0,
+  status: "pending",
+  order_mode: mode,                       // 👈 NON dipende più da tableCode
+  customer_name: customerName || null,
+  customer_phone: customerPhone || null,
+  customer_note: customerNote || null,
+};
 
     const { data: order, error: oErr } = await supabase
       .from("orders")
