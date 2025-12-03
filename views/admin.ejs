@@ -893,12 +893,28 @@ const rows = (o.items || []).map(it => `
     el.innerHTML=`
       <div class="head">
         <div>
-          <div class="muted">ID: ${o.id}</div>
           <div class="muted">
-            Tavolo: <b>${o.table_code || 'ASPORTO'}</b>
-            ${isAsporto ? '<span class="pill takeaway">asporto</span>' : ''}
-          </div>
-          <div class="muted">Data: ${when}</div>
+  Tavolo: <b>${o.table_code || (isHome ? 'DA CASA' : 'ASPORTO')}</b>
+  ${
+    isHome
+      ? '<span class="pill takeaway">da casa</span>'
+      : (isAsporto ? '<span class="pill takeaway">asporto</span>' : '')
+  }
+</div>
+
+${
+  (o.customer_name || o.customer_phone || o.customer_note)
+    ? `
+      <div class="muted" style="margin-top:4px">
+        Cliente: <b>${o.customer_name || '-'}</b>
+        ${o.customer_phone ? ` · Tel: ${o.customer_phone}` : ''}
+        ${o.customer_note ? `<br><span class="muted">Nota: ${o.customer_note}</span>` : ''}
+      </div>
+    `
+    : ''
+}
+
+<div class="muted">Data: ${when}</div>
         </div>
         <div class="badge">${bell}<span class="pill">Totale: ${euro(o.total)}</span></div>
       </div>
