@@ -953,7 +953,16 @@ $('#orders').addEventListener('click', async ev=>{
   const id=b.dataset.id, act=b.dataset.act;
   try{
     if(act==='print'){ window.print(); await F(`/api/orders/${id}/printed`,{method:'POST'}); return; }
-    if(act==='complete'){ await F(`/api/orders/${id}/complete`,{method:'POST'}); }
+       if(act==='complete'){
+      // 1) segna l'ordine come COMPLETATO
+      await F(`/api/orders/${id}/complete`,{method:'POST'});
+      // 2) segna anche PAGATO (payment_status = 'paid')
+      await F(`/api/orders/${id}/pay`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ method:'cash' })
+      });
+    }
     if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await F(`/api/orders/${id}/cancel`,{method:'POST'}); }
     if(act==='restore'){ await F(`/api/orders/${id}/restore`,{method:'POST'}); }
     if(act==='receipt'){ await emitReceipt(id); return; }
