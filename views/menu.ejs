@@ -716,6 +716,8 @@ btn.addEventListener('click', () => dec(n));
       if(btnSplit) btnSplit.disabled = !(hasItems && PAY_ENABLED);
     }
 
+let CREATING_ORDER = false;
+
 // —— Core: salva ordine e ritorna { order_id, total }
 async function createOrder(){
   const items = Array.from(cart.entries())
