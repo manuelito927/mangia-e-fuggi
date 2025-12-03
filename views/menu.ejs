@@ -720,6 +720,12 @@ let CREATING_ORDER = false;
 
 // —— Core: salva ordine e ritorna { order_id, total }
 async function createOrder(){
+  if (CREATING_ORDER) {
+    // già in corso, evito doppio ordine
+    return null;
+  }
+  CREATING_ORDER = true;
+
   const items = Array.from(cart.entries())
     .filter(([_, it]) => it.qty > 0)
     .map(([n, it]) => ({
@@ -730,6 +736,7 @@ async function createOrder(){
 
   if (!items.length) {
     alert(t("alert_add_item"));
+    CREATING_ORDER = false;
     return null;
   }
 
@@ -738,7 +745,6 @@ async function createOrder(){
   // 🔹 base payload comune
   const payload = { items, total };
 
-  // 🔗 Legge il codice tavolo dall’URL (supporta più nomi param)
   const params = new URLSearchParams(window.location.search);
   const tableCode =
     params.get("t") ||
@@ -748,11 +754,9 @@ async function createOrder(){
     null;
 
   if (ORDER_MODE === "table") {
-    // 🪑 Ordine al tavolo
-    payload.tableCode = tableCode;     // va in orders.table_code
-    payload.orderMode = "table";       // fallback se tableCode è nullo
+    payload.tableCode = tableCode;
+    payload.orderMode = "table";
   } else {
-    // 🏠 Ordine "da casa"
     const nameEl  = document.getElementById("homeName");
     const phoneEl = document.getElementById("homePhone");
     const noteEl  = document.getElementById("homeNote");
@@ -763,14 +767,14 @@ async function createOrder(){
 
     if (!customerName || !customerPhone) {
       alert("Per gli ordini da casa inserisci almeno nome e telefono.");
+      CREATING_ORDER = false;
       return null;
     }
 
-    payload.orderMode     = "home";          // va in orders.order_mode
-    payload.customerName  = customerName;    // orders.customer_name
-    payload.customerPhone = customerPhone;   // orders.customer_phone
-    payload.customerNote  = customerNote;    // orders.customer_note
-    // niente tableCode → resta NULL
+    payload.orderMode     = "home";
+    payload.customerName  = customerName;
+    payload.customerPhone = customerPhone;
+    payload.customerNote  = customerNote;
   }
 
   try {
@@ -784,10 +788,10 @@ async function createOrder(){
     if (!res.ok || !data.ok) {
       console.error("checkout error", data);
       alert(t("err_send_order"));
+      CREATING_ORDER = false;
       return null;
     }
 
-    // 🔙 Ritorno un oggetto usabile da chi chiama
     return {
       order_id: data.order_id,
       total
@@ -796,6 +800,8 @@ async function createOrder(){
     console.error("createOrder failed", e);
     alert(t("err_send_order"));
     return null;
+  } finally {
+    CREATING_ORDER = false;
   }
 }
 
