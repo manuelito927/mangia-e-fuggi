@@ -803,7 +803,7 @@ async function counters(){
 
 async function fetchOrders(){
   try{
-    // ✅ prendiamo lo stato tavoli dalla stessa API usata dai clienti
+    // stato tavoli
     const t = await F('/api/tables/status').then(r => r.json());
     if (t.ok) {
       TABLES_MAP = {};
@@ -813,29 +813,41 @@ async function fetchOrders(){
       });
     }
 
-    const q = $('#q').value.toLowerCase();
-    const daySel = $('#dayOrders').value || isoLocalDateStr(new Date());
+    const q       = $('#q').value.toLowerCase();
+    const daySel  = $('#dayOrders').value || isoLocalDateStr(new Date());
 
-    let list = [];
     const [pnd, cmp, cnc] = await Promise.all([
       F(`/api/orders?status=pending&day=${daySel}`).then(r=>r.json()),
       F(`/api/orders?status=completed&day=${daySel}`).then(r=>r.json()),
       F(`/api/orders?status=canceled&day=${daySel}`).then(r=>r.json())
     ]);
-    const pend = (pnd.ok ? (pnd.orders||[]) : []);
-    const comp = (cmp.ok ? (cmp.orders||[]) : []);
-    const canc = (cnc.ok ? (cnc.orders||[]) : []);
 
-    if(STATUS==='all'){ list = pend.filter(o=>!o.ack).concat(comp); }
-    else if(STATUS==='due'){ list = pend.filter(o=>o.ack); }
-    else if(STATUS==='paid'){ list = comp; }
-    else if(STATUS==='canceled'){ list = canc; }
+    const pend = (pnd.ok ? (pnd.orders || []) : []);
+    const comp = (cmp.ok ? (cmp.orders || []) : []);
+    const canc = (cnc.ok ? (cnc.orders || []) : []);
+
+    const paid = comp.filter(o => o.payment_status === 'paid');
+
+    let list = [];
+    if (STATUS === 'all') {
+      // tutti gli ordini di quel giorno
+      list = pend.concat(comp, canc);
+    } else if (STATUS === 'due') {
+      // ordini da incassare: pending + ack true
+      list = pend.filter(o => o.ack);
+    } else if (STATUS === 'paid') {
+      // solo quelli COMPLETATI e PAGATI
+      list = paid;
+    } else if (STATUS === 'canceled') {
+      list = canc;
+    }
 
     list.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
-    ORDERS=list;
+    ORDERS = list;
     renderOrders(q);
     counters();
   }catch(e){
+    console.error(e);
     showErr('Errore nel caricamento ordini. Se richiesto, reinserisci la password della dashboard.');
   }
 }
