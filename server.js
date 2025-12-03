@@ -599,17 +599,22 @@ async function listOrdersHandler(req, res) {
     const day = (req.query.day || "").toString().slice(0, 10);
 
     let query = supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
+  .from("orders")
+  .select("*")
+  .order("created_at", { ascending: false });
 
-    // se è stato passato un giorno, filtra in base agli orari di quel giorno
-    if (day) {
-      const { start, end } = localDayBounds(day);
-      query = query
-        .gte("created_at", start)
-        .lte("created_at", end);
-    }
+const status = (req.query.status || "").toString().trim();
+if (status) {
+  query = query.eq("status", status);
+}
+
+// se è stato passato un giorno, filtra in base agli orari di quel giorno
+if (day) {
+  const { start, end } = localDayBounds(day);
+  query = query
+    .gte("created_at", start)
+    .lte("created_at", end);
+}
 
     // limitiamo comunque a 200 per non esplodere
     query = query.limit(200);
