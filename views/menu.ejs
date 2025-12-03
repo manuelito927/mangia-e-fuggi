@@ -792,9 +792,7 @@ async function createOrder(){
       return null;
     }
 
-    return {
-          return { order_id: data.order_id, total };
-    };
+return { order_id: data.order_id, total };
   } catch (e) {
     console.error("createOrder failed", e);
     alert(t("err_send_order"));
