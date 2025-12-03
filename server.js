@@ -518,34 +518,65 @@ app.get("/pagamento/annullato", (_req,res)=> res.send("Pagamento annullato. Puoi
 // API ORDINI (cliente + admin)
 // =====================================================================================
 app.post("/api/checkout", async (req, res) => {
-  const { tableCode, items, total } = req.body || {};
+  const {
+    tableCode,
+    items,
+    total,
+    orderMode,
+    customerName,
+    customerPhone,
+    customerNote,
+  } = req.body || {};
+
   if (!Array.isArray(items) || !items.length) {
     return res.status(400).json({ ok:false, error:"no_items" });
   }
-  try {
-const baseRow = { 
-  table_code: tableCode || null, 
-  total: Number(total)||0, 
-  status:"pending"
-};
 
-    const { data: order, error: oErr } = await supabase.from("orders").insert([baseRow]).select().single();
+  try {
+    const baseRow = { 
+      table_code: tableCode || null,
+      total: Number(total) || 0,
+      status: "pending",
+      // 👇 nuovo: modalità e dati cliente
+      order_mode: orderMode || (tableCode ? "table" : "takeaway"),
+      customer_name: customerName || null,
+      customer_phone: customerPhone || null,
+      customer_note: customerNote || null,
+    };
+
+    const { data: order, error: oErr } = await supabase
+      .from("orders")
+      .insert([baseRow])
+      .select()
+      .single();
+
     if (oErr || !order) throw oErr || new Error("order_insert_failed");
 
     const rows = items.map(it => ({
-      order_id: order.id, name: it.name, price: Number(it.price), qty: Number(it.qty)
+      order_id: order.id,
+      name: it.name,
+      price: Number(it.price),
+      qty: Number(it.qty)
     }));
-    const { error: iErr } = await supabase.from("order_items").insert(rows);
+
+    const { error: iErr } = await supabase
+      .from("order_items")
+      .insert(rows);
+
     if (iErr) throw iErr;
 
     req.session.last_order_id = order.id;
-    req.session.save(()=>{});
+    req.session.save(() => {});
 
     // Stampa automatica se attiva
     if (String(process.env.AUTO_PRINT_KITCHEN).toLowerCase() === "true") {
       printToKitchen({
         ...order,
-        items: items.map(it => ({ name: it.name, qty: Number(it.qty), price: Number(it.price) }))
+        items: items.map(it => ({
+          name: it.name,
+          qty: Number(it.qty),
+          price: Number(it.price)
+        }))
       });
     }
 
@@ -553,49 +584,6 @@ const baseRow = {
   } catch (e) {
     console.error("checkout_failed:", e);
     return res.status(500).json({ ok:false, error:"checkout_failed" });
-  }
-});
-
-app.get("/api/orders", requireAdminApi, async (req, res) => {
-  try {
-    const status = (req.query.status || "").toString();
-    const dayStr = (req.query.day || req.query.date || "").toString().slice(0,10);
-
-    let q = supabase.from("orders").select("*").order("created_at", { ascending: false });
-
-    if (status === "all") q = q.neq("status","canceled");
-    else if (status === "due") q = q.eq("payment_status","pending");
-    else if (status === "paid") q = q.eq("payment_status","paid");
-    else if (status) q = q.eq("status", status);
-    else q = q.eq("status","pending");
-
-    if (dayStr) {
-      const { start, end } = localDayBounds(dayStr);
-      q = q.gte("created_at", start).lte("created_at", end);
-    }
-
-    const { data: orders, error: oErr } = await q;
-    if (oErr) throw oErr;
-
-    const ids = (orders||[]).map(o => o.id);
-    let items = [];
-    if (ids.length) {
-      const { data: its, error: iErr } = await supabase
-        .from("order_items")
-        .select("order_id, name, price, qty")
-        .in("order_id", ids);
-      if (iErr) throw iErr;
-      items = its || [];
-    }
-
-    const by = {};
-    for (const o of (orders||[])) by[o.id] = { ...o, items: [] };
-    for (const it of items) by[it.order_id]?.items.push(it);
-
-    res.json({ ok:true, orders:Object.values(by) });
-  } catch (e) {
-    console.error(e);
-    res.json({ ok:false, error:"orders_list_failed" });
   }
 });
 
