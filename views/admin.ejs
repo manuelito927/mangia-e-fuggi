@@ -779,18 +779,26 @@ async function counters(){
       F(`/api/orders?status=completed&day=${daySel}`).then(r=>r.json()),
       F(`/api/orders?status=canceled&day=${daySel}`).then(r=>r.json())
     ]);
-    const pend = (pnd.ok ? (pnd.orders||[]) : []);
-    const comp = (cmp.ok ? (cmp.orders||[]) : []);
-    const canc = (cnc.ok ? (cnc.orders||[]) : []);
 
-    const nAll = pend.filter(o=>!o.ack).length + comp.length;
-    const nDue = pend.filter(o=> o.ack).length;
+    const pend = (pnd.ok ? (pnd.orders || []) : []);
+    const comp = (cmp.ok ? (cmp.orders || []) : []);
+    const canc = (cnc.ok ? (cnc.orders || []) : []);
+
+    // solo quelli COMPLETATI e PAGATI
+    const paid = comp.filter(o => o.payment_status === 'paid');
+
+    // tutti gli ordini del giorno (qualsiasi stato)
+    const nAll = pend.length + comp.length + canc.length;
+    // da incassare = pending ma già "fatti" (ack true)
+    const nDue = pend.filter(o => o.ack).length;
 
     $('#c-all').textContent  = nAll;
     $('#c-due').textContent  = nDue;
-    $('#c-paid').textContent = comp.length;
+    $('#c-paid').textContent = paid.length;
     $('#c-canc').textContent = canc.length;
-  }catch(e){ /* soft */ }
+  }catch(e){
+    // se fallisce non blocchiamo la pagina
+  }
 }
 
 async function fetchOrders(){
