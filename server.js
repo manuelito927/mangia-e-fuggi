@@ -538,7 +538,7 @@ app.post("/api/checkout", async (req, res) => {
       total: Number(total) || 0,
       status: "pending",
       // 👇 nuovo: modalità e dati cliente
-      order_mode: orderMode || (tableCode ? "table" : "takeaway"),
+order_mode: tableCode ? "table" : (orderMode || "takeaway"),
       customer_name: customerName || null,
       customer_phone: customerPhone || null,
       customer_note: customerNote || null,
