@@ -623,6 +623,15 @@ function setOrderMode(mode){
       renderCart();
     }
 
+// 🔗 Collega i bottoni modalità ordine
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    setOrderMode(btn.dataset.mode);
+  });
+});
+
+// Mantieni la UI coerente al caricamento
+updateOrderModeUI();
 
 // Render carrello (mostra la nota e aggiunge il bottone ❌)
 function renderCart(){
