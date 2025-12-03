@@ -716,7 +716,7 @@ btn.addEventListener('click', () => dec(n));
       if(btnSplit) btnSplit.disabled = !(hasItems && PAY_ENABLED);
     }
 
-// —— Core: salva ordine e ritorna order_id
+// —— Core: salva ordine e ritorna { order_id, total }
 async function createOrder(){
   const items = Array.from(cart.entries())
     .filter(([_, it]) => it.qty > 0)
@@ -734,19 +734,23 @@ async function createOrder(){
   const total = cartTotal();
 
   // 🔹 base payload comune
-  const payload = {
-    items,
-    total,
-  };
+  const payload = { items, total };
+
+  // 🔗 Legge il codice tavolo dall’URL (supporta più nomi param)
+  const params = new URLSearchParams(window.location.search);
+  const tableCode =
+    params.get("t") ||
+    params.get("table") ||
+    params.get("tableCode") ||
+    params.get("tavolo") ||
+    null;
 
   if (ORDER_MODE === "table") {
-    // in modalità tavolo prendi il tableCode dall’URL, come facevi già
-    const params = new URLSearchParams(window.location.search);
-    const tableCode = params.get("t") || null;
-    payload.tableCode = tableCode;
-    payload.orderMode = "table";
+    // 🪑 Ordine al tavolo
+    payload.tableCode = tableCode;     // va in orders.table_code
+    payload.orderMode = "table";       // fallback se tableCode è nullo
   } else {
-    // 🏠 modalità "Da casa"
+    // 🏠 Ordine "da casa"
     const nameEl  = document.getElementById("homeName");
     const phoneEl = document.getElementById("homePhone");
     const noteEl  = document.getElementById("homeNote");
@@ -760,11 +764,11 @@ async function createOrder(){
       return null;
     }
 
-    payload.orderMode     = "home";
-    payload.customerName  = customerName;
-    payload.customerPhone = customerPhone;
-    payload.customerNote  = customerNote;
-    // niente tableCode qui → sarà NULL
+    payload.orderMode     = "home";          // va in orders.order_mode
+    payload.customerName  = customerName;    // orders.customer_name
+    payload.customerPhone = customerPhone;   // orders.customer_phone
+    payload.customerNote  = customerNote;    // orders.customer_note
+    // niente tableCode → resta NULL
   }
 
   try {
@@ -781,11 +785,11 @@ async function createOrder(){
       return null;
     }
 
-    // qui probabilmente hai già la logica per:
-    // - aprire SumUp (online)
-    // - o mostrare messaggio "paga in cassa"
-    // → lascia quella parte com'è, ma ora hai data.order_id
-    return data.order_id;
+    // 🔙 Ritorno un oggetto usabile da chi chiama
+    return {
+      order_id: data.order_id,
+      total
+    };
   } catch (e) {
     console.error("createOrder failed", e);
     alert(t("err_send_order"));
