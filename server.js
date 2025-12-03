@@ -587,6 +587,33 @@ app.post("/api/checkout", async (req, res) => {
   }
 });
 
+// Lista ordini per la dashboard admin
+async function listOrdersHandler(req, res) {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      // prendiamo tutte le colonne, così non esplode se mancano ack/payment_status ecc.
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (error) {
+      console.error("orders list error:", error);
+      return res.status(500).json({ ok: false, error: "orders_fetch_failed" });
+    }
+
+    res.json({ ok: true, orders: data || [] });
+  } catch (e) {
+    console.error("orders list exception:", e);
+    res.status(500).json({ ok: false, error: "server_error" });
+  }
+}
+
+// La dashboard potrebbe chiamare /api/admin/orders oppure /api/orders
+// → li facciamo puntare entrambi allo stesso handler
+app.get("/api/admin/orders", requireAdminApi, listOrdersHandler);
+app.get("/api/orders",       requireAdminApi, listOrdersHandler);
+
 // --- azioni su ordini
 app.post("/api/orders/:id/complete", requireAdminApi, async (req, res) => {
   const { error } = await supabase.from("orders")
