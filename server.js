@@ -327,6 +327,76 @@ app.post("/admin/settings", async (req, res) => {
   }
 });
 
+// ===================== PAGINA CAMERIERE /waiter (login con PIN) =====================
+
+// GET: mostra la pagina. Se il cameriere è già loggato, vede la schermata "sei dentro"
+app.get("/waiter", (req, res) => {
+  if (req.session.isWaiter) {
+    return res.render("waiter", {
+      loggedIn: true,
+      error: null,
+    });
+  }
+
+  res.render("waiter", {
+    loggedIn: false,
+    error: null,
+  });
+});
+
+// POST: controlla il PIN inserito
+app.post("/waiter", async (req, res) => {
+  try {
+    const pinInserito = (req.body.pin || "").toString().trim();
+
+    if (!pinInserito) {
+      return res.render("waiter", {
+        loggedIn: false,
+        error: "Inserisci il PIN.",
+      });
+    }
+
+    // prendo i dati della pizzeria (riga settings.key = 'restaurant')
+    const { data, error } = await supabase
+      .from("settings")
+      .select("waiter_pin")
+      .eq("key", "restaurant")
+      .single();
+
+    if (error) {
+      console.error("Errore lettura waiter_pin:", error);
+      return res.render("waiter", {
+        loggedIn: false,
+        error: "Errore interno, riprova.",
+      });
+    }
+
+    const savedPin = (data?.waiter_pin || "").toString().trim();
+
+    // confronto PIN
+    if (pinInserito !== savedPin) {
+      return res.render("waiter", {
+        loggedIn: false,
+        error: "PIN errato.",
+      });
+    }
+
+    // PIN corretto → segno in sessione che è un cameriere loggato
+    req.session.isWaiter = true;
+
+    return res.render("waiter", {
+      loggedIn: true,
+      error: null,
+    });
+  } catch (e) {
+    console.error("Eccezione login cameriere:", e);
+    return res.render("waiter", {
+      loggedIn: false,
+      error: "Errore interno.",
+    });
+  }
+});
+
 // === API MENU (categorie + piatti) ===
 app.get("/admin/menu-json", async (req, res) => {
   try {
