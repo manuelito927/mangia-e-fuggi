@@ -310,6 +310,7 @@ app.post("/admin/settings", async (req, res) => {
         payments,
         auto_sound: auto_sound === "on",
         auto_refresh: auto_refresh === "on",
+        waiter_pin
         updated_at: new Date().toISOString(),
       })
       .eq("key", "restaurant");
