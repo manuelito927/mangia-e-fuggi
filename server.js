@@ -293,7 +293,7 @@ app.post("/admin/settings", async (req, res) => {
       payments,
       auto_sound,
       auto_refresh,
-      waiter_pin
+      waiter_pin, // 👈 il nostro nuovo campo PIN
     } = req.body;
 
     const { error } = await supabase
@@ -310,8 +310,8 @@ app.post("/admin/settings", async (req, res) => {
         payments,
         auto_sound: auto_sound === "on",
         auto_refresh: auto_refresh === "on",
-        waiter_pin
-        updated_at: new Date().toISOString(),
+        waiter_pin: waiter_pin || null, // 👈 salvo il PIN
+        updated_at: new Date().toISOString(), // 👈 questa riga VA BENISSIMO qui
       })
       .eq("key", "restaurant");
 
@@ -326,7 +326,6 @@ app.post("/admin/settings", async (req, res) => {
     res.status(500).send("Errore interno");
   }
 });
-
 // ===================== PAGINA CAMERIERE /waiter (login con PIN) =====================
 
 // GET: mostra la pagina. Se il cameriere è già loggato, vede la schermata "sei dentro"
