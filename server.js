@@ -293,6 +293,7 @@ app.post("/admin/settings", async (req, res) => {
       payments,
       auto_sound,
       auto_refresh,
+      waiter_pin
     } = req.body;
 
     const { error } = await supabase
