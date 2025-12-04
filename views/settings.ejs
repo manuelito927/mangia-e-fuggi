@@ -63,6 +63,16 @@
         </label><br/>
 
         <label>
+          PIN cameriere (per accesso rapido)<br/>
+          <input
+            type="text"
+            name="waiter_pin"
+            placeholder="es. 1234"
+            value="<%= settings.waiter_pin || '' %>"
+          />
+        </label><br/>
+
+        <label>
           Servizio / coperto (%)<br/>
           <input type="number" step="0.1" name="service_fee_p"
                  value="<%= settings.service_fee_p || 0 %>" />
