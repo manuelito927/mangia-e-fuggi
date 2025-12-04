@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Modalità cameriere — Mangia & Fuggi</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    main {
+      max-width: 480px;
+      margin: 40px auto;
+      padding: 20px;
+      border-radius: 16px;
+      background: #f6efe7;
+      border: 1px solid #ead8cf;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+    }
+    h1 { margin-top: 0; }
+    label { display:block; margin-top: 12px; }
+    input[type="password"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #ead8cf;
+    }
+    button {
+      margin-top: 16px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 0;
+      background: #7a4a3b;
+      color: #fff;
+      cursor: pointer;
+    }
+    .error {
+      margin-top: 10px;
+      color: #b42318;
+      font-weight: 600;
+    }
+    .ok {
+      margin-top: 10px;
+      color: #1f8f4e;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Modalità cameriere</h1>
+
+    <% if (!loggedIn) { %>
+      <p>Inserisci il PIN che hai salvato nelle impostazioni della pizzeria.</p>
+
+      <% if (error) { %>
+        <p class="error"><%= error %></p>
+      <% } %>
+
+      <form method="POST" action="/waiter">
+        <label>
+          PIN<br />
+          <input type="password" name="pin" autocomplete="off" />
+        </label>
+
+        <button type="submit">Entra</button>
+      </form>
+    <% } else { %>
+      <p class="ok">Sei entrato come cameriere ✅</p>
+      <p>Da qui, per ora, puoi usare la dashboard per gestire gli ordini.</p>
+
+      <ul>
+        <li><a href="/admin">Apri dashboard ordini</a></li>
+      </ul>
+
+      <p style="margin-top:16px;font-size:14px;color:#7b6d66;">
+        (In un secondo momento possiamo creare una schermata dedicata solo al cameriere:
+        lista tavoli, prendi comanda, ecc.)
+      </p>
+    <% } %>
+  </main>
+</body>
+</html>
