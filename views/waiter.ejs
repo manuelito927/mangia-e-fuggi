@@ -5,76 +5,136 @@
   <title>Modalità cameriere — Mangia & Fuggi</title>
   <link rel="stylesheet" href="/styles.css" />
   <style>
-    main {
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5eee6;
+      margin: 0;
+      padding: 0;
+    }
+    .waiter-page {
       max-width: 480px;
       margin: 40px auto;
-      padding: 20px;
+      background: #fff7ef;
       border-radius: 16px;
-      background: #f6efe7;
-      border: 1px solid #ead8cf;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      padding: 24px 20px 28px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+      border: 1px solid #f0ddc9;
     }
-    h1 { margin-top: 0; }
-    label { display:block; margin-top: 12px; }
-    input[type="password"] {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 1px solid #ead8cf;
+    h1 {
+      margin-top: 0;
+      font-size: 1.7rem;
+      color: #42200b;
     }
-    button {
-      margin-top: 16px;
-      padding: 8px 14px;
-      border-radius: 10px;
-      border: 0;
-      background: #7a4a3b;
-      color: #fff;
-      cursor: pointer;
+    p {
+      margin: 0 0 12px;
+      color: #5a3a22;
     }
     .error {
-      margin-top: 10px;
-      color: #b42318;
-      font-weight: 600;
+      margin-bottom: 12px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #ffe5e5;
+      color: #8a1b1b;
+      font-size: 0.9rem;
     }
-    .ok {
-      margin-top: 10px;
-      color: #1f8f4e;
+    label {
+      display: block;
+      margin-bottom: 8px;
       font-weight: 600;
+      color: #4a2a14;
+    }
+    input[type="password"],
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #d4bda5;
+      font-size: 1rem;
+      margin-bottom: 16px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: #7a3b1a;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      text-align: center;
+    }
+    .btn.secondary {
+      background: #f2e0cf;
+      color: #7a3b1a;
+      margin-left: 8px;
+    }
+    .actions {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    @media (min-width: 480px) {
+      .actions {
+        flex-direction: row;
+      }
+    }
+    small {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: #7b6047;
     }
   </style>
 </head>
 <body>
-  <main>
-    <h1>Modalità cameriere</h1>
+
+  <main class="waiter-page">
 
     <% if (!loggedIn) { %>
+      <h1>Modalità cameriere</h1>
       <p>Inserisci il PIN che hai salvato nelle impostazioni della pizzeria.</p>
 
       <% if (error) { %>
-        <p class="error"><%= error %></p>
+        <div class="error"><%= error %></div>
       <% } %>
 
       <form method="POST" action="/waiter">
-        <label>
-          PIN<br />
-          <input type="password" name="pin" autocomplete="off" />
-        </label>
-
-        <button type="submit">Entra</button>
+        <label for="pin">PIN</label>
+        <input type="password" id="pin" name="pin" autocomplete="off" />
+        <button type="submit" class="btn">Entra</button>
       </form>
+
     <% } else { %>
-      <p class="ok">Sei entrato come cameriere ✅</p>
-      <p>Da qui, per ora, puoi usare la dashboard per gestire gli ordini.</p>
+      <h1>Sei in modalità cameriere ✅</h1>
+      <p>Da qui non si vedono statistiche o impostazioni, solo azioni utili al servizio ai tavoli.</p>
 
-      <ul>
-        <li><a href="/admin">Apri dashboard ordini</a></li>
-      </ul>
+      <div class="actions">
+        <!-- apre il menu in modalità cameriere -->
+        <a href="/menu?waiter=1" class="btn">
+          Prendi un ordine al tavolo
+        </a>
 
-      <p style="margin-top:16px;font-size:14px;color:#7b6d66;">
-        (In un secondo momento possiamo creare una schermata dedicata solo al cameriere:
-        lista tavoli, prendi comanda, ecc.)
-      </p>
+        <!-- se vuoi puoi usare questo per asporto -->
+        <a href="/menu?waiter=1&orderMode=takeaway" class="btn secondary">
+          Ordine d'asporto
+        </a>
+      </div>
+
+      <small>
+        Suggerimento: aggiungi questa pagina alla schermata Home del tablet del cameriere.
+      </small>
+
+      <form method="POST" action="/waiter/logout" style="margin-top:18px;">
+        <button type="submit" class="btn secondary">Esci dalla modalità cameriere</button>
+      </form>
     <% } %>
+
   </main>
+
 </body>
 </html>
