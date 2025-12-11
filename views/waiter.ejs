@@ -2,139 +2,535 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Modalità cameriere — Mangia & Fuggi</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <title>Modalità cameriere</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5eee6;
       margin: 0;
-      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f6efe7;
+      color: #2b1a12;
     }
-    .waiter-page {
-      max-width: 480px;
-      margin: 40px auto;
-      background: #fff7ef;
-      border-radius: 16px;
-      padding: 24px 20px 28px;
-      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
-      border: 1px solid #f0ddc9;
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+    .card {
+      background: #fff6ee;
+      border-radius: 18px;
+      padding: 24px 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      border: 1px solid #f0dcc7;
     }
     h1 {
-      margin-top: 0;
-      font-size: 1.7rem;
-      color: #42200b;
+      margin: 0 0 8px;
+      font-size: 26px;
+      font-weight: 700;
+    }
+    h2 {
+      margin: 24px 0 10px;
+      font-size: 18px;
     }
     p {
-      margin: 0 0 12px;
-      color: #5a3a22;
+      margin: 4px 0;
+      line-height: 1.4;
     }
-    .error {
-      margin-bottom: 12px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      background: #ffe5e5;
-      color: #8a1b1b;
-      font-size: 0.9rem;
-    }
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: #4a2a14;
-    }
-    input[type="password"],
-    input[type="text"],
-    input[type="number"] {
+    .input {
       width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #d8c1a6;
+      font-size: 16px;
       box-sizing: border-box;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid #d4bda5;
-      font-size: 1rem;
-      margin-bottom: 16px;
     }
-    .btn {
-      display: inline-block;
-      padding: 10px 16px;
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border-radius: 999px;
       border: none;
-      cursor: pointer;
-      background: #7a3b1a;
-      color: #fff;
+      padding: 10px 18px;
+      font-size: 15px;
       font-weight: 600;
-      font-size: 0.95rem;
-      text-decoration: none;
-      text-align: center;
+      cursor: pointer;
+      background: #7b3e20;
+      color: #fff;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
-    .btn.secondary {
-      background: #f2e0cf;
-      color: #7a3b1a;
-      margin-left: 8px;
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+      background: #8d4523;
     }
-    .actions {
-      margin-top: 16px;
+    .button.secondary {
+      background: #f0e1cf;
+      color: #5a3923;
+      box-shadow: none;
+    }
+    .button.secondary:hover {
+      background: #e3d3bf;
+    }
+    .button.sm {
+      padding: 6px 12px;
+      font-size: 13px;
+      box-shadow: none;
+    }
+    .row {
       display: flex;
-      flex-direction: column;
-      gap: 10px;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
     }
-    @media (min-width: 480px) {
-      .actions {
-        flex-direction: row;
-      }
+    .row > * {
+      flex: 1;
+      min-width: 0;
     }
-    small {
-      display: block;
-      margin-top: 4px;
-      font-size: 0.8rem;
-      color: #7b6047;
+    .mt-16 { margin-top:16px; }
+    .mt-24 { margin-top:24px; }
+    .mt-32 { margin-top:32px; }
+    .error {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #ffe5e0;
+      color: #8b1e08;
+      font-size: 14px;
+    }
+    .badge {
+      display: inline-flex;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #f0e1cf;
+      color: #5a3923;
+    }
+    .table-wrap {
+      margin-top: 8px;
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid #edd7c1;
+      background: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    thead {
+      background: #faefe1;
+    }
+    th, td {
+      padding: 8px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody tr:nth-child(even) {
+      background: #fff9f2;
+    }
+    .status-pill {
+      display: inline-flex;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+    .status-pill.pending { background:#fff1bf; color:#7a5b00; }
+    .status-pill.completed { background:#d9f7d9; color:#11611b; }
+    .status-pill.canceled { background:#ffd7d7; color:#8b1e1e; }
+    .pill-mode {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #f0e1cf;
+      margin-left: 4px;
+    }
+    .muted {
+      font-size: 12px;
+      color: #7f6b57;
+    }
+    .items-list {
+      font-size: 12px;
+      color: #5c4632;
+    }
+    .items-list div + div {
+      margin-top: 2px;
+    }
+    .divider {
+      height: 1px;
+      background: #ead7c3;
+      margin: 18px 0;
+    }
+    .tag {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: #f0e1cf;
+      color: #5a3923;
+      margin-left: 6px;
+    }
+    .text-right { text-align:right; }
+    .text-center { text-align:center; }
+    .w-60 { width:60px; }
+    .w-90 { width:90px; }
+
+    /* layout mobile-friendly */
+    @media (max-width: 600px) {
+      .card { padding: 18px 16px; }
+      h1 { font-size: 22px; }
+      .row { flex-direction: column; align-items: stretch; }
+      th, td { font-size: 12px; padding: 6px 8px; }
+      .button { width: 100%; justify-content: center; }
+      .button.sm { width: auto; }
     }
   </style>
 </head>
 <body>
+<div class="page">
 
-  <main class="waiter-page">
-
-    <% if (!loggedIn) { %>
+  <% if (!loggedIn) { %>
+    <!-- ======================= SCHERMATA LOGIN PIN ======================= -->
+    <div class="card" style="max-width: 480px; margin: 40px auto;">
       <h1>Modalità cameriere</h1>
-      <p>Inserisci il PIN che hai salvato nelle impostazioni della pizzeria.</p>
+      <p>Inserisci il PIN salvato nelle impostazioni della pizzeria.</p>
 
-      <% if (error) { %>
-        <div class="error"><%= error %></div>
-      <% } %>
+      <form method="POST" action="/waiter" class="mt-16">
+        <label for="pin" style="font-size:14px; font-weight:500;">PIN</label>
+        <input
+          id="pin"
+          name="pin"
+          type="password"
+          maxlength="10"
+          autocomplete="off"
+          class="input mt-8"
+          placeholder="••••"
+        />
 
-      <form method="POST" action="/waiter">
-        <label for="pin">PIN</label>
-        <input type="password" id="pin" name="pin" autocomplete="off" />
-        <button type="submit" class="btn">Entra</button>
+        <% if (error) { %>
+          <div class="error"><%= error %></div>
+        <% } %>
+
+        <button type="submit" class="button mt-16">Entra</button>
       </form>
+    </div>
 
-    <% } else { %>
-      <h1>Sei in modalità cameriere ✅</h1>
-      <p>Da qui non si vedono statistiche o impostazioni, solo azioni utili al servizio ai tavoli.</p>
+  <% } else { %>
+    <!-- ======================= DASHBOARD CAMERIERE ======================= -->
 
-      <div class="actions">
-        <!-- apre il menu in modalità cameriere -->
-        <a href="/menu?waiter=1" class="btn">
-          Prendi un ordine al tavolo
-        </a>
-
-        <!-- se vuoi puoi usare questo per asporto -->
-        <a href="/menu?waiter=1&orderMode=takeaway" class="btn secondary">
-          Ordine d'asporto
-        </a>
+    <div class="card">
+      <div class="row">
+        <div>
+          <h1>Sei in modalità cameriere ✅</h1>
+          <p class="muted">Da qui puoi creare e gestire gli ordini senza vedere statistiche o impostazioni.</p>
+        </div>
+        <div style="text-align:right;">
+          <form method="POST" action="/waiter/logout">
+            <button type="submit" class="button secondary sm">
+              Esci dalla modalità cameriere
+            </button>
+          </form>
+        </div>
       </div>
 
-      <small>
-        Suggerimento: aggiungi questa pagina alla schermata Home del tablet del cameriere.
-      </small>
+      <!-- BLOCCO NUOVO ORDINE VELOCE -->
+      <h2 class="mt-24">Nuovo ordine veloce</h2>
+      <p class="muted">
+        Compila i campi principali. Questo modulo usa lo stesso motore di checkout dei clienti,
+        ma è pensato per essere usato dal cameriere.
+      </p>
 
-      <form method="POST" action="/waiter/logout" style="margin-top:18px;">
-        <button type="submit" class="btn secondary">Esci dalla modalità cameriere</button>
+      <form id="new-order-form" class="mt-16">
+        <div class="row">
+          <div>
+            <label style="font-size:13px;">Modalità</label>
+            <select id="order-mode" class="input mt-4">
+              <option value="table">Al tavolo</option>
+              <option value="takeaway">Asporto</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:13px;">Tavolo / Codice</label>
+            <input id="order-table" class="input mt-4" placeholder="Es. T1, Sala, ecc." />
+          </div>
+        </div>
+
+        <div class="row mt-16">
+          <div>
+            <label style="font-size:13px;">Nome cliente (opzionale)</label>
+            <input id="order-name" class="input mt-4" placeholder="Nome" />
+          </div>
+          <div>
+            <label style="font-size:13px;">Telefono (opzionale)</label>
+            <input id="order-phone" class="input mt-4" placeholder="Telefono" />
+          </div>
+        </div>
+
+        <div class="mt-16">
+          <label style="font-size:13px;">Nota per cucina (opzionale)</label>
+          <textarea id="order-note" class="input mt-4" rows="2" placeholder="Scrivi eventuali indicazioni..."></textarea>
+        </div>
+
+        <!-- righe prodotti -->
+        <div class="mt-16">
+          <div class="row" style="align-items:flex-end;">
+            <div>
+              <label style="font-size:13px;">Prodotto</label>
+              <input id="item-name" class="input mt-4" placeholder="Es. Margherita" />
+            </div>
+            <div class="w-60">
+              <label style="font-size:13px;">Qtà</label>
+              <input id="item-qty" class="input mt-4" type="number" min="1" value="1" />
+            </div>
+            <div class="w-90">
+              <label style="font-size:13px;">Prezzo €</label>
+              <input id="item-price" class="input mt-4" type="number" step="0.01" min="0" placeholder="8.00" />
+            </div>
+            <div style="flex:0 0 auto;">
+              <button type="button" class="button sm" id="add-item-btn">Aggiungi riga</button>
+            </div>
+          </div>
+
+          <div id="items-preview" class="mt-16 muted">
+            Nessun prodotto aggiunto.
+          </div>
+        </div>
+
+        <div class="row mt-24">
+          <div>
+            <span class="muted">Totale ordine stimato:</span>
+            <strong id="order-total">€ 0,00</strong>
+          </div>
+          <div style="text-align:right;">
+            <button type="submit" class="button">
+              Invia ordine alla cucina
+            </button>
+          </div>
+        </div>
+
+        <div id="new-order-message" class="mt-8 muted"></div>
       </form>
-    <% } %>
 
-  </main>
+      <div class="divider"></div>
+
+      <!-- BLOCCO LISTA ORDINI -->
+      <h2>Ordini attivi</h2>
+      <p class="muted">
+        Solo gli ordini di oggi, ordinati dal più recente. Il cameriere può
+        completarli, annullarli o ripristinarli.
+        <span class="tag">Aggiornamento automatico ogni 10s</span>
+      </p>
+
+      <div class="mt-8">
+        <button type="button" class="button secondary sm" id="refresh-orders-btn">
+          Aggiorna ora
+        </button>
+      </div>
+
+      <div class="table-wrap mt-16">
+        <table>
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tavolo</th>
+            <th>Stato</th>
+            <th>Modo</th>
+            <th>Totale</th>
+            <th>Creato</th>
+            <th>Azioni</th>
+          </tr>
+          </thead>
+          <tbody id="orders-body">
+          <tr>
+            <td colspan="7" class="text-center muted">Caricamento ordini...</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div> <!-- card -->
+  <% } %>
+</div>
+
+<script>
+  <% if (loggedIn) { %>
+  // ====================== LOGICA JS CAMERIERE ======================
+  const items = [];
+
+  const fmtMoney = (x) => {
+    const n = Number(x || 0);
+    return "€ " + n.toFixed(2).replace(".", ",");
+  };
+
+  function renderItemsPreview() {
+    const box = document.getElementById("items-preview");
+    const total = items.reduce((s,it)=> s + it.price*it.qty, 0);
+    document.getElementById("order-total").textContent = fmtMoney(total);
+
+    if (!items.length) {
+      box.textContent = "Nessun prodotto aggiunto.";
+      return;
+    }
+    box.innerHTML = items.map(it =>
+      `<div>${it.qty}× ${it.name} (${fmtMoney(it.price)})</div>`
+    ).join("");
+  }
+
+  document.getElementById("add-item-btn").addEventListener("click", () => {
+    const name  = document.getElementById("item-name").value.trim();
+    const qty   = Number(document.getElementById("item-qty").value || 1);
+    const price = Number(document.getElementById("item-price").value || 0);
+
+    if (!name || !price) {
+      alert("Inserisci almeno nome e prezzo del prodotto.");
+      return;
+    }
+    items.push({ name, qty: qty || 1, price });
+    document.getElementById("item-name").value = "";
+    document.getElementById("item-qty").value  = "1";
+    document.getElementById("item-price").value = "";
+
+    renderItemsPreview();
+  });
+
+  // invio ordine → /api/checkout
+  document.getElementById("new-order-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msgEl = document.getElementById("new-order-message");
+    msgEl.textContent = "";
+
+    if (!items.length) {
+      alert("Aggiungi almeno un prodotto all'ordine.");
+      return;
+    }
+
+    const mode  = document.getElementById("order-mode").value;
+    const table = document.getElementById("order-table").value.trim();
+    const name  = document.getElementById("order-name").value.trim();
+    const phone = document.getElementById("order-phone").value.trim();
+    const note  = document.getElementById("order-note").value.trim();
+
+    const total = items.reduce((s,it)=> s + it.price*it.qty, 0);
+
+    try {
+      const resp = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({
+          tableCode: table || null,
+          items,
+          total,
+          orderMode: mode,
+          customerName: name || null,
+          customerPhone: phone || null,
+          customerNote: note || null
+        })
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "errore");
+
+      // reset
+      items.length = 0;
+      renderItemsPreview();
+      document.getElementById("order-table").value = "";
+      document.getElementById("order-name").value  = "";
+      document.getElementById("order-phone").value = "";
+      document.getElementById("order-note").value  = "";
+
+      msgEl.textContent = "Ordine creato correttamente (ID: " + data.order_id + ").";
+      msgEl.style.color = "#11611b";
+
+      // aggiorna lista ordini
+      loadOrders();
+    } catch (err) {
+      console.error(err);
+      msgEl.textContent = "Errore nell'invio dell'ordine.";
+      msgEl.style.color = "#8b1e1e";
+    }
+  });
+
+  // ====== LISTA ORDINI ======
+  async function loadOrders() {
+    const tbody = document.getElementById("orders-body");
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Caricamento...</td></tr>`;
+
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const resp = await fetch("/api/waiter/orders?day=" + encodeURIComponent(today));
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "error");
+
+      const orders = data.orders || [];
+      if (!orders.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Nessun ordine per oggi.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = orders.map(o => {
+        const created = o.created_at ? new Date(o.created_at) : null;
+        const hh = created ? String(created.getHours()).padStart(2,"0") : "--";
+        const mm = created ? String(created.getMinutes()).padStart(2,"0") : "--";
+        const statusClass = o.status === "completed" ? "completed"
+          : o.status === "canceled" ? "canceled" : "pending";
+        const modeLabel = o.order_mode === "takeaway" ? "Asporto" : "Tavolo";
+
+        return `
+          <tr>
+            <td>#${o.id}</td>
+            <td>${o.table_code || "-"}</td>
+            <td><span class="status-pill ${statusClass}">${o.status}</span></td>
+            <td>${modeLabel}</td>
+            <td>${fmtMoney(o.total || 0)}</td>
+            <td>${hh}:${mm}</td>
+            <td>
+              <button class="button sm" data-act="complete" data-id="${o.id}">Completa</button>
+              <button class="button sm secondary" data-act="cancel" data-id="${o.id}">Annulla</button>
+              <button class="button sm secondary" data-act="restore" data-id="${o.id}">Ripristina</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Errore nel caricamento ordini.</td></tr>`;
+    }
+  }
+
+  document.getElementById("refresh-orders-btn").addEventListener("click", loadOrders);
+
+  // azioni (complete/cancel/restore) → /api/waiter/orders/:id/...
+  document.getElementById("orders-body").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    const id  = btn.getAttribute("data-id");
+    const act = btn.getAttribute("data-act");
+
+    const map = {
+      complete: "complete",
+      cancel: "cancel",
+      restore: "restore"
+    };
+    const endpoint = map[act];
+    if (!endpoint) return;
+
+    try {
+      const resp = await fetch(`/api/waiter/orders/${id}/${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" }
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "error");
+      loadOrders();
+    } catch (err) {
+      console.error(err);
+      alert("Errore nell'aggiornare l'ordine.");
+    }
+  });
+
+  // carica subito e poi ogni 10s
+  loadOrders();
+  setInterval(loadOrders, 10000);
+  <% } %>
+</script>
 
 </body>
 </html>
