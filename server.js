@@ -754,6 +754,44 @@ app.post("/api/orders/:id/ack", requireAdminApi, async (req, res) => {
   res.json({ ok: !error });
 });
 
+// =====================================================================================
+// API ORDINI PER CAMERIERE (usa la stessa logica ma senza statistiche / impostazioni)
+// =====================================================================================
+app.get("/api/waiter/orders", requireWaiter, listOrdersHandler);
+
+// il cameriere può segnare un ordine completato
+app.post("/api/waiter/orders/:id/complete", requireWaiter, async (req, res) => {
+  const { error } = await supabase.from("orders")
+    .update({ status: "completed", completed_at: new Date().toISOString() })
+    .eq("id", req.params.id);
+  res.json({ ok: !error });
+});
+
+// il cameriere può annullare un ordine (es. cliente cambia idea)
+app.post("/api/waiter/orders/:id/cancel", requireWaiter, async (req, res) => {
+  const { error } = await supabase.from("orders")
+    .update({ status: "canceled", canceled_at: new Date().toISOString() })
+    .eq("id", req.params.id);
+  res.json({ ok: !error });
+});
+
+// il cameriere può ripristinare un ordine (da annullato/completato a pending)
+app.post("/api/waiter/orders/:id/restore", requireWaiter, async (req, res) => {
+  const { error } = await supabase.from("orders")
+    .update({ status: "pending", completed_at: null, canceled_at: null })
+    .eq("id", req.params.id);
+  res.json({ ok: !error });
+});
+
+// conferma che l'ordine è stato visto (ack)
+// (utile per una futura lista del cameriere con "nuovi" / "già visti")
+app.post("/api/waiter/orders/:id/ack", requireWaiter, async (req, res) => {
+  const { error } = await supabase.from("orders")
+    .update({ ack: true })
+    .eq("id", req.params.id);
+  res.json({ ok: !error });
+});
+
 // ✅ pagamenti manuali
 app.post("/api/orders/:id/pay", requireAdminApi, async (req, res) => {
   try{
