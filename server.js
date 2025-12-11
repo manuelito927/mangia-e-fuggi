@@ -211,6 +211,21 @@ function requireAdminApi(req, res, next) {
   return res.status(403).json({ ok:false, error:"admin_only" });
 }
 
+// ===== Middleware CAMERIERE =====
+function requireWaiter(req, res, next) {
+  if (req.session && req.session.isWaiter) {
+    return next();
+  }
+
+  // se chiede HTML lo rimando alla pagina di login cameriere
+  if (req.accepts("html")) {
+    return res.redirect("/waiter");
+  }
+
+  // se è una chiamata AJAX/API
+  return res.status(403).json({ ok: false, error: "waiter_only" });
+}
+
 app.use("/admin", (req, res, next) => {
   const required = (process.env.ADMIN_PASSWORD || "").trim();
   if (!required) return next();
