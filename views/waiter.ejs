@@ -259,7 +259,23 @@
           </div>
           <div>
             <label style="font-size:13px;">Tavolo / Codice</label>
-            <input id="order-table" class="input" style="margin-top:4px" placeholder="Es. T1, Sala, ecc." />
+app.get("/waiter", (req, res) => {
+  const prefillTable = req.session.waiterPrefillTable || null;
+
+  if (req.session.isWaiter) {
+    return res.render("waiter", {
+      loggedIn: true,
+      error: null,
+      prefillTable
+    });
+  }
+
+  res.render("waiter", {
+    loggedIn: false,
+    error: null,
+    prefillTable
+  });
+});
           </div>
         </div>
 
