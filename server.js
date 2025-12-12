@@ -357,18 +357,21 @@ app.get("/w/:table", (req, res) => {
   return res.redirect("/waiter");
 });
 
-// GET: mostra la pagina. Se il cameriere è già loggato, vede la schermata "sei dentro"
 app.get("/waiter", (req, res) => {
+  const prefillTable = req.session.waiterPrefillTable || null;
+
   if (req.session.isWaiter) {
     return res.render("waiter", {
       loggedIn: true,
       error: null,
+      prefillTable
     });
   }
 
   res.render("waiter", {
     loggedIn: false,
     error: null,
+    prefillTable
   });
 });
 
