@@ -373,20 +373,20 @@ app.get("/w/:table", (req, res) => {
 });
 
 app.get("/waiter", (req, res) => {
-  const prefillTable = req.session.waiterPrefillTable || null;
+  const presetTable = req.session.waiterTable || "";
 
   if (req.session.isWaiter) {
     return res.render("waiter", {
       loggedIn: true,
       error: null,
-      prefillTable
+      presetTable
     });
   }
 
-  res.render("waiter", {
+  return res.render("waiter", {
     loggedIn: false,
     error: null,
-    prefillTable
+    presetTable
   });
 });
 
