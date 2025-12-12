@@ -858,29 +858,7 @@ app.post("/api/settings", requireAdminApi, async (req, res) => {
   } catch(e){ console.error(e); res.json({ ok:false }); }
 });
 
-// ====== MENU JSON PER ADMIN ======
-app.get("/admin/menu-json", async (req, res) => {
-  try {
-    const { data: categories, error: cErr } = await supabase
-      .from("menu_categories")
-      .select("id,name,sort_order,is_active");
 
-    if (cErr) throw cErr;
-
-    const { data: items, error: iErr } = await supabase
-      .from("menu_items")
-      .select("id,category_id,name,description,price,is_available");
-
-    if (iErr) throw iErr;
-
-    res.json({ ok: true, categories: categories || [], items: items || [] });
-  } catch (e) {
-    console.error("menu-json error:", e);
-    res.status(500).json({ ok: false, error: "menu_json_failed" });
-  }
-});
-
-app.post("/admin/menu-json/add-category", async (req, res) => {
   try {
     const { name, sort_order = 0 } = req.body || {};
     if (!name || typeof name !== "string") {
