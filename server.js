@@ -356,6 +356,21 @@ app.get("/w/:table", (req, res) => {
   req.session.waiterPrefillTable = t || null;
   return res.redirect("/waiter");
 });
+// ===================== LINK RAPIDO CAMERIERE CON TAVOLO =====================
+// Esempio: /w/T1  -> salva "T1" in sessione e manda al login /waiter
+app.get("/w/:table", (req, res) => {
+  const t = (req.params.table || "").toString().trim();
+  if (!t) return res.redirect("/waiter");
+
+  // salvo in sessione il tavolo scelto dal link
+  req.session.waiterTable = t;
+
+  // se già loggato cameriere -> vai diretto alla dashboard
+  if (req.session.isWaiter) return res.redirect("/waiter");
+
+  // altrimenti -> vai alla pagina PIN
+  return res.redirect("/waiter");
+});
 
 app.get("/waiter", (req, res) => {
   const prefillTable = req.session.waiterPrefillTable || null;
