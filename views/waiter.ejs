@@ -220,54 +220,75 @@
         Per ora è la versione “base”. Nel prossimo step lo trasformiamo in POS con menu vero e carrello.
       </p>
 
-      <form id="new-order-form" class="mt-16">
-        <div class="row">
-          <div>
-            <label style="font-size:13px;">Modalità</label>
-            <select id="order-mode" class="input" style="margin-top:4px">
-              <option value="table">Al tavolo</option>
-              <option value="takeaway">Asporto</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:13px;">Tavolo / Codice</label>
-            <input id="order-table" class="input" style="margin-top:4px" placeholder="Es. T1, Sala, ecc." />
-          </div>
-        </div>
+<form id="new-order-form" class="mt-16">
+  <div class="row">
+    <div>
+      <label style="font-size:13px;">Modalità</label>
+      <select id="order-mode" class="input" style="margin-top:4px">
+        <option value="table">Al tavolo</option>
+        <option value="takeaway">Asporto</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:13px;">Tavolo / Codice</label>
+      <input id="order-table" class="input" style="margin-top:4px" placeholder="Es. T1, Sala, ecc." />
+    </div>
+  </div>
 
-        <div class="row mt-16">
-          <div>
-            <label style="font-size:13px;">Nome cliente (opzionale)</label>
-            <input id="order-name" class="input" style="margin-top:4px" placeholder="Nome" />
-          </div>
-          <div>
-            <label style="font-size:13px;">Telefono (opzionale)</label>
-            <input id="order-phone" class="input" style="margin-top:4px" placeholder="Telefono" />
-          </div>
-        </div>
+  <div class="row mt-16">
+    <div>
+      <label style="font-size:13px;">Nome cliente (opzionale)</label>
+      <input id="order-name" class="input" style="margin-top:4px" placeholder="Nome" />
+    </div>
+    <div>
+      <label style="font-size:13px;">Telefono (opzionale)</label>
+      <input id="order-phone" class="input" style="margin-top:4px" placeholder="Telefono" />
+    </div>
+  </div>
 
-        <div class="mt-16">
-          <label style="font-size:13px;">Nota per cucina (opzionale)</label>
-          <textarea id="order-note" class="input" style="margin-top:4px" rows="2" placeholder="Scrivi eventuali indicazioni..."></textarea>
-        </div>
+  <div class="mt-16">
+    <label style="font-size:13px;">Nota per cucina (opzionale)</label>
+    <textarea id="order-note" class="input" style="margin-top:4px" rows="2" placeholder="Scrivi eventuali indicazioni..."></textarea>
+  </div>
 
-        <!-- ✅ Per ora togliamo le righe manuali (nel prossimo step mettiamo MENU vero) -->
-        <div class="mt-16 muted">
-          Sezione prodotti: in arrivo (POS con menu e carrello).
-        </div>
+  <div class="divider"></div>
 
-        <div class="row mt-24">
-          <div>
-            <span class="muted">Totale:</span>
-            <strong id="order-total">€ 0,00</strong>
-          </div>
-          <div style="text-align:right;">
-            <button type="submit" class="button">Invia ordine</button>
-          </div>
-        </div>
+  <!-- ✅ MENU + CARRELLO -->
+  <h2 style="margin:0 0 10px">Menu</h2>
+  <p class="muted">Tocca un prodotto per aggiungerlo al carrello.</p>
 
-        <div id="new-order-message" class="mt-8 muted"></div>
-      </form>
+  <div class="row mt-16">
+    <div>
+      <label style="font-size:13px;">Categoria</label>
+      <select id="cat-filter" class="input" style="margin-top:4px">
+        <option value="">Tutte</option>
+      </select>
+    </div>
+    <div>
+      <label style="font-size:13px;">Cerca</label>
+      <input id="menu-search" class="input" style="margin-top:4px" placeholder="Scrivi un nome..." />
+    </div>
+  </div>
+
+  <div id="menu-grid" class="mt-16"></div>
+
+  <div class="divider"></div>
+
+  <h2 style="margin:0 0 10px">Carrello</h2>
+  <div id="cart-box" class="muted">Carrello vuoto.</div>
+
+  <div class="row mt-24">
+    <div>
+      <span class="muted">Totale:</span>
+      <strong id="order-total">€ 0,00</strong>
+    </div>
+    <div style="text-align:right;">
+      <button type="submit" class="button">Invia ordine alla cucina</button>
+    </div>
+  </div>
+
+  <div id="new-order-message" class="mt-8 muted"></div>
+</form>
 
       <div class="divider"></div>
 
