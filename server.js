@@ -848,6 +848,8 @@ app.get("/api/settings", requireAdminApi, async (_req, res) => {
 });
 
 app.post("/api/settings", requireAdminApi, async (req, res) => {
+  // === AGGIUNGI CATEGORIA ===
+app.post("/admin/menu-json/add-category", async (req, res) => {
   try {
     const { sound_enabled=false, autorefresh=false } = req.body || {};
     const rows = [
