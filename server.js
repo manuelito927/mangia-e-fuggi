@@ -869,6 +869,7 @@ app.post("/api/settings", requireAdminApi, async (req, res) => {
 app.post("/admin/menu-json/add-category", async (req, res) => {
   try {
     const { name, sort_order = 0 } = req.body || {};
+
     if (!name || typeof name !== "string") {
       return res.status(400).json({ ok: false, error: "missing_name" });
     }
@@ -887,10 +888,10 @@ app.post("/admin/menu-json/add-category", async (req, res) => {
 
     if (error) throw error;
 
-    res.json({ ok: true, category: data });
+    return res.json({ ok: true, category: data });
   } catch (e) {
     console.error("add-category error:", e);
-    res.status(500).json({ ok: false, error: "add_category_failed" });
+    return res.status(500).json({ ok: false, error: "add_category_failed" });
   }
 });
 
