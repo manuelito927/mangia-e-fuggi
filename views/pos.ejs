@@ -1,1 +1,57 @@
-.
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>POS Tavoli</title>
+  <link rel="stylesheet" href="/css/pos.css"/>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <h1>POS Tavoli</h1>
+
+      <div class="row">
+        <label>Tavolo</label>
+        <select id="tableSelect">
+          <option value="">Seleziona…</option>
+          <option value="T1">T1</option><option value="T2">T2</option><option value="T3">T3</option>
+          <option value="T4">T4</option><option value="T5">T5</option><option value="T6">T6</option>
+        </select>
+
+        <button id="loadBtn">Carica conto</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="panel">
+        <h2>Categorie</h2>
+        <div id="catGrid" class="tileGrid"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Prodotti</h2>
+        <div id="itemGrid" class="tileGrid"></div>
+      </section>
+
+      <section class="panel cart">
+        <h2>Conto tavolo</h2>
+        <div id="cartLines" class="lines"></div>
+        <div class="tot">
+          Totale: € <span id="cartTotal">0.00</span>
+        </div>
+        <div class="actions">
+          <button id="saveBtn" class="primary">Aggiungi al tavolo</button>
+          <button id="clearBtn">Svuota selezione</button>
+        </div>
+        <div class="hint" id="statusHint"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    window.POS_BASE_URL = "<%= BASE_URL %>";
+  </script>
+  <script src="/js/pos.js"></script>
+</body>
+</html>
