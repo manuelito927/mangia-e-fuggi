@@ -267,6 +267,10 @@ app.get("/admin", (req, res) => {
   });
 });
 
+app.get("/admin/pos", (req, res) => {
+  res.render("pos", { BASE_URL: getBaseUrl(req) });
+});
+
 // PAGINA IMPOSTAZIONI PIZZERIA
 
 // mostra il form
