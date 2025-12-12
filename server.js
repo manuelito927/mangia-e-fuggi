@@ -249,11 +249,13 @@ app.use("/admin", (req, res, next) => {
 app.get("/", (_req, res) => res.render("home"));
 app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/storia", (_req, res) => res.render("storia"));
-app.get("/admin", (req, res) => {
-  // ✅ POS manuale (admin)
+
+// ✅ POS manuale (admin)
 app.get("/admin/pos", (req, res) => {
   res.render("pos");
 });
+
+app.get("/admin", (req, res) => {
   // usa SOLO la anon key nel client
   const SUPABASE_ANON = getEnvAny("SUPABASE_ANON_KEY") || "";
   res.render("admin", {
