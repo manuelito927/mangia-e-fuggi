@@ -848,20 +848,51 @@ app.get("/api/settings", requireAdminApi, async (_req, res) => {
 });
 
 app.post("/api/settings", requireAdminApi, async (req, res) => {
-  // === AGGIUNGI CATEGORIA ===
-app.post("/admin/menu-json/add-category", async (req, res) => {
   try {
-    const { sound_enabled=false, autorefresh=false } = req.body || {};
+    const { sound_enabled = false, autorefresh = false } = req.body || {};
+
     const rows = [
-      { key:"sound_enabled", value: { v: !!sound_enabled } },
-      { key:"autorefresh",   value: { v: !!autorefresh } }
+      { key: "sound_enabled", value: { v: !!sound_enabled } },
+      { key: "autorefresh", value: { v: !!autorefresh } }
     ];
+
     const { error } = await supabase.from("settings").upsert(rows);
     if (error) throw error;
-    res.json({ ok:true });
-  } catch(e){ console.error(e); res.json({ ok:false }); }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.json({ ok: false });
+  }
 });
 
+app.post("/admin/menu-json/add-category", async (req, res) => {
+  try {
+    const { name, sort_order = 0 } = req.body || {};
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({ ok: false, error: "missing_name" });
+    }
+
+    const row = {
+      name: name.trim(),
+      sort_order: Number(sort_order) || 0,
+      is_active: true
+    };
+
+    const { data, error } = await supabase
+      .from("menu_categories")
+      .insert([row])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ ok: true, category: data });
+  } catch (e) {
+    console.error("add-category error:", e);
+    res.status(500).json({ ok: false, error: "add_category_failed" });
+  }
+});
 
   try {
     const { name, sort_order = 0 } = req.body || {};
