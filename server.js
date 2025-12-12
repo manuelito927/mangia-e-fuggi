@@ -349,6 +349,14 @@ app.post("/admin/settings", async (req, res) => {
 });
 // ===================== PAGINA CAMERIERE /waiter (login con PIN) =====================
 
+// ✅ Link rapido: imposta il tavolo e porta al login cameriere
+// esempio: /w/T1  oppure /w/Tavolo%201
+app.get("/w/:table", (req, res) => {
+  const t = (req.params.table || "").toString().trim();
+  req.session.waiterPrefillTable = t || null;
+  return res.redirect("/waiter");
+});
+
 // GET: mostra la pagina. Se il cameriere è già loggato, vede la schermata "sei dentro"
 app.get("/waiter", (req, res) => {
   if (req.session.isWaiter) {
