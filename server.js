@@ -895,33 +895,6 @@ app.post("/admin/menu-json/add-category", async (req, res) => {
   }
 });
 
-  try {
-    const { name, sort_order = 0 } = req.body || {};
-    if (!name || typeof name !== "string") {
-      return res.status(400).json({ ok: false, error: "missing_name" });
-    }
-
-    const row = {
-      name: name.trim(),
-      sort_order: Number(sort_order) || 0,
-      is_active: true
-    };
-
-    const { data, error } = await supabase
-      .from("menu_categories")
-      .insert([row])
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    res.json({ ok: true, category: data });
-  } catch (e) {
-    console.error("add-category error:", e);
-    res.status(500).json({ ok: false, error: "add_category_failed" });
-  }
-});
-
 // === AGGIUNGI PRODOTTO (upload su Supabase Storage) ===
 app.post(
   "/admin/menu-json/add-item",
