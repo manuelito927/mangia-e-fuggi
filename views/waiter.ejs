@@ -138,23 +138,9 @@
     .status-pill.pending { background:#fff1bf; color:#7a5b00; }
     .status-pill.completed { background:#d9f7d9; color:#11611b; }
     .status-pill.canceled { background:#ffd7d7; color:#8b1e1e; }
-    .pill-mode {
-      font-size: 11px;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: #f0e1cf;
-      margin-left: 4px;
-    }
     .muted {
       font-size: 12px;
       color: #7f6b57;
-    }
-    .items-list {
-      font-size: 12px;
-      color: #5c4632;
-    }
-    .items-list div + div {
-      margin-top: 2px;
     }
     .divider {
       height: 1px;
@@ -171,10 +157,7 @@
     }
     .text-right { text-align:right; }
     .text-center { text-align:center; }
-    .w-60 { width:60px; }
-    .w-90 { width:90px; }
 
-    /* layout mobile-friendly */
     @media (max-width: 600px) {
       .card { padding: 18px 16px; }
       h1 { font-size: 22px; }
@@ -185,11 +168,12 @@
     }
   </style>
 </head>
+
 <body>
 <div class="page">
 
   <% if (!loggedIn) { %>
-    <!-- ======================= SCHERMATA LOGIN PIN ======================= -->
+    <!-- ======================= LOGIN PIN ======================= -->
     <div class="card" style="max-width: 480px; margin: 40px auto;">
       <h1>Modalità cameriere</h1>
       <p>Inserisci il PIN salvato nelle impostazioni della pizzeria.</p>
@@ -225,85 +209,60 @@
         </div>
         <div style="text-align:right;">
           <form method="POST" action="/waiter/logout">
-            <button type="submit" class="button secondary sm">
-              Esci dalla modalità cameriere
-            </button>
+            <button type="submit" class="button secondary sm">Esci</button>
           </form>
         </div>
       </div>
 
-      <!-- BLOCCO NUOVO ORDINE VELOCE -->
-      <h2 class="mt-24">Nuovo ordine veloce</h2>
+      <!-- BLOCCO ORDINE (BASE) -->
+      <h2 class="mt-24">Nuovo ordine</h2>
       <p class="muted">
-        Compila i campi principali. Questo modulo usa lo stesso motore di checkout dei clienti,
-        ma è pensato per essere usato dal cameriere.
+        Per ora è la versione “base”. Nel prossimo step lo trasformiamo in POS con menu vero e carrello.
       </p>
 
       <form id="new-order-form" class="mt-16">
         <div class="row">
           <div>
             <label style="font-size:13px;">Modalità</label>
-            <select id="order-mode" class="input mt-4">
+            <select id="order-mode" class="input" style="margin-top:4px">
               <option value="table">Al tavolo</option>
               <option value="takeaway">Asporto</option>
             </select>
           </div>
           <div>
             <label style="font-size:13px;">Tavolo / Codice</label>
-            <input id="order-table" class="input mt-4" placeholder="Es. T1, Sala, ecc." />
+            <input id="order-table" class="input" style="margin-top:4px" placeholder="Es. T1, Sala, ecc." />
           </div>
         </div>
 
         <div class="row mt-16">
           <div>
             <label style="font-size:13px;">Nome cliente (opzionale)</label>
-            <input id="order-name" class="input mt-4" placeholder="Nome" />
+            <input id="order-name" class="input" style="margin-top:4px" placeholder="Nome" />
           </div>
           <div>
             <label style="font-size:13px;">Telefono (opzionale)</label>
-            <input id="order-phone" class="input mt-4" placeholder="Telefono" />
+            <input id="order-phone" class="input" style="margin-top:4px" placeholder="Telefono" />
           </div>
         </div>
 
         <div class="mt-16">
           <label style="font-size:13px;">Nota per cucina (opzionale)</label>
-          <textarea id="order-note" class="input mt-4" rows="2" placeholder="Scrivi eventuali indicazioni..."></textarea>
+          <textarea id="order-note" class="input" style="margin-top:4px" rows="2" placeholder="Scrivi eventuali indicazioni..."></textarea>
         </div>
 
-        <!-- righe prodotti -->
-        <div class="mt-16">
-          <div class="row" style="align-items:flex-end;">
-            <div>
-              <label style="font-size:13px;">Prodotto</label>
-              <input id="item-name" class="input mt-4" placeholder="Es. Margherita" />
-            </div>
-            <div class="w-60">
-              <label style="font-size:13px;">Qtà</label>
-              <input id="item-qty" class="input mt-4" type="number" min="1" value="1" />
-            </div>
-            <div class="w-90">
-              <label style="font-size:13px;">Prezzo €</label>
-              <input id="item-price" class="input mt-4" type="number" step="0.01" min="0" placeholder="8.00" />
-            </div>
-            <div style="flex:0 0 auto;">
-              <button type="button" class="button sm" id="add-item-btn">Aggiungi riga</button>
-            </div>
-          </div>
-
-          <div id="items-preview" class="mt-16 muted">
-            Nessun prodotto aggiunto.
-          </div>
+        <!-- ✅ Per ora togliamo le righe manuali (nel prossimo step mettiamo MENU vero) -->
+        <div class="mt-16 muted">
+          Sezione prodotti: in arrivo (POS con menu e carrello).
         </div>
 
         <div class="row mt-24">
           <div>
-            <span class="muted">Totale ordine stimato:</span>
+            <span class="muted">Totale:</span>
             <strong id="order-total">€ 0,00</strong>
           </div>
           <div style="text-align:right;">
-            <button type="submit" class="button">
-              Invia ordine alla cucina
-            </button>
+            <button type="submit" class="button">Invia ordine</button>
           </div>
         </div>
 
@@ -312,18 +271,15 @@
 
       <div class="divider"></div>
 
-      <!-- BLOCCO LISTA ORDINI -->
+      <!-- LISTA ORDINI -->
       <h2>Ordini attivi</h2>
       <p class="muted">
-        Solo gli ordini di oggi, ordinati dal più recente. Il cameriere può
-        completarli, annullarli o ripristinarli.
+        Solo gli ordini di oggi, ordinati dal più recente.
         <span class="tag">Aggiornamento automatico ogni 10s</span>
       </p>
 
       <div class="mt-8">
-        <button type="button" class="button secondary sm" id="refresh-orders-btn">
-          Aggiorna ora
-        </button>
+        <button type="button" class="button secondary sm" id="refresh-orders-btn">Aggiorna ora</button>
       </div>
 
       <div class="table-wrap mt-16">
@@ -340,112 +296,35 @@
           </tr>
           </thead>
           <tbody id="orders-body">
-          <tr>
-            <td colspan="7" class="text-center muted">Caricamento ordini...</td>
-          </tr>
+            <tr>
+              <td colspan="7" class="text-center muted">Caricamento ordini...</td>
+            </tr>
           </tbody>
         </table>
       </div>
-
-    </div> <!-- card -->
+    </div>
   <% } %>
+
 </div>
 
 <script>
-  <% if (loggedIn) { %>
-  // ====================== LOGICA JS CAMERIERE ======================
-  const items = [];
+<% if (loggedIn) { %>
+  // ====================== LOGICA JS CAMERIERE (BASE) ======================
 
   const fmtMoney = (x) => {
     const n = Number(x || 0);
     return "€ " + n.toFixed(2).replace(".", ",");
   };
 
-  function renderItemsPreview() {
-    const box = document.getElementById("items-preview");
-    const total = items.reduce((s,it)=> s + it.price*it.qty, 0);
-    document.getElementById("order-total").textContent = fmtMoney(total);
+  // Per ora totale fisso a 0 (quando mettiamo il carrello, lo calcoliamo davvero)
+  document.getElementById("order-total").textContent = fmtMoney(0);
 
-    if (!items.length) {
-      box.textContent = "Nessun prodotto aggiunto.";
-      return;
-    }
-    box.innerHTML = items.map(it =>
-      `<div>${it.qty}× ${it.name} (${fmtMoney(it.price)})</div>`
-    ).join("");
-  }
-
-  document.getElementById("add-item-btn").addEventListener("click", () => {
-    const name  = document.getElementById("item-name").value.trim();
-    const qty   = Number(document.getElementById("item-qty").value || 1);
-    const price = Number(document.getElementById("item-price").value || 0);
-
-    if (!name || !price) {
-      alert("Inserisci almeno nome e prezzo del prodotto.");
-      return;
-    }
-    items.push({ name, qty: qty || 1, price });
-    document.getElementById("item-name").value = "";
-    document.getElementById("item-qty").value  = "1";
-    document.getElementById("item-price").value = "";
-
-    renderItemsPreview();
-  });
-
-  // invio ordine → /api/checkout
+  // invio ordine → per ora BLOCCATO perché manca il carrello
   document.getElementById("new-order-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const msgEl = document.getElementById("new-order-message");
-    msgEl.textContent = "";
-
-    if (!items.length) {
-      alert("Aggiungi almeno un prodotto all'ordine.");
-      return;
-    }
-
-    const mode  = document.getElementById("order-mode").value;
-    const table = document.getElementById("order-table").value.trim();
-    const name  = document.getElementById("order-name").value.trim();
-    const phone = document.getElementById("order-phone").value.trim();
-    const note  = document.getElementById("order-note").value.trim();
-
-    const total = items.reduce((s,it)=> s + it.price*it.qty, 0);
-
-    try {
-      const resp = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type":"application/json" },
-        body: JSON.stringify({
-          tableCode: table || null,
-          items,
-          total,
-          orderMode: mode,
-          customerName: name || null,
-          customerPhone: phone || null,
-          customerNote: note || null
-        })
-      });
-      const data = await resp.json();
-      if (!data.ok) throw new Error(data.error || "errore");
-
-      // reset
-      items.length = 0;
-      renderItemsPreview();
-      document.getElementById("order-table").value = "";
-      document.getElementById("order-name").value  = "";
-      document.getElementById("order-phone").value = "";
-      document.getElementById("order-note").value  = "";
-
-      msgEl.textContent = "Ordine creato correttamente (ID: " + data.order_id + ").";
-      msgEl.style.color = "#11611b";
-
-      // aggiorna lista ordini
-      loadOrders();
-    } catch (err) {
-      console.error(err);
-      msgEl.textContent = "Errore nell'invio dell'ordine.";
-      msgEl.style.color = "#8b1e1e";
-    }
+    msgEl.style.color = "#8b1e1e";
+    msgEl.textContent = "⚠️ In questo step non puoi ancora inviare prodotti: nel prossimo step mettiamo il POS con menu e carrello.";
   });
 
   // ====== LISTA ORDINI ======
@@ -469,9 +348,14 @@
         const created = o.created_at ? new Date(o.created_at) : null;
         const hh = created ? String(created.getHours()).padStart(2,"0") : "--";
         const mm = created ? String(created.getMinutes()).padStart(2,"0") : "--";
-        const statusClass = o.status === "completed" ? "completed"
-          : o.status === "canceled" ? "canceled" : "pending";
-        const modeLabel = o.order_mode === "takeaway" ? "Asporto" : "Tavolo";
+
+        const statusClass =
+          o.status === "completed" ? "completed" :
+          o.status === "canceled" ? "canceled" : "pending";
+
+        const modeLabel =
+          o.order_mode === "takeaway" ? "Asporto" :
+          (o.order_mode === "home" ? "Da casa" : "Tavolo");
 
         return `
           <tr>
@@ -497,18 +381,14 @@
 
   document.getElementById("refresh-orders-btn").addEventListener("click", loadOrders);
 
-  // azioni (complete/cancel/restore) → /api/waiter/orders/:id/...
   document.getElementById("orders-body").addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-act]");
     if (!btn) return;
+
     const id  = btn.getAttribute("data-id");
     const act = btn.getAttribute("data-act");
 
-    const map = {
-      complete: "complete",
-      cancel: "cancel",
-      restore: "restore"
-    };
+    const map = { complete: "complete", cancel: "cancel", restore: "restore" };
     const endpoint = map[act];
     if (!endpoint) return;
 
@@ -526,10 +406,9 @@
     }
   });
 
-  // carica subito e poi ogni 10s
   loadOrders();
   setInterval(loadOrders, 10000);
-  <% } %>
+<% } %>
 </script>
 
 </body>
