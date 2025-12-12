@@ -798,6 +798,95 @@ app.post("/api/waiter/orders/:id/ack", requireWaiter, async (req, res) => {
   res.json({ ok: !error });
 });
 
+// =====================
+// ✅ CAMERIERE: recupera ordine "aperto" di un tavolo (pending)
+// GET /api/waiter/open-order?table=T1
+// =====================
+app.get("/api/waiter/open-order", requireWaiter, async (req, res) => {
+  try {
+    const table = (req.query.table || "").toString().trim();
+    if (!table) return res.status(400).json({ ok: false, error: "missing_table" });
+
+    // prendo l'ordine pending più recente per quel tavolo
+    const { data: ord, error: oErr } = await supabase
+      .from("orders")
+      .select("id, table_code, total, status, order_mode, created_at")
+      .eq("table_code", table)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (oErr) throw oErr;
+    if (!ord) return res.json({ ok: true, order: null, items: [] });
+
+    const { data: its, error: iErr } = await supabase
+      .from("order_items")
+      .select("id, name, qty, price")
+      .eq("order_id", ord.id)
+      .order("id", { ascending: true });
+
+    if (iErr) throw iErr;
+
+    return res.json({ ok: true, order: ord, items: its || [] });
+  } catch (e) {
+    console.error("open-order error:", e);
+    return res.status(500).json({ ok: false, error: "open_order_failed" });
+  }
+});
+
+
+// =====================
+// ✅ CAMERIERE: aggiorna righe ordine (sovrascrive order_items e aggiorna totale)
+// POST /api/waiter/orders/:id/update-items
+// body: { items:[{name,qty,price},...], total }
+// =====================
+app.post("/api/waiter/orders/:id/update-items", requireWaiter, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const items = Array.isArray(req.body?.items) ? req.body.items : [];
+    const total = Number(req.body?.total || 0);
+
+    if (!id) return res.status(400).json({ ok: false, error: "missing_id" });
+    if (!items.length) return res.status(400).json({ ok: false, error: "no_items" });
+
+    // 1) cancello righe vecchie
+    const { error: delErr } = await supabase
+      .from("order_items")
+      .delete()
+      .eq("order_id", id);
+
+    if (delErr) throw delErr;
+
+    // 2) inserisco righe nuove
+    const rows = items.map(it => ({
+      order_id: Number(id),
+      name: (it.name || "").toString(),
+      qty: Number(it.qty || 1),
+      price: Number(it.price || 0)
+    }));
+
+    const { error: insErr } = await supabase
+      .from("order_items")
+      .insert(rows);
+
+    if (insErr) throw insErr;
+
+    // 3) aggiorno totale ordine
+    const { error: upErr } = await supabase
+      .from("orders")
+      .update({ total })
+      .eq("id", id);
+
+    if (upErr) throw upErr;
+
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("update-items error:", e);
+    return res.status(500).json({ ok: false, error: "update_items_failed" });
+  }
+});
+
 // ✅ pagamenti manuali
 app.post("/api/orders/:id/pay", requireAdminApi, async (req, res) => {
   try{
