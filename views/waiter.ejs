@@ -158,6 +158,36 @@
     .text-right { text-align:right; }
     .text-center { text-align:center; }
 
+    /* ✅ STILI POS (menu + carrello) */
+    #menu-grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:10px;
+    }
+    @media (max-width:900px){ #menu-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (max-width:600px){ #menu-grid{ grid-template-columns: 1fr; } }
+
+    .mitem{
+      background:#fff;
+      border:1px solid #edd7c1;
+      border-radius:14px;
+      padding:10px;
+      cursor:pointer;
+    }
+    .mitem:hover{ background:#fff9f2; }
+    .mitem .name{ font-weight:700; }
+    .mitem .price{ font-weight:700; }
+
+    .cart-row{
+      display:flex; justify-content:space-between; align-items:center;
+      gap:8px; padding:8px 0; border-top:1px solid #eee;
+    }
+    .cart-actions{ display:flex; gap:6px; align-items:center; }
+    .qtybtn{
+      border:1px solid #edd7c1; background:#fff;
+      padding:4px 10px; border-radius:999px; cursor:pointer;
+    }
+
     @media (max-width: 600px) {
       .card { padding: 18px 16px; }
       h1 { font-size: 22px; }
@@ -214,81 +244,78 @@
         </div>
       </div>
 
-      <!-- BLOCCO ORDINE (BASE) -->
+      <!-- POS -->
       <h2 class="mt-24">Nuovo ordine</h2>
-      <p class="muted">
-        Per ora è la versione “base”. Nel prossimo step lo trasformiamo in POS con menu vero e carrello.
-      </p>
+      <p class="muted">Tocca i prodotti del menu → finiscono nel carrello → invia alla cucina.</p>
 
-<form id="new-order-form" class="mt-16">
-  <div class="row">
-    <div>
-      <label style="font-size:13px;">Modalità</label>
-      <select id="order-mode" class="input" style="margin-top:4px">
-        <option value="table">Al tavolo</option>
-        <option value="takeaway">Asporto</option>
-      </select>
-    </div>
-    <div>
-      <label style="font-size:13px;">Tavolo / Codice</label>
-      <input id="order-table" class="input" style="margin-top:4px" placeholder="Es. T1, Sala, ecc." />
-    </div>
-  </div>
+      <form id="new-order-form" class="mt-16">
+        <div class="row">
+          <div>
+            <label style="font-size:13px;">Modalità</label>
+            <select id="order-mode" class="input" style="margin-top:4px">
+              <option value="table">Al tavolo</option>
+              <option value="takeaway">Asporto</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:13px;">Tavolo / Codice</label>
+            <input id="order-table" class="input" style="margin-top:4px" placeholder="Es. T1, Sala, ecc." />
+          </div>
+        </div>
 
-  <div class="row mt-16">
-    <div>
-      <label style="font-size:13px;">Nome cliente (opzionale)</label>
-      <input id="order-name" class="input" style="margin-top:4px" placeholder="Nome" />
-    </div>
-    <div>
-      <label style="font-size:13px;">Telefono (opzionale)</label>
-      <input id="order-phone" class="input" style="margin-top:4px" placeholder="Telefono" />
-    </div>
-  </div>
+        <div class="row mt-16">
+          <div>
+            <label style="font-size:13px;">Nome cliente (opzionale)</label>
+            <input id="order-name" class="input" style="margin-top:4px" placeholder="Nome" />
+          </div>
+          <div>
+            <label style="font-size:13px;">Telefono (opzionale)</label>
+            <input id="order-phone" class="input" style="margin-top:4px" placeholder="Telefono" />
+          </div>
+        </div>
 
-  <div class="mt-16">
-    <label style="font-size:13px;">Nota per cucina (opzionale)</label>
-    <textarea id="order-note" class="input" style="margin-top:4px" rows="2" placeholder="Scrivi eventuali indicazioni..."></textarea>
-  </div>
+        <div class="mt-16">
+          <label style="font-size:13px;">Nota per cucina (opzionale)</label>
+          <textarea id="order-note" class="input" style="margin-top:4px" rows="2" placeholder="Scrivi eventuali indicazioni..."></textarea>
+        </div>
 
-  <div class="divider"></div>
+        <div class="divider"></div>
 
-  <!-- ✅ MENU + CARRELLO -->
-  <h2 style="margin:0 0 10px">Menu</h2>
-  <p class="muted">Tocca un prodotto per aggiungerlo al carrello.</p>
+        <h2 style="margin:0 0 10px">Menu</h2>
+        <p class="muted">Tocca un prodotto per aggiungerlo al carrello.</p>
 
-  <div class="row mt-16">
-    <div>
-      <label style="font-size:13px;">Categoria</label>
-      <select id="cat-filter" class="input" style="margin-top:4px">
-        <option value="">Tutte</option>
-      </select>
-    </div>
-    <div>
-      <label style="font-size:13px;">Cerca</label>
-      <input id="menu-search" class="input" style="margin-top:4px" placeholder="Scrivi un nome..." />
-    </div>
-  </div>
+        <div class="row mt-16">
+          <div>
+            <label style="font-size:13px;">Categoria</label>
+            <select id="cat-filter" class="input" style="margin-top:4px">
+              <option value="">Tutte</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:13px;">Cerca</label>
+            <input id="menu-search" class="input" style="margin-top:4px" placeholder="Scrivi un nome..." />
+          </div>
+        </div>
 
-  <div id="menu-grid" class="mt-16"></div>
+        <div id="menu-grid" class="mt-16"></div>
 
-  <div class="divider"></div>
+        <div class="divider"></div>
 
-  <h2 style="margin:0 0 10px">Carrello</h2>
-  <div id="cart-box" class="muted">Carrello vuoto.</div>
+        <h2 style="margin:0 0 10px">Carrello</h2>
+        <div id="cart-box" class="muted">Carrello vuoto.</div>
 
-  <div class="row mt-24">
-    <div>
-      <span class="muted">Totale:</span>
-      <strong id="order-total">€ 0,00</strong>
-    </div>
-    <div style="text-align:right;">
-      <button type="submit" class="button">Invia ordine alla cucina</button>
-    </div>
-  </div>
+        <div class="row mt-24">
+          <div>
+            <span class="muted">Totale:</span>
+            <strong id="order-total">€ 0,00</strong>
+          </div>
+          <div style="text-align:right;">
+            <button type="submit" class="button">Invia ordine alla cucina</button>
+          </div>
+        </div>
 
-  <div id="new-order-message" class="mt-8 muted"></div>
-</form>
+        <div id="new-order-message" class="mt-8 muted"></div>
+      </form>
 
       <div class="divider"></div>
 
@@ -330,22 +357,193 @@
 
 <script>
 <% if (loggedIn) { %>
-  // ====================== LOGICA JS CAMERIERE (BASE) ======================
+  // ====================== LOGICA JS CAMERIERE (POS) ======================
+
+  let MENU = { categories: [], items: [] };
+  let CART = []; // {id, name, price, qty}
 
   const fmtMoney = (x) => {
     const n = Number(x || 0);
     return "€ " + n.toFixed(2).replace(".", ",");
   };
 
-  // Per ora totale fisso a 0 (quando mettiamo il carrello, lo calcoliamo davvero)
-  document.getElementById("order-total").textContent = fmtMoney(0);
+  function cartTotal(){
+    return CART.reduce((s,i)=> s + (Number(i.price)*Number(i.qty)), 0);
+  }
 
-  // invio ordine → per ora BLOCCATO perché manca il carrello
-  document.getElementById("new-order-form").addEventListener("submit", async (e) => {
+  function catName(id){
+    const c = (MENU.categories||[]).find(x => Number(x.id) === Number(id));
+    return c ? c.name : "—";
+  }
+
+  function renderCart(){
+    const box = document.getElementById("cart-box");
+    const totalEl = document.getElementById("order-total");
+    totalEl.textContent = fmtMoney(cartTotal());
+
+    if(!CART.length){
+      box.textContent = "Carrello vuoto.";
+      return;
+    }
+
+    box.innerHTML = CART.map(it => `
+      <div class="cart-row">
+        <div>
+          <b>${it.name}</b> <span class="muted">(${fmtMoney(it.price)})</span>
+        </div>
+        <div class="cart-actions">
+          <button type="button" class="qtybtn" data-act="dec" data-id="${it.id}">-</button>
+          <b>${it.qty}</b>
+          <button type="button" class="qtybtn" data-act="inc" data-id="${it.id}">+</button>
+          <button type="button" class="qtybtn" data-act="del" data-id="${it.id}">🗑</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function addToCart(menuItem){
+    const existing = CART.find(x => x.id === menuItem.id);
+    if(existing) existing.qty += 1;
+    else CART.push({ id: menuItem.id, name: menuItem.name, price: Number(menuItem.price), qty: 1 });
+    renderCart();
+  }
+
+  function renderMenu(){
+    const grid = document.getElementById("menu-grid");
+    const catSel = document.getElementById("cat-filter");
+    const q = (document.getElementById("menu-search").value || "").toLowerCase();
+    const cat = catSel.value ? Number(catSel.value) : null;
+
+    let items = (MENU.items || []).filter(it => it.is_available !== false);
+    if(cat) items = items.filter(it => Number(it.category_id) === cat);
+    if(q) items = items.filter(it => (it.name||"").toLowerCase().includes(q));
+
+    if(!items.length){
+      grid.innerHTML = `<div class="muted">Nessun prodotto trovato.</div>`;
+      return;
+    }
+
+    grid.innerHTML = items.map(it => `
+      <div class="mitem" data-mid="${it.id}">
+        <div class="name">${it.name}</div>
+        ${it.description ? `<div class="muted" style="margin-top:4px">${it.description}</div>` : ``}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <span class="badge">${catName(it.category_id)}</span>
+          <span class="price">${fmtMoney(it.price)}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function loadMenu(){
+    const grid = document.getElementById("menu-grid");
+    grid.innerHTML = `<div class="muted">Caricamento menu...</div>`;
+
+    const res = await fetch("/admin/menu-json", { headers: { "Accept":"application/json" } });
+    const data = await res.json().catch(()=>null);
+    if(!data || !data.ok) throw new Error("menu");
+
+    MENU.categories = data.categories || [];
+    MENU.items = data.items || [];
+
+    // popola filtro categorie
+    const catSel = document.getElementById("cat-filter");
+    catSel.innerHTML = `<option value="">Tutte</option>` + MENU.categories
+      .slice()
+      .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
+      .map(c => `<option value="${c.id}">${c.name}</option>`)
+      .join("");
+
+    renderMenu();
+  }
+
+  document.getElementById("menu-search").addEventListener("input", renderMenu);
+  document.getElementById("cat-filter").addEventListener("change", renderMenu);
+
+  document.getElementById("menu-grid").addEventListener("click", (e)=>{
+    const card = e.target.closest("[data-mid]");
+    if(!card) return;
+    const id = Number(card.getAttribute("data-mid"));
+    const it = (MENU.items||[]).find(x => Number(x.id) === id);
+    if(it) addToCart(it);
+  });
+
+  document.getElementById("cart-box").addEventListener("click", (e)=>{
+    const b = e.target.closest("[data-act]");
+    if(!b) return;
+    const id = Number(b.getAttribute("data-id"));
+    const act = b.getAttribute("data-act");
+    const it = CART.find(x => Number(x.id) === id);
+    if(!it) return;
+
+    if(act === "inc") it.qty += 1;
+    if(act === "dec") it.qty = Math.max(1, it.qty - 1);
+    if(act === "del") CART = CART.filter(x => Number(x.id) !== id);
+
+    renderCart();
+  });
+
+  // ✅ invio ordine → /api/checkout
+  document.getElementById("new-order-form").addEventListener("submit", async (e)=>{
     e.preventDefault();
     const msgEl = document.getElementById("new-order-message");
-    msgEl.style.color = "#8b1e1e";
-    msgEl.textContent = "⚠️ In questo step non puoi ancora inviare prodotti: nel prossimo step mettiamo il POS con menu e carrello.";
+    msgEl.style.color = "#7f6b57";
+    msgEl.textContent = "";
+
+    if(!CART.length){
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Aggiungi almeno un prodotto.";
+      return;
+    }
+
+    const mode  = document.getElementById("order-mode").value; // table / takeaway
+    const table = document.getElementById("order-table").value.trim();
+    const name  = document.getElementById("order-name").value.trim();
+    const phone = document.getElementById("order-phone").value.trim();
+    const note  = document.getElementById("order-note").value.trim();
+
+    if(mode === "table" && !table){
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Inserisci il tavolo (es. T1).";
+      return;
+    }
+
+    const items = CART.map(x => ({ name: x.name, qty: x.qty, price: x.price }));
+    const total = cartTotal();
+
+    try{
+      const resp = await fetch("/api/checkout", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          tableCode: (mode === "table") ? table : null,
+          items,
+          total,
+          orderMode: (mode === "table") ? "table" : "takeaway",
+          customerName: name || null,
+          customerPhone: phone || null,
+          customerNote: note || null
+        })
+      });
+      const data = await resp.json();
+      if(!data.ok) throw new Error(data.error || "error");
+
+      CART = [];
+      renderCart();
+      document.getElementById("order-table").value = "";
+      document.getElementById("order-name").value  = "";
+      document.getElementById("order-phone").value = "";
+      document.getElementById("order-note").value  = "";
+
+      msgEl.style.color = "#11611b";
+      msgEl.textContent = "✅ Ordine inviato (ID: " + data.order_id + ").";
+
+      loadOrders();
+    }catch(err){
+      console.error(err);
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Errore nell'invio ordine.";
+    }
   });
 
   // ====== LISTA ORDINI ======
@@ -427,8 +625,18 @@
     }
   });
 
-  loadOrders();
-  setInterval(loadOrders, 10000);
+  // BOOT
+  (async()=>{
+    try{
+      await loadMenu();
+    }catch(e){
+      console.error(e);
+      document.getElementById("menu-grid").innerHTML = `<div class="muted">Errore caricamento menu.</div>`;
+    }
+    renderCart();
+    loadOrders();
+    setInterval(loadOrders, 10000);
+  })();
 <% } %>
 </script>
 
