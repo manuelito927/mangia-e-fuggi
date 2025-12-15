@@ -339,9 +339,20 @@ let CART = []; // { key, id, name, price, qty }
   }
 
   function addToCart(menuItem){
-    const existing = CART.find(x => x.id === menuItem.id);
-    if(existing) existing.qty += 1;
-    else CART.push({ id: menuItem.id, name: menuItem.name, price: Number(menuItem.price), qty: 1 });
+    const key = "id:" + menuItem.id;
+const existing = CART.find(x => x.key === key);
+
+if(existing) {
+  existing.qty += 1;
+} else {
+  CART.push({
+    key,
+    id: menuItem.id,
+    name: menuItem.name,
+    price: Number(menuItem.price),
+    qty: 1
+  });
+}
     renderCart();
   }
 
