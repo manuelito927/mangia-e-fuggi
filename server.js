@@ -372,23 +372,6 @@ app.get("/w/:table", (req, res) => {
   return res.redirect("/waiter");
 });
 
-app.get("/waiter", (req, res) => {
-  const presetTable = req.session.waiterTable || "";
-
-  if (req.session.isWaiter) {
-    return res.render("waiter", {
-      loggedIn: true,
-      error: null,
-      presetTable
-    });
-  }
-
-  return res.render("waiter", {
-    loggedIn: false,
-    error: null,
-    presetTable
-  });
-});
 
 // POST: controlla il PIN inserito
 app.post("/waiter", async (req, res) => {
