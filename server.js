@@ -351,11 +351,7 @@ app.post("/admin/settings", async (req, res) => {
 
 // ✅ Link rapido: imposta il tavolo e porta al login cameriere
 // esempio: /w/T1  oppure /w/Tavolo%201
-app.get("/w/:table", (req, res) => {
-  const t = (req.params.table || "").toString().trim();
-  req.session.waiterPrefillTable = t || null;
-  return res.redirect("/waiter");
-});
+
 // ===================== LINK RAPIDO CAMERIERE CON TAVOLO =====================
 // Esempio: /w/T1  -> salva "T1" in sessione e manda al login /waiter
 app.get("/w/:table", (req, res) => {
