@@ -467,14 +467,6 @@ app.post("/waiter/logout", (req, res) => {
   });
 });
 
-// logout cameriere
-app.post("/waiter/logout", (req, res) => {
-  req.session.isWaiter = false;
-  req.session.destroy(() => {
-    res.redirect("/waiter");
-  });
-});
-
 // === API MENU (categorie + piatti) ===
 app.get("/admin/menu-json", async (req, res) => {
   try {
