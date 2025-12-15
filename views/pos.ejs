@@ -4,22 +4,28 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>POS Tavoli</title>
-<link rel="stylesheet" href="/pos.css"/>
+  <link rel="stylesheet" href="/pos.css"/>
 </head>
+
 <body>
   <div class="wrap">
     <header class="top">
       <h1>POS Tavoli</h1>
 
       <div class="row">
-        <label>Tavolo</label>
+        <label for="tableSelect">Tavolo</label>
+
         <select id="tableSelect">
           <option value="">Seleziona…</option>
-          <option value="T1">T1</option><option value="T2">T2</option><option value="T3">T3</option>
-          <option value="T4">T4</option><option value="T5">T5</option><option value="T6">T6</option>
+          <option value="T1">T1</option>
+          <option value="T2">T2</option>
+          <option value="T3">T3</option>
+          <option value="T4">T4</option>
+          <option value="T5">T5</option>
+          <option value="T6">T6</option>
         </select>
 
-        <button id="loadBtn">Carica conto</button>
+        <button id="loadBtn" type="button">Carica conto</button>
       </div>
     </header>
 
@@ -36,14 +42,22 @@
 
       <section class="panel cart">
         <h2>Conto tavolo</h2>
+
         <div id="cartLines" class="lines"></div>
+
         <div class="tot">
           Totale: € <span id="cartTotal">0.00</span>
         </div>
+
         <div class="actions">
-          <button id="saveBtn" class="primary">Aggiungi al tavolo</button>
-          <button id="clearBtn">Svuota selezione</button>
+          <button id="saveBtn" class="primary" type="button">Aggiungi al tavolo</button>
+          <button id="clearBtn" type="button">Svuota selezione</button>
+
+          <!-- ✅ CHIUSURA CONTO -->
+          <button id="payCashBtn" class="primary" type="button">CASSA (contanti)</button>
+          <button id="payCardBtn" type="button">CASSA (carta)</button>
         </div>
+
         <div class="hint" id="statusHint"></div>
       </section>
     </main>
