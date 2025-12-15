@@ -568,7 +568,12 @@ if (HAS_PRESET_TABLE) {
 
       CART = [];
       renderCart();
-      document.getElementById("order-table").value = "";
+if (HAS_PRESET_TABLE) {
+  document.getElementById("order-table").value = PRESET_TABLE; // lo mantengo
+  document.getElementById("order-table").readOnly = true;      // lo riblocco
+} else {
+  document.getElementById("order-table").value = "";
+}
       document.getElementById("order-name").value  = "";
       document.getElementById("order-phone").value = "";
       document.getElementById("order-note").value  = "";
