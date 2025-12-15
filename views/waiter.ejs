@@ -378,6 +378,28 @@
   let MENU = { categories: [], items: [] };
   let CART = []; // {id, name, price, qty}
 
+const PRESET_TABLE = "<%= (presetTable || '').toString().replace(/"/g, '\\"') %>";
+const HAS_PRESET_TABLE = !!PRESET_TABLE;
+
+if (HAS_PRESET_TABLE) {
+  const tableInput = document.getElementById("order-table");
+  if (tableInput) {
+    tableInput.value = PRESET_TABLE;
+    tableInput.readOnly = true;
+  }
+
+  const btn = document.getElementById("change-table-btn");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      const ok = confirm("Vuoi cambiare tavolo? (Sblocca il campo)");
+      if (!ok) return;
+      tableInput.readOnly = false;
+      tableInput.focus();
+      tableInput.select();
+    });
+  }
+}
+
   const fmtMoney = (x) => {
     const n = Number(x || 0);
     return "€ " + n.toFixed(2).replace(".", ",");
