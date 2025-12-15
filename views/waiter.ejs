@@ -259,8 +259,24 @@
           </div>
 <div>
   <label style="font-size:13px;">Tavolo / Codice</label>
-  <input id="order-table" class="input" style="margin-top:4px"
-         placeholder="Es. T1, SALA..." value="<%= presetTable || '' %>" />
+
+  <% if (presetTable) { %>
+    <div class="muted" style="margin-top:6px">
+      Stai lavorando su <b><%= presetTable %></b>
+      <button type="button" id="change-table-btn" class="button secondary sm" style="margin-left:10px">
+        Cambia tavolo
+      </button>
+    </div>
+  <% } %>
+
+  <input
+    id="order-table"
+    class="input"
+    style="margin-top:4px"
+    placeholder="Es. T1, SALA..."
+    value="<%= presetTable || '' %>"
+    <%= presetTable ? "readonly" : "" %>
+  />
 </div>
 
         <div class="row mt-16">
