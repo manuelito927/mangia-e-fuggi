@@ -400,8 +400,8 @@ let CART = []; // { key, id, name, price, qty }
   document.getElementById("menu-grid").addEventListener("click", (e)=>{
     const card = e.target.closest("[data-mid]");
     if(!card) return;
-    const id = Number(card.getAttribute("data-mid"));
-    const it = (MENU.items||[]).find(x => Number(x.id) === id);
+    const key = b.getAttribute("data-key");
+const it = CART.find(x => x.key === key);
     if(it) addToCart(it);
   });
 
