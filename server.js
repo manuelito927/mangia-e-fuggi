@@ -390,27 +390,6 @@ app.get("/waiter", (req, res) => {
 });
 
 // POST: controlla il PIN inserito
-// GET: pagina login cameriere (mostra form PIN + prefill tavolo)
-app.get("/waiter", (req, res) => {
-  const presetTable = req.session.waiterTable || null;
-
-  // se già loggato -> vai direttamente alla dashboard (waiter.ejs deve gestire loggedIn=true)
-  if (req.session.isWaiter) {
-    return res.render("waiter", {
-      loggedIn: true,
-      error: null,
-      presetTable
-    });
-  }
-
-  // non loggato -> mostra login
-  return res.render("waiter", {
-    loggedIn: false,
-    error: null,
-    presetTable
-  });
-});
-
 app.post("/waiter", async (req, res) => {
   try {
     const pinInserito = (req.body.pin || "").toString().trim();
