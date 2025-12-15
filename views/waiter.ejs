@@ -36,35 +36,16 @@
     .tag{ font-size:11px; padding:2px 6px; border-radius:8px; background:#f0e1cf; color:#5a3923; margin-left:6px; }
     .text-center{ text-align:center; }
 
-    /* ✅ TAB */
-    .tabs {
-      display:flex;
-      gap:10px;
-      align-items:center;
-      margin-top:16px;
-      flex-wrap:wrap;
-    }
-    .tabbtn{
-      border:1px solid #edd7c1;
-      background:#fff;
-      color:#5a3923;
-      padding:8px 14px;
-      border-radius:999px;
-      font-weight:700;
-      cursor:pointer;
-    }
-    .tabbtn.active{
-      background:#7b3e20;
-      color:#fff;
-      border-color:#7b3e20;
-    }
+    .tabs { display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap; }
+    .tabbtn{ border:1px solid #edd7c1; background:#fff; color:#5a3923; padding:8px 14px; border-radius:999px; font-weight:700; cursor:pointer; }
+    .tabbtn.active{ background:#7b3e20; color:#fff; border-color:#7b3e20; }
     .tabpanel{ display:none; }
     .tabpanel.active{ display:block; }
 
-    /* POS */
     #menu-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
     @media (max-width:900px){ #menu-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
     @media (max-width:600px){ #menu-grid{ grid-template-columns:1fr; } }
+
     .mitem{ background:#fff; border:1px solid #edd7c1; border-radius:14px; padding:10px; cursor:pointer; }
     .mitem:hover{ background:#fff9f2; }
     .mitem .name{ font-weight:700; }
@@ -89,7 +70,6 @@
 <body>
 <div class="page">
   <% if (!loggedIn) { %>
-    <!-- ======================= LOGIN PIN ======================= -->
     <div class="card" style="max-width: 480px; margin: 40px auto;">
       <h1>Modalità cameriere</h1>
       <p>Inserisci il PIN salvato nelle impostazioni della pizzeria.</p>
@@ -111,7 +91,6 @@
     </div>
   <% } else { %>
 
-    <!-- ======================= DASHBOARD CAMERIERE ======================= -->
     <div class="card">
       <div class="row">
         <div>
@@ -125,7 +104,6 @@
         </div>
       </div>
 
-      <!-- ✅ TAB BAR -->
       <div class="tabs">
         <button type="button" class="tabbtn active" data-tab="pos">🧾 POS</button>
         <button type="button" class="tabbtn" data-tab="orders">📋 Ordini</button>
@@ -139,10 +117,9 @@
 
       <div class="divider"></div>
 
-      <!-- ======================= TAB: POS ======================= -->
       <section id="tab-pos" class="tabpanel active">
-        <h2 style="margin-top:0">Nuovo ordine</h2>
-        <p class="muted">Tocca i prodotti del menu → finiscono nel carrello → invia alla cucina.</p>
+        <h2 style="margin-top:0">Nuovo ordine / Modifica ordine tavolo</h2>
+        <p class="muted">Puoi: (1) creare un nuovo ordine, oppure (2) caricare l’ordine del tavolo fatto dal QR e modificarlo.</p>
 
         <form id="new-order-form" class="mt-16">
           <div class="row">
@@ -176,6 +153,13 @@
               />
             </div>
           </div>
+
+          <!-- ✅ AZIONI EDIT ORDINE -->
+          <div class="row mt-16">
+            <button type="button" class="button secondary" id="load-open-order-btn">📥 Carica ordine del tavolo</button>
+            <button type="button" class="button secondary" id="save-edit-order-btn" style="display:none">✅ Salva modifiche (ordine esistente)</button>
+          </div>
+          <div id="edit-order-hint" class="mt-8 muted"></div>
 
           <div class="row mt-16">
             <div>
@@ -224,7 +208,7 @@
               <strong id="order-total">€ 0,00</strong>
             </div>
             <div style="text-align:right;">
-              <button type="submit" class="button">Invia ordine alla cucina</button>
+              <button type="submit" class="button">Invia ordine alla cucina (NUOVO)</button>
             </div>
           </div>
 
@@ -232,7 +216,6 @@
         </form>
       </section>
 
-      <!-- ======================= TAB: ORDINI ======================= -->
       <section id="tab-orders" class="tabpanel">
         <h2 style="margin-top:0">Ordini attivi</h2>
         <p class="muted">
@@ -281,34 +264,29 @@
     tabBtns.forEach(b => b.classList.toggle("active", b.dataset.tab === name));
     tabPos.classList.toggle("active", name === "pos");
     tabOrders.classList.toggle("active", name === "orders");
-    // opzionale: salva in URL
     history.replaceState(null, "", "#"+name);
   }
 
-  tabBtns.forEach(btn => {
-    btn.addEventListener("click", () => setTab(btn.dataset.tab));
-  });
+  tabBtns.forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
 
-  // se l'URL ha #orders apri ordini
   const hash = (location.hash || "").replace("#","");
   if (hash === "orders") setTab("orders");
 
-  // ====================== LOGICA JS CAMERIERE (POS + ORDINI) ======================
-
+  // ====================== LOGICA JS CAMERIERE ======================
   let MENU = { categories: [], items: [] };
   let CART = []; // {id, name, price, qty}
+
+  let CURRENT_ORDER_ID = null; // se carichiamo un ordine pending del tavolo
 
   const PRESET_TABLE = "<%= (presetTable || '').toString().replace(/"/g, '\\"') %>";
   const HAS_PRESET_TABLE = !!PRESET_TABLE;
 
-  // preset tavolo + sblocco
   if (HAS_PRESET_TABLE) {
     const tableInput = document.getElementById("order-table");
     if (tableInput) {
       tableInput.value = PRESET_TABLE;
       tableInput.readOnly = true;
     }
-
     const btn = document.getElementById("change-table-btn");
     if (btn) {
       btn.addEventListener("click", () => {
@@ -398,7 +376,8 @@
     const grid = document.getElementById("menu-grid");
     grid.innerHTML = `<div class="muted">Caricamento menu...</div>`;
 
-    const res = await fetch("/admin/menu-json", { headers: { "Accept":"application/json" } });
+    // ✅ CORRETTO: menu pubblico
+    const res = await fetch("/api/menu", { headers: { "Accept":"application/json" } });
     const data = await res.json().catch(()=>null);
     if(!data || !data.ok) throw new Error("menu");
 
@@ -441,7 +420,103 @@
     renderCart();
   });
 
-  // invio ordine
+  // ====================== MODIFICA ORDINE DEL TAVOLO (QR) ======================
+  async function loadOpenOrderForTable(){
+    const table = (document.getElementById("order-table").value || "").trim();
+    const hint = document.getElementById("edit-order-hint");
+    hint.textContent = "";
+
+    if(!table){
+      alert("Inserisci il tavolo (es. T1).");
+      return;
+    }
+
+    const resp = await fetch(`/api/waiter/open-order?table=${encodeURIComponent(table)}`);
+    const data = await resp.json().catch(()=>null);
+    if(!data || !data.ok){
+      alert("Errore caricamento ordine del tavolo.");
+      return;
+    }
+
+    if(!data.order){
+      CURRENT_ORDER_ID = null;
+      document.getElementById("save-edit-order-btn").style.display = "none";
+      hint.textContent = "Nessun ordine pending trovato per questo tavolo (ancora).";
+      return;
+    }
+
+    CURRENT_ORDER_ID = data.order.id;
+
+    // carico righe in carrello: supporta sia {name,qty,price} sia {item_name,quantity,unit_price}
+    CART = (data.items || []).map(x => ({
+      id: x.item_id || x.id || (x.name || x.item_name), // id “di comodo”
+      name: x.name || x.item_name,
+      qty: Number(x.qty ?? x.quantity ?? 1),
+      price: Number(x.price ?? x.unit_price ?? 0),
+    }));
+
+    // carico anche nota se presente
+    const note = data.order.customer_note || "";
+    document.getElementById("order-note").value = note;
+
+    renderCart();
+
+    document.getElementById("save-edit-order-btn").style.display = "inline-flex";
+    hint.textContent = `✅ Ordine #${CURRENT_ORDER_ID} caricato. Ora puoi modificare carrello e nota, poi clicca "Salva modifiche".`;
+  }
+
+  async function saveEditsToCurrentOrder(){
+    const hint = document.getElementById("edit-order-hint");
+    hint.textContent = "";
+
+    if(!CURRENT_ORDER_ID){
+      alert("Prima carica l’ordine del tavolo.");
+      return;
+    }
+    if(!CART.length){
+      alert("Carrello vuoto: aggiungi almeno un prodotto.");
+      return;
+    }
+
+    const total = cartTotal();
+    const note  = (document.getElementById("order-note").value || "").trim();
+
+    // payload compatibile con la tua update-items (name/qty/price)
+    const items = CART.map(x => ({ name: x.name, qty: x.qty, price: x.price }));
+
+    // 1) righe + totale
+    const r1 = await fetch(`/api/waiter/orders/${CURRENT_ORDER_ID}/update-items`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ items, total })
+    });
+    const j1 = await r1.json().catch(()=>null);
+    if(!j1 || !j1.ok){
+      alert("Errore nel salvataggio righe/totale.");
+      return;
+    }
+
+    // 2) nota
+    const r2 = await fetch(`/api/waiter/orders/${CURRENT_ORDER_ID}/note`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ note })
+    });
+    const j2 = await r2.json().catch(()=>null);
+    if(!j2 || !j2.ok){
+      // non blocco tutto, ma avviso
+      console.warn("note not saved");
+    }
+
+    hint.textContent = `✅ Modifiche salvate su ordine #${CURRENT_ORDER_ID} — Totale ${fmtMoney(total)}.`;
+    // aggiorna lista ordini
+    loadOrders();
+  }
+
+  document.getElementById("load-open-order-btn").addEventListener("click", loadOpenOrderForTable);
+  document.getElementById("save-edit-order-btn").addEventListener("click", saveEditsToCurrentOrder);
+
+  // ====================== NUOVO ORDINE (checkout) ======================
   document.getElementById("new-order-form").addEventListener("submit", async (e)=>{
     e.preventDefault();
     const msgEl = document.getElementById("new-order-message");
@@ -489,6 +564,11 @@
       CART = [];
       renderCart();
 
+      // reset ordine “edit”
+      CURRENT_ORDER_ID = null;
+      document.getElementById("save-edit-order-btn").style.display = "none";
+      document.getElementById("edit-order-hint").textContent = "";
+
       if (HAS_PRESET_TABLE) {
         document.getElementById("order-table").value = PRESET_TABLE;
         document.getElementById("order-table").readOnly = true;
@@ -503,7 +583,6 @@
       msgEl.style.color = "#11611b";
       msgEl.textContent = "✅ Ordine inviato (ID: " + data.order_id + ").";
 
-      // dopo invio -> tab ordini (più comodo)
       setTab("orders");
       loadOrders();
     }catch(err){
@@ -513,7 +592,7 @@
     }
   });
 
-  // ====== LISTA ORDINI ======
+  // ====================== LISTA ORDINI ======================
   async function loadOrders() {
     const tbody = document.getElementById("orders-body");
     tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Caricamento...</td></tr>`;
