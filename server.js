@@ -1887,6 +1887,30 @@ app.post("/api/debug/seed-order", requireAdminApi, async (_req,res)=>{
   }catch(e){ console.error(e); res.status(500).json({ ok:false, error:"seed_failed" }); }
 });
 
+// =====================
+// ✅ CAMERIERE: aggiorna NOTA ordine
+// POST /api/waiter/orders/:id/note
+// body: { note: "..." }
+// =====================
+app.post("/api/waiter/orders/:id/note", requireWaiter, async (req,res)=>{
+  try{
+    const id = req.params.id;
+    const note = (req.body?.note || "").toString().trim();
+
+    const { error } = await supabase
+      .from("orders")
+      .update({ customer_note: note || null })
+      .eq("id", id);
+
+    if(error) throw error;
+
+    res.json({ ok:true });
+  }catch(e){
+    console.error("waiter note error:", e);
+    res.status(500).json({ ok:false, error:"note_failed" });
+  }
+});
+
 // ---- Avvio
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server avviato sulla porta ${PORT}`));
