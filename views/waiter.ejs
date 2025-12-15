@@ -459,12 +459,23 @@ if(act === "del") CART = CART.filter(x => x.key !== key);
     CURRENT_ORDER_ID = data.order.id;
 
     // carico righe in carrello: supporta sia {name,qty,price} sia {item_name,quantity,unit_price}
-    CART = (data.items || []).map(x => ({
-      id: x.item_id || x.id || (x.name || x.item_name), // id “di comodo”
-      name: x.name || x.item_name,
-      qty: Number(x.qty ?? x.quantity ?? 1),
-      price: Number(x.price ?? x.unit_price ?? 0),
-    }));
+CART = (data.items || []).map(x => {
+  const name = x.name || x.item_name;
+  const price = Number(x.price ?? x.unit_price ?? 0);
+  const qty = Number(x.qty ?? x.quantity ?? 1);
+
+  // provo a ricollegarmi al menu per avere l'id vero
+  const menuItem = MENU.items.find(m => m.name === name);
+  const id = menuItem ? menuItem.id : null;
+
+  return {
+    key: id ? `id:${id}` : `name:${name}`,
+    id,
+    name,
+    price,
+    qty
+  };
+});
 
     // carico anche nota se presente
     const note = data.order.customer_note || "";
