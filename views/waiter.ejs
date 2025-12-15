@@ -268,15 +268,17 @@
   }
 
   tabBtns.forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
-
   const hash = (location.hash || "").replace("#","");
   if (hash === "orders") setTab("orders");
 
-  // ====================== LOGICA JS CAMERIERE ======================
+  // ====================== STATE ======================
   let MENU = { categories: [], items: [] };
-let CART = []; // { key, id, name, price, qty }
 
-  let CURRENT_ORDER_ID = null; // se carichiamo un ordine pending del tavolo
+  // CART item:
+  // { key, id, name, price, qty, note }
+  let CART = [];
+
+  let CURRENT_ORDER_ID = null;
 
   const PRESET_TABLE = "<%= (presetTable || '').toString().replace(/"/g, '\\"') %>";
   const HAS_PRESET_TABLE = !!PRESET_TABLE;
@@ -299,6 +301,7 @@ let CART = []; // { key, id, name, price, qty }
     }
   }
 
+  // ====================== HELPERS ======================
   const fmtMoney = (x) => {
     const n = Number(x || 0);
     return "€ " + n.toFixed(2).replace(".", ",");
@@ -313,6 +316,11 @@ let CART = []; // { key, id, name, price, qty }
     return c ? c.name : "—";
   }
 
+  function findCartItemByKey(key){
+    return CART.find(x => x.key === key);
+  }
+
+  // ====================== RENDER CART (con note per prodotto) ======================
   function renderCart(){
     const box = document.getElementById("cart-box");
     const totalEl = document.getElementById("order-total");
@@ -324,38 +332,53 @@ let CART = []; // { key, id, name, price, qty }
     }
 
     box.innerHTML = CART.map(it => `
-      <div class="cart-row">
-        <div>
-          <b>${it.name}</b> <span class="muted">(${fmtMoney(it.price)})</span>
+      <div class="cart-row" style="align-items:flex-start;">
+        <div style="flex:1; min-width:0;">
+          <div>
+            <b>${it.name}</b> <span class="muted">(${fmtMoney(it.price)})</span>
+          </div>
+
+          <!-- nota per singolo prodotto -->
+          <textarea
+            class="input"
+            data-note-key="${it.key}"
+            rows="2"
+            placeholder="Nota per questo prodotto (es. senza sale, ben cotto...)"
+            style="margin-top:6px; font-size:13px; padding:8px 10px;"
+          >${it.note ? it.note : ""}</textarea>
         </div>
-        <div class="cart-actions">
-<button type="button" class="qtybtn" data-act="dec" data-key="${it.key}">-</button>
-<b>${it.qty}</b>
-<button type="button" class="qtybtn" data-act="inc" data-key="${it.key}">+</button>
-<button type="button" class="qtybtn" data-act="del" data-key="${it.key}">🗑</button>
+
+        <div class="cart-actions" style="margin-left:10px; padding-top:2px;">
+          <button type="button" class="qtybtn" data-act="dec" data-key="${it.key}">-</button>
+          <b>${it.qty}</b>
+          <button type="button" class="qtybtn" data-act="inc" data-key="${it.key}">+</button>
+          <button type="button" class="qtybtn" data-act="del" data-key="${it.key}">🗑</button>
         </div>
       </div>
     `).join("");
   }
 
+  // ====================== ADD/UPDATE CART ======================
   function addToCart(menuItem){
     const key = "id:" + menuItem.id;
-const existing = CART.find(x => x.key === key);
+    const existing = findCartItemByKey(key);
 
-if(existing) {
-  existing.qty += 1;
-} else {
-  CART.push({
-    key,
-    id: menuItem.id,
-    name: menuItem.name,
-    price: Number(menuItem.price),
-    qty: 1
-  });
-}
+    if(existing){
+      existing.qty += 1;
+    } else {
+      CART.push({
+        key,
+        id: menuItem.id,
+        name: menuItem.name,
+        price: Number(menuItem.price),
+        qty: 1,
+        note: "" // nota per prodotto
+      });
+    }
     renderCart();
   }
 
+  // ====================== MENU ======================
   function renderMenu(){
     const grid = document.getElementById("menu-grid");
     const catSel = document.getElementById("cat-filter");
@@ -387,7 +410,6 @@ if(existing) {
     const grid = document.getElementById("menu-grid");
     grid.innerHTML = `<div class="muted">Caricamento menu...</div>`;
 
-    // ✅ CORRETTO: menu pubblico
     const res = await fetch("/api/menu", { headers: { "Accept":"application/json" } });
     const data = await res.json().catch(()=>null);
     if(!data || !data.ok) throw new Error("menu");
@@ -408,27 +430,40 @@ if(existing) {
   document.getElementById("menu-search").addEventListener("input", renderMenu);
   document.getElementById("cat-filter").addEventListener("change", renderMenu);
 
+  // ✅ FIX: click menu usa data-mid e passa il menuItem vero
   document.getElementById("menu-grid").addEventListener("click", (e)=>{
     const card = e.target.closest("[data-mid]");
     if(!card) return;
-    const key = b.getAttribute("data-key");
-const it = CART.find(x => x.key === key);
+    const id = Number(card.getAttribute("data-mid"));
+    const it = (MENU.items||[]).find(x => Number(x.id) === id);
     if(it) addToCart(it);
   });
 
+  // ✅ FIX: click carrello usa data-key
   document.getElementById("cart-box").addEventListener("click", (e)=>{
     const b = e.target.closest("[data-act]");
     if(!b) return;
-    const id = Number(b.getAttribute("data-id"));
+
+    const key = b.getAttribute("data-key");
     const act = b.getAttribute("data-act");
-    const it = CART.find(x => Number(x.id) === id);
+    const it = findCartItemByKey(key);
     if(!it) return;
 
     if(act === "inc") it.qty += 1;
     if(act === "dec") it.qty = Math.max(1, it.qty - 1);
-if(act === "del") CART = CART.filter(x => x.key !== key);
+    if(act === "del") CART = CART.filter(x => x.key !== key);
 
     renderCart();
+  });
+
+  // ✅ Nota prodotto: input live (funziona anche dopo renderCart perché ascoltiamo sul container)
+  document.getElementById("cart-box").addEventListener("input", (e)=>{
+    const t = e.target.closest("textarea[data-note-key]");
+    if(!t) return;
+    const key = t.getAttribute("data-note-key");
+    const it = findCartItemByKey(key);
+    if(!it) return;
+    it.note = t.value;
   });
 
   // ====================== MODIFICA ORDINE DEL TAVOLO (QR) ======================
@@ -458,33 +493,32 @@ if(act === "del") CART = CART.filter(x => x.key !== key);
 
     CURRENT_ORDER_ID = data.order.id;
 
-    // carico righe in carrello: supporta sia {name,qty,price} sia {item_name,quantity,unit_price}
-CART = (data.items || []).map(x => {
-  const name = x.name || x.item_name;
-  const price = Number(x.price ?? x.unit_price ?? 0);
-  const qty = Number(x.qty ?? x.quantity ?? 1);
+    // Qui supporto anche note prodotto se il backend le manda già.
+    CART = (data.items || []).map(x => {
+      const name = x.name || x.item_name;
+      const price = Number(x.price ?? x.unit_price ?? 0);
+      const qty = Number(x.qty ?? x.quantity ?? 1);
+      const note = (x.note ?? x.item_note ?? x.product_note ?? "") + "";
 
-  // provo a ricollegarmi al menu per avere l'id vero
-  const menuItem = MENU.items.find(m => m.name === name);
-  const id = menuItem ? menuItem.id : null;
+      // Provo a ricollegare al menu per id
+      const menuItem = (MENU.items||[]).find(m => (m.name || "").trim() === (name || "").trim());
+      const id = menuItem ? menuItem.id : null;
 
-  return {
-    key: id ? `id:${id}` : `name:${name}`,
-    id,
-    name,
-    price,
-    qty
-  };
-});
+      return {
+        key: id ? `id:${id}` : `name:${name}`,
+        id,
+        name,
+        price,
+        qty,
+        note
+      };
+    });
 
-    // carico anche nota se presente
-    const note = data.order.customer_note || "";
-    document.getElementById("order-note").value = note;
-
+    document.getElementById("order-note").value = data.order.customer_note || "";
     renderCart();
 
     document.getElementById("save-edit-order-btn").style.display = "inline-flex";
-    hint.textContent = `✅ Ordine #${CURRENT_ORDER_ID} caricato. Ora puoi modificare carrello e nota, poi clicca "Salva modifiche".`;
+    hint.textContent = `✅ Ordine #${CURRENT_ORDER_ID} caricato. Ora puoi modificare quantità, eliminare/aggiungere prodotti e mettere note per prodotto + nota generale. Poi clicca "Salva modifiche".`;
   }
 
   async function saveEditsToCurrentOrder(){
@@ -503,10 +537,14 @@ CART = (data.items || []).map(x => {
     const total = cartTotal();
     const note  = (document.getElementById("order-note").value || "").trim();
 
-    // payload compatibile con la tua update-items (name/qty/price)
-    const items = CART.map(x => ({ name: x.name, qty: x.qty, price: x.price }));
+    // ✅ invio anche note per prodotto
+    const items = CART.map(x => ({
+      name: x.name,
+      qty: x.qty,
+      price: x.price,
+      note: (x.note || "").trim()
+    }));
 
-    // 1) righe + totale
     const r1 = await fetch(`/api/waiter/orders/${CURRENT_ORDER_ID}/update-items`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -518,7 +556,6 @@ CART = (data.items || []).map(x => {
       return;
     }
 
-    // 2) nota
     const r2 = await fetch(`/api/waiter/orders/${CURRENT_ORDER_ID}/note`, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
@@ -526,12 +563,10 @@ CART = (data.items || []).map(x => {
     });
     const j2 = await r2.json().catch(()=>null);
     if(!j2 || !j2.ok){
-      // non blocco tutto, ma avviso
       console.warn("note not saved");
     }
 
     hint.textContent = `✅ Modifiche salvate su ordine #${CURRENT_ORDER_ID} — Totale ${fmtMoney(total)}.`;
-    // aggiorna lista ordini
     loadOrders();
   }
 
@@ -563,7 +598,13 @@ CART = (data.items || []).map(x => {
       return;
     }
 
-    const items = CART.map(x => ({ name: x.name, qty: x.qty, price: x.price }));
+    // ✅ invio anche note per prodotto
+    const items = CART.map(x => ({
+      name: x.name,
+      qty: x.qty,
+      price: x.price,
+      note: (x.note || "").trim()
+    }));
     const total = cartTotal();
 
     try{
@@ -586,7 +627,6 @@ CART = (data.items || []).map(x => {
       CART = [];
       renderCart();
 
-      // reset ordine “edit”
       CURRENT_ORDER_ID = null;
       document.getElementById("save-edit-order-btn").style.display = "none";
       document.getElementById("edit-order-hint").textContent = "";
