@@ -245,6 +245,15 @@ app.use("/admin", (req, res, next) => {
   next();
 });
 
+// =====================
+// ✅ POS CAMERIERE
+// =====================
+app.get("/waiter/pos", requireWaiter, (req, res) => {
+  res.render("pos-waiter", {
+    BASE_URL: getBaseUrl(req)
+  });
+});
+
 // ---------- Pagine (NON passo più la key al client)
 app.get("/", (_req, res) => res.render("home"));
 app.get("/menu", (_req, res) => res.render("menu"));
