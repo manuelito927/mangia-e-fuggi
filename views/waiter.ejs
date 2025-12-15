@@ -329,10 +329,10 @@ let CART = []; // { key, id, name, price, qty }
           <b>${it.name}</b> <span class="muted">(${fmtMoney(it.price)})</span>
         </div>
         <div class="cart-actions">
-          <button type="button" class="qtybtn" data-act="dec" data-id="${it.id}">-</button>
-          <b>${it.qty}</b>
-          <button type="button" class="qtybtn" data-act="inc" data-id="${it.id}">+</button>
-          <button type="button" class="qtybtn" data-act="del" data-id="${it.id}">🗑</button>
+<button type="button" class="qtybtn" data-act="dec" data-key="${it.key}">-</button>
+<b>${it.qty}</b>
+<button type="button" class="qtybtn" data-act="inc" data-key="${it.key}">+</button>
+<button type="button" class="qtybtn" data-act="del" data-key="${it.key}">🗑</button>
         </div>
       </div>
     `).join("");
