@@ -368,11 +368,13 @@ app.get("/w/:table", (req, res) => {
   return res.redirect("/waiter");
 });
 
-// GET: pagina login cameriere (mostra form PIN + prefill tavolo)
+// =====================
+// GET: pagina login cameriere (PIN + eventuale tavolo da QR)
+// =====================
 app.get("/waiter", (req, res) => {
   const presetTable = req.session.waiterTable || null;
 
-  // se già loggato -> vai direttamente alla dashboard (waiter.ejs deve gestire loggedIn=true)
+  // se già loggato → vai direttamente alla dashboard
   if (req.session.isWaiter) {
     return res.render("waiter", {
       loggedIn: true,
@@ -381,7 +383,7 @@ app.get("/waiter", (req, res) => {
     });
   }
 
-  // non loggato -> mostra login
+  // non loggato → mostra login PIN
   return res.render("waiter", {
     loggedIn: false,
     error: null,
@@ -389,20 +391,26 @@ app.get("/waiter", (req, res) => {
   });
 });
 
-// POST: controlla il PIN inserito
+
+// =====================
+// POST: controllo PIN cameriere
+// =====================
 app.post("/waiter", async (req, res) => {
+  const presetTable = req.session.waiterTable || null;
+
   try {
-    const presetTable = req.session.waiterTable || null;
     const pinInserito = (req.body.pin || "").toString().trim();
 
+    // PIN mancante
     if (!pinInserito) {
       return res.render("waiter", {
         loggedIn: false,
         error: "Inserisci il PIN.",
+        presetTable
       });
     }
 
-    // prendo i dati della pizzeria (riga settings.key = 'restaurant')
+    // leggo PIN salvato
     const { data, error } = await supabase
       .from("settings")
       .select("waiter_pin")
@@ -414,33 +422,49 @@ app.post("/waiter", async (req, res) => {
       return res.render("waiter", {
         loggedIn: false,
         error: "Errore interno, riprova.",
+        presetTable
       });
     }
 
     const savedPin = (data?.waiter_pin || "").toString().trim();
 
-    // confronto PIN
+    // PIN errato
     if (pinInserito !== savedPin) {
       return res.render("waiter", {
         loggedIn: false,
         error: "PIN errato.",
+        presetTable
       });
     }
 
-    // PIN corretto → segno in sessione che è un cameriere loggato
+    // ✅ PIN corretto
     req.session.isWaiter = true;
 
     return res.render("waiter", {
       loggedIn: true,
       error: null,
+      presetTable
     });
+
   } catch (e) {
     console.error("Eccezione login cameriere:", e);
     return res.render("waiter", {
       loggedIn: false,
       error: "Errore interno.",
+      presetTable
     });
   }
+});
+
+
+// =====================
+// LOGOUT cameriere
+// =====================
+app.post("/waiter/logout", (req, res) => {
+  req.session.isWaiter = false;
+  req.session.destroy(() => {
+    res.redirect("/waiter");
+  });
 });
 
 // logout cameriere
