@@ -382,6 +382,390 @@ const PRESET_TABLE = "<%= (presetTable || '').toString().replace(/"/g, '\\"') %>
 const HAS_PRESET_TABLE = !!PRESET_TABLE;
 
 if (HAS_PRESET_TABLE) {
+  <!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Modalità cameriere</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f6efe7;
+      color: #2b1a12;
+    }
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+    .card {
+      background: #fff6ee;
+      border-radius: 18px;
+      padding: 24px 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      border: 1px solid #f0dcc7;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      font-weight: 700;
+    }
+    h2 {
+      margin: 24px 0 10px;
+      font-size: 18px;
+    }
+    p {
+      margin: 4px 0;
+      line-height: 1.4;
+    }
+    .input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #d8c1a6;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: none;
+      padding: 10px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #7b3e20;
+      color: #fff;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+      background: #8d4523;
+    }
+    .button.secondary {
+      background: #f0e1cf;
+      color: #5a3923;
+      box-shadow: none;
+    }
+    .button.secondary:hover {
+      background: #e3d3bf;
+    }
+    .button.sm {
+      padding: 6px 12px;
+      font-size: 13px;
+      box-shadow: none;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .row > * {
+      flex: 1;
+      min-width: 0;
+    }
+    .mt-16 { margin-top:16px; }
+    .mt-24 { margin-top:24px; }
+    .mt-32 { margin-top:32px; }
+    .error {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #ffe5e0;
+      color: #8b1e08;
+      font-size: 14px;
+    }
+    .badge {
+      display: inline-flex;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #f0e1cf;
+      color: #5a3923;
+    }
+    .table-wrap {
+      margin-top: 8px;
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid #edd7c1;
+      background: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    thead {
+      background: #faefe1;
+    }
+    th, td {
+      padding: 8px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody tr:nth-child(even) {
+      background: #fff9f2;
+    }
+    .status-pill {
+      display: inline-flex;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+    .status-pill.pending { background:#fff1bf; color:#7a5b00; }
+    .status-pill.completed { background:#d9f7d9; color:#11611b; }
+    .status-pill.canceled { background:#ffd7d7; color:#8b1e1e; }
+    .muted {
+      font-size: 12px;
+      color: #7f6b57;
+    }
+    .divider {
+      height: 1px;
+      background: #ead7c3;
+      margin: 18px 0;
+    }
+    .tag {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      background: #f0e1cf;
+      color: #5a3923;
+      margin-left: 6px;
+    }
+    .text-right { text-align:right; }
+    .text-center { text-align:center; }
+
+    /* ✅ STILI POS (menu + carrello) */
+    #menu-grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:10px;
+    }
+    @media (max-width:900px){ #menu-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (max-width:600px){ #menu-grid{ grid-template-columns: 1fr; } }
+
+    .mitem{
+      background:#fff;
+      border:1px solid #edd7c1;
+      border-radius:14px;
+      padding:10px;
+      cursor:pointer;
+    }
+    .mitem:hover{ background:#fff9f2; }
+    .mitem .name{ font-weight:700; }
+    .mitem .price{ font-weight:700; }
+
+    .cart-row{
+      display:flex; justify-content:space-between; align-items:center;
+      gap:8px; padding:8px 0; border-top:1px solid #eee;
+    }
+    .cart-actions{ display:flex; gap:6px; align-items:center; }
+    .qtybtn{
+      border:1px solid #edd7c1; background:#fff;
+      padding:4px 10px; border-radius:999px; cursor:pointer;
+    }
+
+    @media (max-width: 600px) {
+      .card { padding: 18px 16px; }
+      h1 { font-size: 22px; }
+      .row { flex-direction: column; align-items: stretch; }
+      th, td { font-size: 12px; padding: 6px 8px; }
+      .button { width: 100%; justify-content: center; }
+      .button.sm { width: auto; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="page">
+
+  <% if (!loggedIn) { %>
+    <!-- ======================= LOGIN PIN ======================= -->
+    <div class="card" style="max-width: 480px; margin: 40px auto;">
+      <h1>Modalità cameriere</h1>
+      <p>Inserisci il PIN salvato nelle impostazioni della pizzeria.</p>
+
+      <form method="POST" action="/waiter" class="mt-16">
+        <label for="pin" style="font-size:14px; font-weight:500;">PIN</label>
+        <input
+          id="pin"
+          name="pin"
+          type="password"
+          maxlength="10"
+          autocomplete="off"
+          class="input mt-8"
+          placeholder="••••"
+        />
+
+        <% if (error) { %>
+          <div class="error"><%= error %></div>
+        <% } %>
+
+        <button type="submit" class="button mt-16">Entra</button>
+      </form>
+    </div>
+
+  <% } else { %>
+    <!-- ======================= DASHBOARD CAMERIERE ======================= -->
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <h1>Sei in modalità cameriere ✅</h1>
+          <p class="muted">Da qui puoi creare e gestire gli ordini senza vedere statistiche o impostazioni.</p>
+        </div>
+        <div style="text-align:right;">
+          <form method="POST" action="/waiter/logout">
+            <button type="submit" class="button secondary sm">Esci</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- POS -->
+      <h2 class="mt-24">Nuovo ordine</h2>
+      <p class="muted">Tocca i prodotti del menu → finiscono nel carrello → invia alla cucina.</p>
+
+      <form id="new-order-form" class="mt-16">
+        <div class="row">
+          <div>
+            <label style="font-size:13px;">Modalità</label>
+            <select id="order-mode" class="input" style="margin-top:4px">
+              <option value="table">Al tavolo</option>
+              <option value="takeaway">Asporto</option>
+            </select>
+          </div>
+<div>
+  <label style="font-size:13px;">Tavolo / Codice</label>
+
+  <% if (presetTable) { %>
+    <div class="muted" style="margin-top:6px">
+      Stai lavorando su <b><%= presetTable %></b>
+      <button type="button" id="change-table-btn" class="button secondary sm" style="margin-left:10px">
+        Cambia tavolo
+      </button>
+    </div>
+  <% } %>
+
+  <input
+    id="order-table"
+    class="input"
+    style="margin-top:4px"
+    placeholder="Es. T1, SALA..."
+    value="<%= presetTable || '' %>"
+    <%= presetTable ? "readonly" : "" %>
+  />
+</div>
+
+        <div class="row mt-16">
+          <div>
+            <label style="font-size:13px;">Nome cliente (opzionale)</label>
+            <input id="order-name" class="input" style="margin-top:4px" placeholder="Nome" />
+          </div>
+          <div>
+            <label style="font-size:13px;">Telefono (opzionale)</label>
+            <input id="order-phone" class="input" style="margin-top:4px" placeholder="Telefono" />
+          </div>
+        </div>
+
+        <div class="mt-16">
+          <label style="font-size:13px;">Nota per cucina (opzionale)</label>
+          <textarea id="order-note" class="input" style="margin-top:4px" rows="2" placeholder="Scrivi eventuali indicazioni..."></textarea>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2 style="margin:0 0 10px">Menu</h2>
+        <p class="muted">Tocca un prodotto per aggiungerlo al carrello.</p>
+
+        <div class="row mt-16">
+          <div>
+            <label style="font-size:13px;">Categoria</label>
+            <select id="cat-filter" class="input" style="margin-top:4px">
+              <option value="">Tutte</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:13px;">Cerca</label>
+            <input id="menu-search" class="input" style="margin-top:4px" placeholder="Scrivi un nome..." />
+          </div>
+        </div>
+
+        <div id="menu-grid" class="mt-16"></div>
+
+        <div class="divider"></div>
+
+        <h2 style="margin:0 0 10px">Carrello</h2>
+        <div id="cart-box" class="muted">Carrello vuoto.</div>
+
+        <div class="row mt-24">
+          <div>
+            <span class="muted">Totale:</span>
+            <strong id="order-total">€ 0,00</strong>
+          </div>
+          <div style="text-align:right;">
+            <button type="submit" class="button">Invia ordine alla cucina</button>
+          </div>
+        </div>
+
+        <div id="new-order-message" class="mt-8 muted"></div>
+      </form>
+
+      <div class="divider"></div>
+
+      <!-- LISTA ORDINI -->
+      <h2>Ordini attivi</h2>
+      <p class="muted">
+        Solo gli ordini di oggi, ordinati dal più recente.
+        <span class="tag">Aggiornamento automatico ogni 10s</span>
+      </p>
+
+      <div class="mt-8">
+        <button type="button" class="button secondary sm" id="refresh-orders-btn">Aggiorna ora</button>
+      </div>
+
+      <div class="table-wrap mt-16">
+        <table>
+          <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tavolo</th>
+            <th>Stato</th>
+            <th>Modo</th>
+            <th>Totale</th>
+            <th>Creato</th>
+            <th>Azioni</th>
+          </tr>
+          </thead>
+          <tbody id="orders-body">
+            <tr>
+              <td colspan="7" class="text-center muted">Caricamento ordini...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% } %>
+
+</div>
+
+<script>
+<% if (loggedIn) { %>
+  // ====================== LOGICA JS CAMERIERE (POS) ======================
+
+  let MENU = { categories: [], items: [] };
+  let CART = []; // {id, name, price, qty}
+
+const PRESET_TABLE = "<%= (presetTable || '').toString().replace(/"/g, '\\"') %>";
+const HAS_PRESET_TABLE = !!PRESET_TABLE;
+
+if (HAS_PRESET_TABLE) {
   const tableInput = document.getElementById("order-table");
   if (tableInput) {
     tableInput.value = PRESET_TABLE;
@@ -398,6 +782,293 @@ if (HAS_PRESET_TABLE) {
       tableInput.select();
     });
   }
+}
+
+  const fmtMoney = (x) => {
+    const n = Number(x || 0);
+    return "€ " + n.toFixed(2).replace(".", ",");
+  };
+
+  function cartTotal(){
+    return CART.reduce((s,i)=> s + (Number(i.price)*Number(i.qty)), 0);
+  }
+
+  function catName(id){
+    const c = (MENU.categories||[]).find(x => Number(x.id) === Number(id));
+    return c ? c.name : "—";
+  }
+
+  function renderCart(){
+    const box = document.getElementById("cart-box");
+    const totalEl = document.getElementById("order-total");
+    totalEl.textContent = fmtMoney(cartTotal());
+
+    if(!CART.length){
+      box.textContent = "Carrello vuoto.";
+      return;
+    }
+
+    box.innerHTML = CART.map(it => `
+      <div class="cart-row">
+        <div>
+          <b>${it.name}</b> <span class="muted">(${fmtMoney(it.price)})</span>
+        </div>
+        <div class="cart-actions">
+          <button type="button" class="qtybtn" data-act="dec" data-id="${it.id}">-</button>
+          <b>${it.qty}</b>
+          <button type="button" class="qtybtn" data-act="inc" data-id="${it.id}">+</button>
+          <button type="button" class="qtybtn" data-act="del" data-id="${it.id}">🗑</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function addToCart(menuItem){
+    const existing = CART.find(x => x.id === menuItem.id);
+    if(existing) existing.qty += 1;
+    else CART.push({ id: menuItem.id, name: menuItem.name, price: Number(menuItem.price), qty: 1 });
+    renderCart();
+  }
+
+  function renderMenu(){
+    const grid = document.getElementById("menu-grid");
+    const catSel = document.getElementById("cat-filter");
+    const q = (document.getElementById("menu-search").value || "").toLowerCase();
+    const cat = catSel.value ? Number(catSel.value) : null;
+
+    let items = (MENU.items || []).filter(it => it.is_available !== false);
+    if(cat) items = items.filter(it => Number(it.category_id) === cat);
+    if(q) items = items.filter(it => (it.name||"").toLowerCase().includes(q));
+
+    if(!items.length){
+      grid.innerHTML = `<div class="muted">Nessun prodotto trovato.</div>`;
+      return;
+    }
+
+    grid.innerHTML = items.map(it => `
+      <div class="mitem" data-mid="${it.id}">
+        <div class="name">${it.name}</div>
+        ${it.description ? `<div class="muted" style="margin-top:4px">${it.description}</div>` : ``}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <span class="badge">${catName(it.category_id)}</span>
+          <span class="price">${fmtMoney(it.price)}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function loadMenu(){
+    const grid = document.getElementById("menu-grid");
+    grid.innerHTML = `<div class="muted">Caricamento menu...</div>`;
+
+    const res = await fetch("/admin/menu-json", { headers: { "Accept":"application/json" } });
+    const data = await res.json().catch(()=>null);
+    if(!data || !data.ok) throw new Error("menu");
+
+    MENU.categories = data.categories || [];
+    MENU.items = data.items || [];
+
+    // popola filtro categorie
+    const catSel = document.getElementById("cat-filter");
+    catSel.innerHTML = `<option value="">Tutte</option>` + MENU.categories
+      .slice()
+      .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
+      .map(c => `<option value="${c.id}">${c.name}</option>`)
+      .join("");
+
+    renderMenu();
+  }
+
+  document.getElementById("menu-search").addEventListener("input", renderMenu);
+  document.getElementById("cat-filter").addEventListener("change", renderMenu);
+
+  document.getElementById("menu-grid").addEventListener("click", (e)=>{
+    const card = e.target.closest("[data-mid]");
+    if(!card) return;
+    const id = Number(card.getAttribute("data-mid"));
+    const it = (MENU.items||[]).find(x => Number(x.id) === id);
+    if(it) addToCart(it);
+  });
+
+  document.getElementById("cart-box").addEventListener("click", (e)=>{
+    const b = e.target.closest("[data-act]");
+    if(!b) return;
+    const id = Number(b.getAttribute("data-id"));
+    const act = b.getAttribute("data-act");
+    const it = CART.find(x => Number(x.id) === id);
+    if(!it) return;
+
+    if(act === "inc") it.qty += 1;
+    if(act === "dec") it.qty = Math.max(1, it.qty - 1);
+    if(act === "del") CART = CART.filter(x => Number(x.id) !== id);
+
+    renderCart();
+  });
+
+  // ✅ invio ordine → /api/checkout
+  document.getElementById("new-order-form").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const msgEl = document.getElementById("new-order-message");
+    msgEl.style.color = "#7f6b57";
+    msgEl.textContent = "";
+
+    if(!CART.length){
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Aggiungi almeno un prodotto.";
+      return;
+    }
+
+    const mode  = document.getElementById("order-mode").value; // table / takeaway
+    const table = document.getElementById("order-table").value.trim();
+    const name  = document.getElementById("order-name").value.trim();
+    const phone = document.getElementById("order-phone").value.trim();
+    const note  = document.getElementById("order-note").value.trim();
+
+    if(mode === "table" && !table){
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Inserisci il tavolo (es. T1).";
+      return;
+    }
+
+    const items = CART.map(x => ({ name: x.name, qty: x.qty, price: x.price }));
+    const total = cartTotal();
+
+    try{
+      const resp = await fetch("/api/checkout", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          tableCode: (mode === "table") ? table : null,
+          items,
+          total,
+          orderMode: (mode === "table") ? "table" : "takeaway",
+          customerName: name || null,
+          customerPhone: phone || null,
+          customerNote: note || null
+        })
+      });
+      const data = await resp.json();
+      if(!data.ok) throw new Error(data.error || "error");
+
+      CART = [];
+      renderCart();
+if (HAS_PRESET_TABLE) {
+  document.getElementById("order-table").value = PRESET_TABLE; // lo mantengo
+  document.getElementById("order-table").readOnly = true;      // lo riblocco
+} else {
+  document.getElementById("order-table").value = "";
+}
+      document.getElementById("order-name").value  = "";
+      document.getElementById("order-phone").value = "";
+      document.getElementById("order-note").value  = "";
+
+      msgEl.style.color = "#11611b";
+      msgEl.textContent = "✅ Ordine inviato (ID: " + data.order_id + ").";
+
+      loadOrders();
+    }catch(err){
+      console.error(err);
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Errore nell'invio ordine.";
+    }
+  });
+
+  // ====== LISTA ORDINI ======
+  async function loadOrders() {
+    const tbody = document.getElementById("orders-body");
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Caricamento...</td></tr>`;
+
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const resp = await fetch("/api/waiter/orders?day=" + encodeURIComponent(today));
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "error");
+
+      const orders = data.orders || [];
+      if (!orders.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Nessun ordine per oggi.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = orders.map(o => {
+        const created = o.created_at ? new Date(o.created_at) : null;
+        const hh = created ? String(created.getHours()).padStart(2,"0") : "--";
+        const mm = created ? String(created.getMinutes()).padStart(2,"0") : "--";
+
+        const statusClass =
+          o.status === "completed" ? "completed" :
+          o.status === "canceled" ? "canceled" : "pending";
+
+        const modeLabel =
+          o.order_mode === "takeaway" ? "Asporto" :
+          (o.order_mode === "home" ? "Da casa" : "Tavolo");
+
+        return `
+          <tr>
+            <td>#${o.id}</td>
+            <td>${o.table_code || "-"}</td>
+            <td><span class="status-pill ${statusClass}">${o.status}</span></td>
+            <td>${modeLabel}</td>
+            <td>${fmtMoney(o.total || 0)}</td>
+            <td>${hh}:${mm}</td>
+            <td>
+              <button class="button sm" data-act="complete" data-id="${o.id}">Completa</button>
+              <button class="button sm secondary" data-act="cancel" data-id="${o.id}">Annulla</button>
+              <button class="button sm secondary" data-act="restore" data-id="${o.id}">Ripristina</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Errore nel caricamento ordini.</td></tr>`;
+    }
+  }
+
+  document.getElementById("refresh-orders-btn").addEventListener("click", loadOrders);
+
+  document.getElementById("orders-body").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+
+    const id  = btn.getAttribute("data-id");
+    const act = btn.getAttribute("data-act");
+
+    const map = { complete: "complete", cancel: "cancel", restore: "restore" };
+    const endpoint = map[act];
+    if (!endpoint) return;
+
+    try {
+      const resp = await fetch(`/api/waiter/orders/${id}/${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" }
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "error");
+      loadOrders();
+    } catch (err) {
+      console.error(err);
+      alert("Errore nell'aggiornare l'ordine.");
+    }
+  });
+
+  // BOOT
+  (async()=>{
+    try{
+      await loadMenu();
+    }catch(e){
+      console.error(e);
+      document.getElementById("menu-grid").innerHTML = `<div class="muted">Errore caricamento menu.</div>`;
+    }
+    renderCart();
+    loadOrders();
+    setInterval(loadOrders, 10000);
+  })();
+<% } %>
+</script>
+
+</body>
+</html>
 }
 
   const fmtMoney = (x) => {
