@@ -415,7 +415,7 @@ const it = CART.find(x => x.key === key);
 
     if(act === "inc") it.qty += 1;
     if(act === "dec") it.qty = Math.max(1, it.qty - 1);
-    if(act === "del") CART = CART.filter(x => Number(x.id) !== id);
+if(act === "del") CART = CART.filter(x => x.key !== key);
 
     renderCart();
   });
