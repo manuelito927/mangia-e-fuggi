@@ -392,6 +392,7 @@ app.get("/waiter", (req, res) => {
 // POST: controlla il PIN inserito
 app.post("/waiter", async (req, res) => {
   try {
+    const presetTable = req.session.waiterTable || null;
     const pinInserito = (req.body.pin || "").toString().trim();
 
     if (!pinInserito) {
