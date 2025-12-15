@@ -19,7 +19,7 @@
     .button.sm { padding:6px 12px; font-size:13px; box-shadow:none; }
     .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
     .row > * { flex:1; min-width:0; }
-    .mt-16{margin-top:16px;} .mt-24{margin-top:24px;} .mt-32{margin-top:32px;}
+    .mt-8{margin-top:8px;} .mt-16{margin-top:16px;} .mt-24{margin-top:24px;} .mt-32{margin-top:32px;}
     .error { margin-top:10px; padding:8px 10px; border-radius:10px; background:#ffe5e0; color:#8b1e08; font-size:14px; }
     .badge { display:inline-flex; padding:3px 10px; border-radius:999px; font-size:12px; background:#f0e1cf; color:#5a3923; }
     .table-wrap { margin-top:8px; overflow-x:auto; border-radius:14px; border:1px solid #edd7c1; background:#fff; }
@@ -35,6 +35,31 @@
     .divider{ height:1px; background:#ead7c3; margin:18px 0; }
     .tag{ font-size:11px; padding:2px 6px; border-radius:8px; background:#f0e1cf; color:#5a3923; margin-left:6px; }
     .text-center{ text-align:center; }
+
+    /* ✅ TAB */
+    .tabs {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-top:16px;
+      flex-wrap:wrap;
+    }
+    .tabbtn{
+      border:1px solid #edd7c1;
+      background:#fff;
+      color:#5a3923;
+      padding:8px 14px;
+      border-radius:999px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .tabbtn.active{
+      background:#7b3e20;
+      color:#fff;
+      border-color:#7b3e20;
+    }
+    .tabpanel{ display:none; }
+    .tabpanel.active{ display:block; }
 
     /* POS */
     #menu-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
@@ -55,6 +80,8 @@
       th,td{ font-size:12px; padding:6px 8px; }
       .button{ width:100%; justify-content:center; }
       .button.sm{ width:auto; }
+      .tabs{ gap:8px; }
+      .tabbtn{ width:100%; justify-content:center; }
     }
   </style>
 </head>
@@ -62,9 +89,14 @@
 <body>
 <div class="page">
   <% if (!loggedIn) { %>
+    <!-- ======================= LOGIN PIN ======================= -->
     <div class="card" style="max-width: 480px; margin: 40px auto;">
       <h1>Modalità cameriere</h1>
       <p>Inserisci il PIN salvato nelle impostazioni della pizzeria.</p>
+
+      <% if (presetTable) { %>
+        <p class="muted mt-8">Tavolo impostato da QR: <b><%= presetTable %></b></p>
+      <% } %>
 
       <form method="POST" action="/waiter" class="mt-16">
         <label for="pin" style="font-size:14px; font-weight:500;">PIN</label>
@@ -79,11 +111,12 @@
     </div>
   <% } else { %>
 
+    <!-- ======================= DASHBOARD CAMERIERE ======================= -->
     <div class="card">
       <div class="row">
         <div>
           <h1>Sei in modalità cameriere ✅</h1>
-          <p class="muted">Da qui puoi creare e gestire gli ordini senza vedere statistiche o impostazioni.</p>
+          <p class="muted">Operatività veloce: POS + Ordini. Niente statistiche o impostazioni.</p>
         </div>
         <div style="text-align:right;">
           <form method="POST" action="/waiter/logout">
@@ -92,142 +125,183 @@
         </div>
       </div>
 
-      <h2 class="mt-24">Nuovo ordine</h2>
-      <p class="muted">Tocca i prodotti del menu → finiscono nel carrello → invia alla cucina.</p>
+      <!-- ✅ TAB BAR -->
+      <div class="tabs">
+        <button type="button" class="tabbtn active" data-tab="pos">🧾 POS</button>
+        <button type="button" class="tabbtn" data-tab="orders">📋 Ordini</button>
 
-      <form id="new-order-form" class="mt-16">
-        <div class="row">
-          <div>
-            <label style="font-size:13px;">Modalità</label>
-            <select id="order-mode" class="input" style="margin-top:4px">
-              <option value="table">Al tavolo</option>
-              <option value="takeaway">Asporto</option>
-            </select>
-          </div>
-
-          <div>
-            <label style="font-size:13px;">Tavolo / Codice</label>
-
-            <% if (presetTable) { %>
-              <div class="muted" style="margin-top:6px">
-                Stai lavorando su <b><%= presetTable %></b>
-                <button type="button" id="change-table-btn" class="button secondary sm" style="margin-left:10px">
-                  Cambia tavolo
-                </button>
-              </div>
-            <% } %>
-
-            <input
-              id="order-table"
-              class="input"
-              style="margin-top:4px"
-              placeholder="Es. T1, SALA..."
-              value="<%= presetTable || '' %>"
-              <%= presetTable ? "readonly" : "" %>
-            />
-          </div>
-        </div>
-
-        <div class="row mt-16">
-          <div>
-            <label style="font-size:13px;">Nome cliente (opzionale)</label>
-            <input id="order-name" class="input" style="margin-top:4px" placeholder="Nome" />
-          </div>
-          <div>
-            <label style="font-size:13px;">Telefono (opzionale)</label>
-            <input id="order-phone" class="input" style="margin-top:4px" placeholder="Telefono" />
-          </div>
-        </div>
-
-        <div class="mt-16">
-          <label style="font-size:13px;">Nota per cucina (opzionale)</label>
-          <textarea id="order-note" class="input" style="margin-top:4px" rows="2" placeholder="Scrivi eventuali indicazioni..."></textarea>
-        </div>
-
-        <div class="divider"></div>
-
-        <h2 style="margin:0 0 10px">Menu</h2>
-        <p class="muted">Tocca un prodotto per aggiungerlo al carrello.</p>
-
-        <div class="row mt-16">
-          <div>
-            <label style="font-size:13px;">Categoria</label>
-            <select id="cat-filter" class="input" style="margin-top:4px">
-              <option value="">Tutte</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:13px;">Cerca</label>
-            <input id="menu-search" class="input" style="margin-top:4px" placeholder="Scrivi un nome..." />
-          </div>
-        </div>
-
-        <div id="menu-grid" class="mt-16"></div>
-
-        <div class="divider"></div>
-
-        <h2 style="margin:0 0 10px">Carrello</h2>
-        <div id="cart-box" class="muted">Carrello vuoto.</div>
-
-        <div class="row mt-24">
-          <div>
-            <span class="muted">Totale:</span>
-            <strong id="order-total">€ 0,00</strong>
-          </div>
-          <div style="text-align:right;">
-            <button type="submit" class="button">Invia ordine alla cucina</button>
-          </div>
-        </div>
-
-        <div id="new-order-message" class="mt-8 muted"></div>
-      </form>
+        <% if (presetTable) { %>
+          <span class="muted" style="margin-left:auto">
+            Tavolo QR: <b><%= presetTable %></b>
+          </span>
+        <% } %>
+      </div>
 
       <div class="divider"></div>
 
-      <h2>Ordini attivi</h2>
-      <p class="muted">
-        Solo gli ordini di oggi, ordinati dal più recente.
-        <span class="tag">Aggiornamento automatico ogni 10s</span>
-      </p>
+      <!-- ======================= TAB: POS ======================= -->
+      <section id="tab-pos" class="tabpanel active">
+        <h2 style="margin-top:0">Nuovo ordine</h2>
+        <p class="muted">Tocca i prodotti del menu → finiscono nel carrello → invia alla cucina.</p>
 
-      <div class="mt-8">
-        <button type="button" class="button secondary sm" id="refresh-orders-btn">Aggiorna ora</button>
-      </div>
+        <form id="new-order-form" class="mt-16">
+          <div class="row">
+            <div>
+              <label style="font-size:13px;">Modalità</label>
+              <select id="order-mode" class="input" style="margin-top:4px">
+                <option value="table">Al tavolo</option>
+                <option value="takeaway">Asporto</option>
+              </select>
+            </div>
 
-      <div class="table-wrap mt-16">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Tavolo</th>
-              <th>Stato</th>
-              <th>Modo</th>
-              <th>Totale</th>
-              <th>Creato</th>
-              <th>Azioni</th>
-            </tr>
-          </thead>
-          <tbody id="orders-body">
-            <tr>
-              <td colspan="7" class="text-center muted">Caricamento ordini...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+            <div>
+              <label style="font-size:13px;">Tavolo / Codice</label>
+
+              <% if (presetTable) { %>
+                <div class="muted" style="margin-top:6px">
+                  Stai lavorando su <b><%= presetTable %></b>
+                  <button type="button" id="change-table-btn" class="button secondary sm" style="margin-left:10px">
+                    Cambia tavolo
+                  </button>
+                </div>
+              <% } %>
+
+              <input
+                id="order-table"
+                class="input"
+                style="margin-top:4px"
+                placeholder="Es. T1, SALA..."
+                value="<%= presetTable || '' %>"
+                <%= presetTable ? "readonly" : "" %>
+              />
+            </div>
+          </div>
+
+          <div class="row mt-16">
+            <div>
+              <label style="font-size:13px;">Nome cliente (opzionale)</label>
+              <input id="order-name" class="input" style="margin-top:4px" placeholder="Nome" />
+            </div>
+            <div>
+              <label style="font-size:13px;">Telefono (opzionale)</label>
+              <input id="order-phone" class="input" style="margin-top:4px" placeholder="Telefono" />
+            </div>
+          </div>
+
+          <div class="mt-16">
+            <label style="font-size:13px;">Nota per cucina (opzionale)</label>
+            <textarea id="order-note" class="input" style="margin-top:4px" rows="2" placeholder="Scrivi eventuali indicazioni..."></textarea>
+          </div>
+
+          <div class="divider"></div>
+
+          <h2 style="margin:0 0 10px">Menu</h2>
+          <p class="muted">Tocca un prodotto per aggiungerlo al carrello.</p>
+
+          <div class="row mt-16">
+            <div>
+              <label style="font-size:13px;">Categoria</label>
+              <select id="cat-filter" class="input" style="margin-top:4px">
+                <option value="">Tutte</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:13px;">Cerca</label>
+              <input id="menu-search" class="input" style="margin-top:4px" placeholder="Scrivi un nome..." />
+            </div>
+          </div>
+
+          <div id="menu-grid" class="mt-16"></div>
+
+          <div class="divider"></div>
+
+          <h2 style="margin:0 0 10px">Carrello</h2>
+          <div id="cart-box" class="muted">Carrello vuoto.</div>
+
+          <div class="row mt-24">
+            <div>
+              <span class="muted">Totale:</span>
+              <strong id="order-total">€ 0,00</strong>
+            </div>
+            <div style="text-align:right;">
+              <button type="submit" class="button">Invia ordine alla cucina</button>
+            </div>
+          </div>
+
+          <div id="new-order-message" class="mt-8 muted"></div>
+        </form>
+      </section>
+
+      <!-- ======================= TAB: ORDINI ======================= -->
+      <section id="tab-orders" class="tabpanel">
+        <h2 style="margin-top:0">Ordini attivi</h2>
+        <p class="muted">
+          Solo gli ordini di oggi, ordinati dal più recente.
+          <span class="tag">Aggiornamento automatico ogni 10s</span>
+        </p>
+
+        <div class="mt-8">
+          <button type="button" class="button secondary sm" id="refresh-orders-btn">Aggiorna ora</button>
+        </div>
+
+        <div class="table-wrap mt-16">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tavolo</th>
+                <th>Stato</th>
+                <th>Modo</th>
+                <th>Totale</th>
+                <th>Creato</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="orders-body">
+              <tr>
+                <td colspan="7" class="text-center muted">Caricamento ordini...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
     </div>
-
   <% } %>
 </div>
 
 <script>
 <% if (loggedIn) { %>
+  // ====================== TAB SWITCH ======================
+  const tabBtns = Array.from(document.querySelectorAll(".tabbtn"));
+  const tabPos = document.getElementById("tab-pos");
+  const tabOrders = document.getElementById("tab-orders");
+
+  function setTab(name){
+    tabBtns.forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+    tabPos.classList.toggle("active", name === "pos");
+    tabOrders.classList.toggle("active", name === "orders");
+    // opzionale: salva in URL
+    history.replaceState(null, "", "#"+name);
+  }
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener("click", () => setTab(btn.dataset.tab));
+  });
+
+  // se l'URL ha #orders apri ordini
+  const hash = (location.hash || "").replace("#","");
+  if (hash === "orders") setTab("orders");
+
+  // ====================== LOGICA JS CAMERIERE (POS + ORDINI) ======================
+
   let MENU = { categories: [], items: [] };
-  let CART = [];
+  let CART = []; // {id, name, price, qty}
 
   const PRESET_TABLE = "<%= (presetTable || '').toString().replace(/"/g, '\\"') %>";
   const HAS_PRESET_TABLE = !!PRESET_TABLE;
 
-  // ✅ BLOCCO GIUSTO: SOLO JS (nessun HTML dentro)
+  // preset tavolo + sblocco
   if (HAS_PRESET_TABLE) {
     const tableInput = document.getElementById("order-table");
     if (tableInput) {
@@ -367,6 +441,7 @@
     renderCart();
   });
 
+  // invio ordine
   document.getElementById("new-order-form").addEventListener("submit", async (e)=>{
     e.preventDefault();
     const msgEl = document.getElementById("new-order-message");
@@ -428,6 +503,8 @@
       msgEl.style.color = "#11611b";
       msgEl.textContent = "✅ Ordine inviato (ID: " + data.order_id + ").";
 
+      // dopo invio -> tab ordini (più comodo)
+      setTab("orders");
       loadOrders();
     }catch(err){
       console.error(err);
@@ -436,6 +513,7 @@
     }
   });
 
+  // ====== LISTA ORDINI ======
   async function loadOrders() {
     const tbody = document.getElementById("orders-body");
     tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Caricamento...</td></tr>`;
@@ -514,6 +592,7 @@
     }
   });
 
+  // BOOT
   (async()=>{
     try{ await loadMenu(); } catch(e){
       console.error(e);
