@@ -974,24 +974,26 @@ async function fetchOrders(){
 
     const paid = comp.filter(o => o.payment_status === 'paid');
 
-    let list = [];
-    if (STATUS === 'all') {
-      // tutti gli ordini di quel giorno
-      list = pend.concat(comp, canc);
-    } else if (STATUS === 'due') {
-      // ordini da incassare: pending + ack true
-      list = pend.filter(o => o.ack);
-    } else if (STATUS === 'paid') {
-      // solo quelli COMPLETATI e PAGATI
-      list = paid;
-    } else if (STATUS === 'canceled') {
-      list = canc;
-    }
+// ✅ sempre tutti (serve alla cucina)
+ALL_ORDERS = pend.concat(comp, canc);
 
-    list.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
-    ORDERS = list;
-    renderOrders(q);
-renderKitchen();
+let list = [];
+if (STATUS === 'all') {
+  list = ALL_ORDERS;
+} else if (STATUS === 'due') {
+  list = pend.filter(o => o.ack);
+} else if (STATUS === 'paid') {
+  list = paid; // (paid lo hai già calcolato)
+} else if (STATUS === 'canceled') {
+  list = canc;
+}
+
+list.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+ORDERS = list;
+
+renderOrders(q);
+renderKitchen(); // ora funzionerà anche se STATUS non è "all"
+counters();
     counters();
   }catch(e){
     console.error(e);
