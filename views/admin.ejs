@@ -1043,14 +1043,16 @@ const rows = (o.items || []).map(it => `
       }else{
         actions = `<button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>`;
       }
-    }else if(STATUS==='due'){
-      const badge = badgeForDue(o);
-      actions = `
-        ${badge}
-        <button class="btn brand" data-act="receipt" data-id="${o.id}">🧾 Scontrino</button>
-        <button class="btn ok" data-act="complete" data-id="${o.id}">💶 Pagato in cassa</button>
-        <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>`;
-    }else if(STATUS==='paid'){
+}else if(STATUS==='due'){
+  const badge = badgeForDue(o);
+  actions = `
+    ${badge}
+    <button class="btn" data-act="edit" data-id="${o.id}">✏️ Modifica</button>
+    <button class="btn brand" data-act="receipt" data-id="${o.id}">🧾 Scontrino</button>
+    <button class="btn ok" data-act="complete" data-id="${o.id}">💶 Pagato in cassa</button>
+    <button class="btn danger" data-act="cancel" data-id="${o.id}">🗑️ Elimina</button>`;
+}
+else if(STATUS==='paid'){
       actions = `<button class="btn" data-act="print" data-id="${o.id}">🖨️ Stampa</button>`;
     }else if(STATUS==='canceled'){
       actions = `<button class="btn" data-act="restore" data-id="${o.id}">↩️ Ripristina</button>`;
