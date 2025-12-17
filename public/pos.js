@@ -376,6 +376,14 @@ async function checkoutTable(method){
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     await loadMenu();
+    // Tabs
+$("tabTables")?.addEventListener("click", () => setMode("tables"));
+$("tabCounter")?.addEventListener("click", () => setMode("counter"));
+setMode("tables");
+
+// Griglia tavoli + ricerca
+renderTablesGrid();
+$("tableSearch")?.addEventListener("input", (e) => renderTablesGrid(e.target.value));
   } catch (e) {
     console.error(e);
     setHint("Errore caricamento menu.", "err");
