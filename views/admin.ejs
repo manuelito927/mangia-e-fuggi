@@ -1253,7 +1253,7 @@ function attachRealtimeTables(){
 function beep(){
   try{
     const c=new (window.AudioContext||window.webkitAudioContext)();
-    const o=c.createOscillator(),g=c.createGain();
+const o = (ALL_ORDERS || []).find(x => String(x.id) === String(orderId));
     o.frequency.value=900;o.type="triangle";
     o.connect(g);g.connect(c.destination);
     g.gain.setValueAtTime(.001,c.currentTime);
