@@ -299,6 +299,30 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
 </div>
 </div>
 
+<!-- ===== MODAL EDIT ORDINE ===== -->
+<div id="editBackdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <h3 id="editTitle">Modifica ordine</h3>
+
+    <div class="muted" style="margin-bottom:10px">
+      ID: <b id="editOrderId">-</b>
+    </div>
+
+    <div class="line">
+      <span class="muted">Nota cliente</span>
+    </div>
+    <textarea id="editNote" class="input" placeholder="Scrivi una nota..."></textarea>
+
+    <div class="actions">
+      <button id="btnEditCancel" type="button" class="btn">Annulla</button>
+      <button id="btnEditSave" type="button" class="btn brand">Salva</button>
+    </div>
+
+    <div id="editMsg" class="muted" style="margin-top:8px;font-size:13px"></div>
+  </div>
+</div>
+<!-- ===== /MODAL EDIT ORDINE ===== -->
+
 <script>
 /* ========= UTILS ========= */
 const $  = sel => document.querySelector(sel);
