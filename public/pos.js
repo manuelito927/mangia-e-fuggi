@@ -385,8 +385,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("saveBtn").onclick  = saveSelectionToTable;
   $("clearBtn").onclick = () => { cart = []; setHint(""); renderCart(); };
 
-  if (payCashBtn) payCashBtn.onclick = () => checkoutTable("cash");
-  if (payCardBtn) payCardBtn.onclick = () => checkoutTable("card");
+const payCashBtn = $("payCashBtn");
+const payCardBtn = $("payCardBtn");
+if (payCashBtn) payCashBtn.onclick = () => checkoutTable("cash");
+if (payCardBtn) payCardBtn.onclick = () => checkoutTable("card");
 
   renderCart();
 });
