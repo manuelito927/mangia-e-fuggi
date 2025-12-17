@@ -1130,6 +1130,7 @@ function renderKitchen() {
           <div class="muted">${formatRome(o.created_at)}</div>
         </div>
         <button class="btn ok" data-act="ack" data-id="${o.id}">
+${o.customer_note ? `<div class="muted">📝 ${o.customer_note}</div>` : ''}
           ✅ Preso
         </button>
       </div>
