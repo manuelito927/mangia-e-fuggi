@@ -32,6 +32,63 @@ function todayISO(){
   return new Date().toISOString().slice(0,10);
 }
 
+function normalizeTableInput(s){
+  s = String(s||"").trim().toUpperCase();
+  if (!s) return "";
+  if (s.startsWith("T")) return s;
+  // se scrivi "9" diventa "T9"
+  if (/^\d+$/.test(s)) return `T${s}`;
+  return s;
+}
+
+function setActiveTable(code){
+  $("tableSelect").value = code;
+  renderTablesGrid();
+  loadOpenOrdersForTable(); // carica conto automatico
+}
+
+function renderTablesGrid(filterText=""){
+  const wrap = $("tablesGrid");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+
+  const f = normalizeTableInput(filterText);
+  const list = TABLES.filter(t => !f || t.includes(f));
+
+  list.forEach(t => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tableBtn" + (($("tableSelect").value===t) ? " active" : "");
+    b.textContent = t;
+    b.onclick = () => setActiveTable(t);
+    wrap.appendChild(b);
+  });
+
+  if (!list.length){
+    wrap.innerHTML = `<div style="opacity:.7">Nessun tavolo trovato.</div>`;
+  }
+}
+
+function setMode(mode){
+  activeMode = mode;
+  const tabTables = $("tabTables");
+  const tabCounter = $("tabCounter");
+  const tablesView = $("tablesView");
+  const counterView = $("counterView");
+
+  if (mode === "tables"){
+    tabTables?.classList.add("active");
+    tabCounter?.classList.remove("active");
+    tablesView.style.display = "";
+    counterView.style.display = "none";
+  } else {
+    tabCounter?.classList.add("active");
+    tabTables?.classList.remove("active");
+    counterView.style.display = "";
+    tablesView.style.display = "none";
+  }
+}
+
 // ---------- UI: categorie
 function renderCats(){
   const wrap = $("catGrid");
