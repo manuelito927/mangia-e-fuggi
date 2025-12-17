@@ -960,6 +960,47 @@ ${
   }
 }
 
+function renderKitchen() {
+  const box = document.getElementById('kitchenOrders');
+  if (!box) return;
+
+  box.innerHTML = '';
+
+  const list = ORDERS.filter(o =>
+    o.status === 'pending' && !o.ack
+  );
+
+  if (!list.length) {
+    box.innerHTML = '<div class="muted">Nessun ordine da preparare 🍕</div>';
+    return;
+  }
+
+  list.forEach(o => {
+    const rows = (o.items || []).map(it => `
+      <div style="display:flex;justify-content:space-between;padding:4px 0">
+        <div><b>${it.qty}×</b> ${it.name}</div>
+        <div>€ ${(it.qty * it.price).toFixed(2)}</div>
+      </div>
+    `).join('');
+
+    const el = document.createElement('div');
+    el.className = 'order';
+    el.innerHTML = `
+      <div class="head">
+        <div>
+          <b>${o.table_code || 'ASPORTO'}</b>
+          <div class="muted">${formatRome(o.created_at)}</div>
+        </div>
+        <button class="btn ok" data-act="ack" data-id="${o.id}">
+          ✅ Preso
+        </button>
+      </div>
+      <div class="rows">${rows}</div>
+    `;
+    box.appendChild(el);
+  });
+}
+
 $('#orders').addEventListener('click', async ev=>{
   const b=ev.target.closest('[data-act]');
   if(!b) return;
