@@ -846,6 +846,78 @@ function formatRome(iso){
 let STATUS='all', ORDERS=[], SUBS=false, refreshTimer=null;
 let TABLES_MAP = {};
 
+/* ========= MODAL EDIT ORDINE ========= */
+let EDITING_ORDER_ID = null;
+
+const editBackdrop = document.getElementById('editBackdrop');
+const editOrderIdEl = document.getElementById('editOrderId');
+const editNoteEl = document.getElementById('editNote');
+const editMsgEl = document.getElementById('editMsg');
+const btnEditCancel = document.getElementById('btnEditCancel');
+const btnEditSave = document.getElementById('btnEditSave');
+
+function openEditModal(orderId){
+  const o = (ORDERS || []).find(x => String(x.id) === String(orderId));
+  if(!o) return;
+
+  EDITING_ORDER_ID = o.id;
+  editOrderIdEl.textContent = o.id;
+  editNoteEl.value = o.customer_note || '';
+  editMsgEl.textContent = '';
+
+  editBackdrop.style.display = 'flex';
+  editBackdrop.setAttribute('aria-hidden', 'false');
+  editNoteEl.focus();
+}
+
+function closeEditModal(){
+  EDITING_ORDER_ID = null;
+  editBackdrop.style.display = 'none';
+  editBackdrop.setAttribute('aria-hidden', 'true');
+}
+
+btnEditCancel.addEventListener('click', closeEditModal);
+
+// click fuori dal modal = chiudi
+editBackdrop.addEventListener('click', (e)=>{
+  if(e.target === editBackdrop) closeEditModal();
+});
+
+// ESC = chiudi
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && editBackdrop.style.display === 'flex') closeEditModal();
+});
+
+btnEditSave.addEventListener('click', async ()=>{
+  if(!EDITING_ORDER_ID) return;
+
+  const note = (editNoteEl.value || '').trim();
+  editMsgEl.textContent = 'Salvataggio...';
+
+  try{
+    // ⚠️ Se la tua rotta è diversa, cambia SOLO questa URL:
+    const r = await F(`/api/orders/${EDITING_ORDER_ID}/update`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ customer_note: note })
+    });
+
+    const j = await r.json().catch(()=> ({}));
+    if(!r.ok || !j.ok){
+      editMsgEl.textContent = 'Errore nel salvataggio.';
+      return;
+    }
+
+    editMsgEl.textContent = 'Salvato ✅';
+    closeEditModal();
+    await fetchOrders();
+  }catch(e){
+    console.error(e);
+    editMsgEl.textContent = 'Errore di rete.';
+  }
+});
+/* ========= /MODAL EDIT ORDINE ========= */
+
 async function counters(){
   try{
     const daySel = $('#dayOrders').value || isoLocalDateStr(new Date());
