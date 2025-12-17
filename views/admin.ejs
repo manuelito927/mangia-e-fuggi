@@ -65,6 +65,44 @@ h1{margin:0 0 10px;font-weight:800;letter-spacing:.3px}
   background:#fdeaea;border:1px solid #f3caca;color:#7a2e2e;
   border-radius:12px;padding:10px;margin-bottom:12px;display:none
 }
+
+/* ===== MODAL EDIT ORDINE ===== */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+.modal{
+  background:#fff;
+  width:100%;
+  max-width:520px;
+  border-radius:16px;
+  padding:16px;
+  box-shadow:0 10px 40px rgba(0,0,0,.3);
+}
+.modal h3{margin:0 0 10px 0}
+.modal .line{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin:6px 0;
+}
+.modal textarea{
+  width:100%;
+  min-height:60px;
+}
+.modal .actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:12px;
+}
+
 </style>
 </head>
 <body>
