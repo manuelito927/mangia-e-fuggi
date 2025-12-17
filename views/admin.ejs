@@ -997,6 +997,7 @@ list.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
 ORDERS = list;
 
 renderOrders(q);
+renderCash();
 renderKitchen(); // ora funzionerà anche se STATUS non è "all"
 counters();
   }catch(e){
