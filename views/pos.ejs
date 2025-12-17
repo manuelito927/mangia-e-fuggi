@@ -9,25 +9,32 @@
 
 <body>
   <div class="wrap">
-    <header class="top">
-      <h1>POS Tavoli</h1>
+  <header class="top">
+  <div class="topBar">
+    <h1>POS</h1>
 
-      <div class="row">
-        <label for="tableSelect">Tavolo</label>
+    <div class="tabs">
+      <button id="tabTables" class="tab active" type="button">TAVOLI</button>
+      <button id="tabCounter" class="tab" type="button">BANCO</button>
+    </div>
 
-        <select id="tableSelect">
-          <option value="">Seleziona…</option>
-          <option value="T1">T1</option>
-          <option value="T2">T2</option>
-          <option value="T3">T3</option>
-          <option value="T4">T4</option>
-          <option value="T5">T5</option>
-          <option value="T6">T6</option>
-        </select>
+    <div class="search">
+      <input id="tableSearch" type="text" placeholder="Cerca tavolo (es. 9, T9)..." />
+    </div>
+  </div>
 
-        <button id="loadBtn" type="button">Carica conto</button>
-      </div>
-    </header>
+  <!-- Vista TAVOLI -->
+  <div id="tablesView" class="tablesView">
+    <div id="tablesGrid" class="tablesGrid"></div>
+    <!-- tavolo selezionato -->
+    <input type="hidden" id="tableSelect" value="" />
+  </div>
+
+  <!-- Vista BANCO (per ora semplice) -->
+  <div id="counterView" class="counterView" style="display:none;">
+    <div class="hint">Modalità banco: aggiungi prodotti e incassa subito (la rifiniamo dopo).</div>
+  </div>
+</header>
 
     <main class="grid">
       <section class="panel">
