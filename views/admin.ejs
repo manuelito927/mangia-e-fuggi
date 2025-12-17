@@ -1153,24 +1153,6 @@ $('#orders').addEventListener('click', async ev=>{
         body: JSON.stringify({ method:'cash' })
       });
 
-// ✅ Click nella vista cucina (bottoni "✅ Preso")
-$('#kitchenOrders').addEventListener('click', async ev=>{
-  const b = ev.target.closest('[data-act]');
-  if(!b) return;
-
-  const id = b.dataset.id;
-  const act = b.dataset.act;
-
-  try{
-    if(act === 'ack'){
-      await F(`/api/orders/${id}/ack`, { method:'POST' });
-    }
-  }catch(e){
-    showErr('Azione fallita in cucina.');
-  }
-  await fetchOrders();
-});
-
     }
     if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await F(`/api/orders/${id}/cancel`,{method:'POST'}); }
     if(act==='restore'){ await F(`/api/orders/${id}/restore`,{method:'POST'}); }
