@@ -1104,9 +1104,9 @@ function renderKitchen() {
 
   box.innerHTML = '';
 
-  const list = ORDERS.filter(o =>
-    o.status === 'pending' && !o.ack
-  );
+  const list = ALL_ORDERS.filter(o =>
+  o.status === 'pending' && !o.ack
+);
 
   if (!list.length) {
     box.innerHTML = '<div class="muted">Nessun ordine da preparare 🍕</div>';
