@@ -116,7 +116,7 @@ app.use(helmet({
         FISKALY_BASE,
         "https://api.sumup.com"
       ].filter(Boolean),
-      "frame-ancestors": ["'none'"],
+"frame-ancestors": ["'self'"],
       "base-uri": ["'self'"],
       "form-action": ["'self'"],
       "object-src": ["'none'"]
