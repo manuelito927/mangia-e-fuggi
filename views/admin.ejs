@@ -1251,15 +1251,7 @@ function attachRealtimeTables(){
     }).subscribe();
 }
 function beep(){
-  try{
-    const c=new (window.AudioContext||window.webkitAudioContext)();
-const o = (ALL_ORDERS || []).find(x => String(x.id) === String(orderId));
-    o.frequency.value=900;o.type="triangle";
-    o.connect(g);g.connect(c.destination);
-    g.gain.setValueAtTime(.001,c.currentTime);
-    g.gain.exponentialRampToValueAtTime(.2,c.currentTime+.01);
-    o.start();o.stop(c.currentTime+.14);
-  }catch{}
+  // disattivato temporaneamente
 }
 
 /* ========= STATISTICHE ========= */
