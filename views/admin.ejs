@@ -858,8 +858,8 @@ async function fetchOrders(){
     list.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
     ORDERS = list;
     renderOrders(q);
-    counters();
 renderKitchen();
+    counters();
   }catch(e){
     console.error(e);
     showErr('Errore nel caricamento ordini. Se richiesto, reinserisci la password della dashboard.');
