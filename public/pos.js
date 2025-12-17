@@ -10,6 +10,10 @@ let openOrders = []; // ordini pending caricati per il tavolo (oggi)
 
 const $ = (id) => document.getElementById(id);
 
+// Tavoli (per ora statici: poi li prendiamo dal DB)
+const TABLES = ["T1","T2","T3","T4","T5","T6","T7","T8","T9","T10"];
+let activeMode = "tables"; // "tables" | "counter"
+
 function money(n){
   return Number(n || 0).toFixed(2);
 }
