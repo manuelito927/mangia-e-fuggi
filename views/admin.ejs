@@ -859,6 +859,7 @@ async function fetchOrders(){
     ORDERS = list;
     renderOrders(q);
     counters();
+renderKitchen();
   }catch(e){
     console.error(e);
     showErr('Errore nel caricamento ordini. Se richiesto, reinserisci la password della dashboard.');
