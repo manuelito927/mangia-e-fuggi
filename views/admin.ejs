@@ -1123,19 +1123,19 @@ function renderKitchen() {
 
     const el = document.createElement('div');
     el.className = 'order';
-    el.innerHTML = `
-      <div class="head">
-        <div>
-          <b>${o.table_code || 'ASPORTO'}</b>
-          <div class="muted">${formatRome(o.created_at)}</div>
-        </div>
-        <button class="btn ok" data-act="ack" data-id="${o.id}">
-${o.customer_note ? `<div class="muted">📝 ${o.customer_note}</div>` : ''}
-          ✅ Preso
-        </button>
-      </div>
-      <div class="rows">${rows}</div>
-    `;
+el.innerHTML = `
+  <div class="head">
+    <div>
+      <b>${o.table_code || 'ASPORTO'}</b>
+      <div class="muted">${formatRome(o.created_at)}</div>
+      ${o.customer_note ? `<div class="muted">📝 ${o.customer_note}</div>` : ''}
+    </div>
+    <button class="btn ok" data-act="ack" data-id="${o.id}">
+      ✅ Preso
+    </button>
+  </div>
+  <div class="rows">${rows}</div>
+`;
     box.appendChild(el);
   });
 }
