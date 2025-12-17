@@ -1157,6 +1157,7 @@ $('#orders').addEventListener('click', async ev=>{
     if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await F(`/api/orders/${id}/cancel`,{method:'POST'}); }
     if(act==='restore'){ await F(`/api/orders/${id}/restore`,{method:'POST'}); }
     if(act==='receipt'){ await emitReceipt(id); return; }
+if(act==='edit'){ openEditModal(id); return; }
     if(act==='ack'){ await F(`/api/orders/${id}/ack`,{method:'POST'}); }
     if(act==='mark_due'){
       await F(`/api/orders/${id}/ack`,{method:'POST'});
