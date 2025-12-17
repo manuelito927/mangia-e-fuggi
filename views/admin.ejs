@@ -856,7 +856,7 @@ const btnEditCancel = document.getElementById('btnEditCancel');
 const btnEditSave = document.getElementById('btnEditSave');
 
 function openEditModal(orderId){
-  const o = (ORDERS || []).find(x => String(x.id) === String(orderId));
+  const o = (ALL_ORDERS || []).find(x => String(x.id) === String(orderId));
   if(!o) return;
 
   EDITING_ORDER_ID = o.id;
