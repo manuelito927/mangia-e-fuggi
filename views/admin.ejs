@@ -1234,6 +1234,34 @@ $('#orders').addEventListener('click', async ev=>{
         body: JSON.stringify({ method:'cash' })
       });
 
+// ✅ CLICK PAGAMENTO IN CASSA (SEZIONE CASSA)
+$('#sec-cash').addEventListener('click', async ev=>{
+  const btn = ev.target.closest('[data-cash]');
+  if(!btn) return;
+
+  const table = btn.dataset.cash;
+
+  try{
+    // prendi tutti gli ordini di quel tavolo non pagati
+    const orders = ALL_ORDERS.filter(o =>
+      o.table_code === table && o.payment_status !== 'paid'
+    );
+
+    for(const o of orders){
+      await F(`/api/orders/${o.id}/complete`, { method:'POST' });
+      await F(`/api/orders/${o.id}/pay`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ method:'cash' })
+      });
+    }
+  }catch(e){
+    showErr('Errore pagamento in cassa.');
+  }
+
+  await fetchOrders();
+});
+
     }
     if(act==='cancel'){ if(!confirm('Confermi eliminazione?')) return; await F(`/api/orders/${id}/cancel`,{method:'POST'}); }
     if(act==='restore'){ await F(`/api/orders/${id}/restore`,{method:'POST'}); }
