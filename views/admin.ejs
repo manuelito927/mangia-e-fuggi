@@ -1102,6 +1102,60 @@ ${
   }
 }
 
+function renderCash() {
+  const box = document.getElementById('cashTables');
+  box.innerHTML = '';
+
+  // solo ordini pronti e non pagati
+  const due = ALL_ORDERS.filter(o =>
+    o.ack === true && o.payment_status !== 'paid'
+  );
+
+  if (!due.length) {
+    box.innerHTML = '<div class="muted">Nessun tavolo da incassare</div>';
+    return;
+  }
+
+  const grouped = {};
+  due.forEach(o => {
+    const key = o.table_code || 'ASPORTO';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(o);
+  });
+
+  Object.entries(grouped).forEach(([table, orders]) => {
+    let total = 0;
+    let rows = '';
+
+    orders.forEach(o => {
+      (o.items || []).forEach(it => {
+        const sub = it.qty * it.price;
+        total += sub;
+        rows += `
+          <div class="row">
+            <div>${it.qty}× ${it.name}</div>
+            <div>€ ${sub.toFixed(2)}</div>
+          </div>`;
+      });
+    });
+
+    const el = document.createElement('div');
+    el.className = 'order';
+    el.innerHTML = `
+      <h3>🪑 Tavolo ${table}</h3>
+      ${rows}
+      <div class="row" style="margin-top:10px">
+        <b>Totale</b>
+        <b>€ ${total.toFixed(2)}</b>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn ok" data-cash="${table}">💶 Pagato in cassa</button>
+      </div>
+    `;
+    box.appendChild(el);
+  });
+}
+
 function renderKitchen() {
   const box = document.getElementById('kitchenOrders');
   if (!box) return;
