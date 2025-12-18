@@ -145,6 +145,66 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui}
   margin-top:12px;
 }
 
+
+/* ===== MOBILE: bottom nav + contenuto subito visibile ===== */
+@media (max-width:700px){
+
+  /* spazio sotto per non coprire il contenuto con la barra */
+  .shell{
+    grid-template-columns:1fr;
+    padding:12px;
+    padding-bottom:96px; /* spazio per la bottom bar */
+  }
+
+  /* sidebar diventa una bottom bar */
+  .side{
+    position:fixed;
+    left:12px; right:12px; bottom:12px;
+    top:auto;
+    height:auto;
+    z-index:999;
+    padding:10px;
+    border-radius:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,.12);
+  }
+
+  /* nav orizzontale scrollabile */
+  .side .nav{
+    display:flex;
+    gap:10px;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:2px;
+  }
+
+  .nav .item{
+    flex:0 0 auto;
+    margin-bottom:0;
+    white-space:nowrap;
+    padding:12px 14px;
+    border-radius:14px;
+  }
+
+  /* nascondiamo le sezioni "admin" su telefono (per ora) */
+  .nav .item[data-section="stats"],
+  .nav .item[data-section="menu"],
+  .nav .item[data-section="tables"],
+  .nav a[href="/admin/settings"]{
+    display:none !important;
+  }
+
+  /* topbar più compatta */
+  .topbar{
+    position:sticky;
+    top:0;
+    background:var(--bg);
+    padding:10px 0;
+    z-index:10;
+  }
+
+  .topbar h1{font-size:18px;}
+}
+
 </style>
 </head>
 <body>
