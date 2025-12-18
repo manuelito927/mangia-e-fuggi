@@ -119,13 +119,12 @@ app.get("/pizza.mp4", (req, res) => {
       "img-src":    ["'self'", "data:", "https:"],
       "font-src":   ["'self'", "data:", "https://fonts.gstatic.com"],
       "connect-src": [
-        "'self'",
-        SUPABASE_URL,
-        `https://${SUPABASE_HOST}`,
-        `wss://${SUPABASE_HOST}`,
-        FISKALY_BASE,
-        "https://api.sumup.com"
-      ].filter(Boolean),
+  "'self'",
+  `https://${SUPABASE_HOST}`,
+  `wss://${SUPABASE_HOST}`,
+  FISKALY_BASE,
+  "https://api.sumup.com"
+].filter(Boolean),
 "frame-ancestors": ["'self'"],
       "base-uri": ["'self'"],
       "form-action": ["'self'"],
