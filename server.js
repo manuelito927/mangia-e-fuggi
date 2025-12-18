@@ -94,8 +94,8 @@ app.use(
         "font-src":   ["'self'", "data:", "https://fonts.gstatic.com"],
         "connect-src": [
           "'self'",
-          `https://${SUPABASE_HOST}`,
-          `wss://${SUPABASE_HOST}`,
+          SUPABASE_HOST ? `https://${SUPABASE_HOST}` : null,
+          SUPABASE_HOST ? `wss://${SUPABASE_HOST}` : null,
           FISKALY_BASE,
           "https://api.sumup.com"
         ].filter(Boolean),
