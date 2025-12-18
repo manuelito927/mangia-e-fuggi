@@ -33,6 +33,15 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui}
   .shell{grid-template-columns:1fr}
 }
 
+@media (max-width:700px){
+  .side{
+    position:relative;   /* niente sticky */
+    top:auto;
+    height:auto;         /* IMPORTANTISSIMO: toglie la pagina bianca */
+    overflow:visible;
+  }
+}
+
 .side{
   background:var(--panel);
   border:1px solid var(--ring);
