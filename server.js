@@ -78,6 +78,12 @@ app.use((req, res, next) => {
   next();
 });
 
+/* =================== SECURITY HEADERS / CSP =================== */
+const SUPABASE_HOST = (() => { try { return new URL(SUPABASE_URL).hostname; } catch { return ""; } })();
+const FISKALY_BASE = getEnvAny("FISKALY_BASE_URL") || "https://api.fiskaly.com";
+
+app.use(helmet({
+
 /* ========================= STATIC ========================= */
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/video", express.static(path.join(__dirname, "public", "video"), {
@@ -103,11 +109,6 @@ app.get("/pizza.mp4", (req, res) => {
   });
 });
 
-/* =================== SECURITY HEADERS / CSP =================== */
-const SUPABASE_HOST = (() => { try { return new URL(SUPABASE_URL).hostname; } catch { return ""; } })();
-const FISKALY_BASE = getEnvAny("FISKALY_BASE_URL") || "https://api.fiskaly.com";
-
-app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: true,
     directives: {
