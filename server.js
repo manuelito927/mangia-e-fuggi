@@ -504,41 +504,34 @@ app.post("/waiter/logout", (req, res) => {
   });
 });
 
-// === API MENU (categorie + piatti) ===
 app.get("/admin/menu-json", async (req, res) => {
   try {
-    // categorie
     const { data: categories, error: catError } = await supabase
       .from("menu_categories")
       .select("id, name, sort_order, is_active")
-      .order("sort_order", { ascending: true, nullsLast: true })
-      .order("id", { ascending: true });
+      .order("sort_order", { ascending: true, nullsLast: true });
 
-    if (catError) {
-      console.error("Errore categorie:", catError);
-      return res.status(500).json({ ok: false, error: "catError" });
-    }
+    if (catError) throw catError;
 
-    // piatti
     const { data: items, error: itemError } = await supabase
       .from("menu_items")
-      .select("id, category_id, name, description, price, is_available, sort_order")
-      .order("sort_order", { ascending: true, nullsLast: true })
-      .order("id", { ascending: true });
+      .select(`
+        id, category_id, name, description, price, is_available, sort_order,
+        item_modifiers (
+          modifier_groups (
+            id, name, is_required, min_selection, max_selection,
+            modifier_options (id, name, extra_price)
+          )
+        )
+      `)
+      .order("sort_order", { ascending: true, nullsLast: true });
 
-    if (itemError) {
-      console.error("Errore items:", itemError);
-      return res.status(500).json({ ok: false, error: "itemError" });
-    }
+    if (itemError) throw itemError;
 
-    res.json({
-      ok: true,
-      categories,
-      items,
-    });
+    res.json({ ok: true, categories, items });
   } catch (e) {
-    console.error("Errore generico /admin/menu-json:", e);
-    res.status(500).json({ ok: false, error: "serverError" });
+    console.error("❌ Errore /admin/menu-json:", e);
+    res.status(500).json({ ok: false, error: "Errore caricamento menu avanzato" });
   }
 });
 
