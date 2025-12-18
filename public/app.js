@@ -53,8 +53,8 @@ function renderLogin(){
     const err = document.getElementById("err");
     err.textContent = "";
 
-    const { data, error } = await supabase
-      .from("pin_codes")
+    const { data, error } = await sb
+  .from("pin_codes")
       .select("role, restaurant_id")
       .eq("code_hash", pin)      // (per ora)
       .eq("active", true)
