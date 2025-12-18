@@ -82,13 +82,57 @@ app.use((req, res, next) => {
 const SUPABASE_HOST = (() => { try { return new URL(SUPABASE_URL).hostname; } catch { return ""; } })();
 const FISKALY_BASE = getEnvAny("FISKALY_BASE_URL") || "https://api.fiskaly.com";
 
-app.use(helmet({
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+        "style-src":  ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+        "img-src":    ["'self'", "data:", "https:"],
+        "font-src":   ["'self'", "data:", "https://fonts.gstatic.com"],
+        "connect-src": [
+          "'self'",
+          `https://${SUPABASE_HOST}`,
+          `wss://${SUPABASE_HOST}`,
+          FISKALY_BASE,
+          "https://api.sumup.com"
+        ].filter(Boolean),
+        "frame-ancestors": ["'self'"],
+        "base-uri": ["'self'"],
+        "form-action": ["'self'"],
+        "object-src": ["'none'"]
+      }
+    },
+    crossOriginEmbedderPolicy: false
+  })
+);
 
 /* ========================= STATIC ========================= */
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/video", express.static(path.join(__dirname, "public", "video"), {
   setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
 }));
+
+app.get("/app", (req, res) => {
+  const SUPABASE_ANON = getEnvAny("SUPABASE_ANON_KEY") || "";
+  res.render("app", {
+    supabaseUrl: SUPABASE_URL,
+    supabaseAnon: SUPABASE_ANON,
+    BASE_URL: getBaseUrl(req)
+  });
+});
+
+app.get("/pizza.mp4", (req, res) => {
+  const filePath = path.join(__dirname, "public", "pizza.mp4");
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error("❌ Video non trovato:", filePath, err?.message);
+      res.status(404).send("pizza.mp4 non trovato in /public");
+    }
+  });
+});
 
 app.get("/app", (req, res) => {
   const SUPABASE_ANON = getEnvAny("SUPABASE_ANON_KEY") || "";
