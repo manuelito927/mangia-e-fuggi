@@ -1,4 +1,4 @@
-const supabase = window.supabase.createClient(
+const sb = window.supabase.createClient(
   window.__SUPABASE_URL__,
   window.__SUPABASE_ANON__
 );
