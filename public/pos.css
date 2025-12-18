@@ -33,3 +33,32 @@ purple{ background:#f0dcff; }
   .grid{ grid-template-columns: 1fr; }
   .tileGrid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
+
+/* Modal Estetica Toast-Style */
+.modal {
+  position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center;
+}
+.modal-content {
+  background: #fdfdfd; padding: 0; border-radius: 15px; width: 95%; max-width: 600px;
+  max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;
+}
+.modal-header { padding: 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
+#modifierGroupsWrapper { padding: 20px; overflow-y: auto; flex-grow: 1; }
+
+/* Griglia opzioni: tasti grandi e tattili */
+.mod-group { margin-bottom: 25px; }
+.mod-options-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+  gap: 12px; 
+  margin-top: 10px;
+}
+.mod-btn {
+  padding: 20px 10px; border: 2px solid #ccc; border-radius: 10px;
+  background: white; font-weight: bold; font-size: 14px; transition: 0.2s;
+}
+.mod-btn.selected { border-color: #8b1e08; background: #8b1e08; color: white; }
+
+.modal-footer { padding: 20px; background: #eee; text-align: center; }
+.btn-confirm { width: 100%; padding: 20px; background: #11611b; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; }
