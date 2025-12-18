@@ -84,6 +84,15 @@ app.use("/video", express.static(path.join(__dirname, "public", "video"), {
   setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
 }));
 
+app.get("/app", (req, res) => {
+  const SUPABASE_ANON = getEnvAny("SUPABASE_ANON_KEY") || "";
+  res.render("app", {
+    supabaseUrl: SUPABASE_URL,
+    supabaseAnon: SUPABASE_ANON,
+    BASE_URL: getBaseUrl(req)
+  });
+});
+
 app.get("/pizza.mp4", (req, res) => {
   const filePath = path.join(__dirname, "public", "pizza.mp4");
   res.sendFile(filePath, (err) => {
