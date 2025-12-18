@@ -74,5 +74,18 @@
     window.POS_BASE_URL = "<%= BASE_URL %>";
   </script>
 <script src="/pos.js"></script>
+
+<div id="modifierModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2 id="modItemName">Nome Prodotto</h2>
+    <div id="modifierGroupsWrapper">
+      </div>
+    <div class="modal-actions">
+      <button onclick="closeModifierModal()" class="btn-cancel">Annulla</button>
+      <button id="confirmModifiersBtn" class="btn-confirm">Aggiungi al carrello</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
