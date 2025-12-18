@@ -8,25 +8,6 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/pos.css">
 
-<div style="position:fixed;top:8px;left:8px;z-index:99999;background:#fff;padding:8px 10px;border:1px solid #000;font:14px Arial">
-  APP.EJS OK ✅
-</div>
-
-<div id="dbg" style="position:fixed;top:48px;left:8px;right:8px;z-index:99999;background:#fff;padding:10px;border:2px solid red;font:14px Arial;display:none"></div>
-
-<script>
-  const dbg = (m)=>{ const b=document.getElementById("dbg"); b.style.display="block"; b.innerHTML = "<b>ERRORE:</b><br>"+String(m).replaceAll("<","&lt;"); };
-  window.addEventListener("error", e => dbg(e.message + " @ " + (e.filename||"") + ":" + (e.lineno||"")));
-  window.addEventListener("unhandledrejection", e => dbg(e.reason?.message || e.reason || "Promise error"));
-
-  // stampo anche le env
-  setTimeout(()=> {
-    const u = window.__SUPABASE_URL__;
-    const a = window.__SUPABASE_ANON__;
-    if (!u || !a) dbg("SUPABASE env vuote → URL=" + u + " ANON=" + (a ? "OK" : "MISSING"));
-  }, 50);
-</script>
-
   <!-- Supabase in browser -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
