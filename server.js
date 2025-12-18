@@ -84,6 +84,10 @@ app.use("/video", express.static(path.join(__dirname, "public", "video"), {
   setHeaders: (res) => res.setHeader("Cache-Control", "public, max-age=604800, immutable")
 }));
 
+app.get("/app", (_req, res) => {
+  res.send("<h1>APP OK</h1><p>Route /app raggiunta</p>");
+});
+
 app.get("/app", (req, res) => {
   const SUPABASE_ANON = getEnvAny("SUPABASE_ANON_KEY") || "";
   res.render("app", {
