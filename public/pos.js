@@ -147,12 +147,89 @@ function escapeHtml(s){
     .replaceAll("'","&#039;");
 }
 
-// ---------- CARRELLO (selezione)
-function addToCart(it){
-  const id = Number(it.id);
-  const found = cart.find(x => Number(x.id) === id);
-  if (found) found.qty += 1;
-  else cart.push({ id, name: it.name, price: Number(it.price||0), qty: 1 });
+// === NUOVA LOGICA MODIFICATORI (Toast-Style) ===
+let currentModItem = null;
+let selectedModifiers = [];
+
+function addToCart(it) {
+  // Verifichiamo se l'item ha modificatori collegati (struttura dal nuovo server.js)
+  // Nota: item_modifiers è il nome della relazione che abbiamo creato su Supabase
+  const hasModifiers = it.item_modifiers && it.item_modifiers.length > 0;
+
+  if (hasModifiers) {
+    openModifierModal(it);
+  } else {
+    // Se non ha varianti, lo aggiungiamo direttamente con array vuoto []
+    executeAddToCart(it, []);
+  }
+}
+
+function openModifierModal(it) {
+  currentModItem = it;
+  selectedModifiers = []; // Reset selezioni precedenti
+  $("modItemName").textContent = it.name;
+  $("modifierGroupsWrapper").innerHTML = "";
+  $("modifierModal").style.display = "flex";
+
+  // Cicliamo sui gruppi di modificatori (es: "Aggiunte", "Cottura")
+  it.item_modifiers.forEach(rel => {
+    const group = rel.modifier_groups;
+    const groupDiv = document.createElement("div");
+    groupDiv.className = "mod-group";
+    groupDiv.innerHTML = `<h3>${escapeHtml(group.name)} ${group.is_required ? '<span style="color:red">*</span>' : ''}</h3>`;
+    
+    const grid = document.createElement("div");
+    grid.className = "mod-options-grid";
+
+    // Cicliamo sulle singole opzioni (es: "Bufala", "Ben cotta")
+    group.modifier_options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "mod-btn";
+      btn.innerHTML = `${escapeHtml(opt.name)}<br><small>+€${money(opt.extra_price)}</small>`;
+      
+      btn.onclick = () => {
+          btn.classList.toggle("selected");
+          const idx = selectedModifiers.findIndex(m => m.id === opt.id);
+          if (idx > -1) selectedModifiers.splice(idx, 1);
+          else selectedModifiers.push(opt);
+      };
+      grid.appendChild(btn);
+    });
+
+    groupDiv.appendChild(grid);
+    $("modifierGroupsWrapper").appendChild(groupDiv);
+  });
+
+  // Tasto conferma nel popup
+  $("confirmModifiersBtn").onclick = () => {
+    executeAddToCart(currentModItem, selectedModifiers);
+    closeModifierModal();
+  };
+}
+
+function closeModifierModal() {
+  $("modifierModal").style.display = "none";
+}
+
+// Questa funzione effettua l'inserimento vero e proprio nel carrello
+function executeAddToCart(it, mods) {
+  // Calcola il prezzo base + tutti gli extra dei modificatori scelti
+  const extra = mods.reduce((sum, m) => sum + Number(m.extra_price || 0), 0);
+  const finalPrice = Number(it.price) + extra;
+  
+  // Crea il nome visualizzato: es "Pizza Margherita [+ Bufala, + Salame]"
+  const modNames = mods.map(m => m.name).join(", ");
+  const displayName = modNames ? `${it.name} [${modNames}]` : it.name;
+
+  // Aggiungiamo al carrello esistente
+  cart.push({ 
+    id: it.id, 
+    name: displayName, 
+    price: finalPrice, 
+    qty: 1,
+    applied_mods: mods // salviamo i dati puri per il database
+  });
+  
   renderCart();
 }
 
