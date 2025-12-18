@@ -153,31 +153,6 @@ app.get("/pizza.mp4", (req, res) => {
   });
 });
 
-  contentSecurityPolicy: {
-    useDefaults: true,
-    directives: {
-      "default-src": ["'self'"],
-      // manteniamo 'unsafe-inline' per non rompere eventuali script/style inline nelle EJS
-      "script-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-      "style-src":  ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
-      "img-src":    ["'self'", "data:", "https:"],
-      "font-src":   ["'self'", "data:", "https://fonts.gstatic.com"],
-      "connect-src": [
-  "'self'",
-  `https://${SUPABASE_HOST}`,
-  `wss://${SUPABASE_HOST}`,
-  FISKALY_BASE,
-  "https://api.sumup.com"
-].filter(Boolean),
-"frame-ancestors": ["'self'"],
-      "base-uri": ["'self'"],
-      "form-action": ["'self'"],
-      "object-src": ["'none'"]
-    }
-  },
-  crossOriginEmbedderPolicy: false
-}));
-
 // HSTS + X-CTO + no-store per API/admin
 app.use((req, res, next) => {
   res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
