@@ -272,16 +272,12 @@ function requireAdminApi(req, res, next) {
 
 // ===== Middleware CAMERIERE =====
 function requireWaiter(req, res, next) {
-  if (req.session && req.session.isWaiter) {
-    return next();
-  }
+  if (req.session?.isWaiter) return next();
 
-  // se chiede HTML lo rimando alla pagina di login cameriere
-if (req.accepts("html")) return res.redirect("/app");
-    return res.redirect("/waiter");
-  }
+  // Se è una pagina HTML → rimanda al login cameriere
+  if (req.accepts("html")) return res.redirect("/app");
 
-  // se è una chiamata AJAX/API
+  // Se è una chiamata fetch/AJAX → 403
   return res.status(403).json({ ok: false, error: "waiter_only" });
 }
 
