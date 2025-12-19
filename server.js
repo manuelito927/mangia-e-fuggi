@@ -194,24 +194,6 @@ app.use((req, res, next) => {
   next();
 });
 
-/* ========================= PARSERS & SESSIONE ========================= */
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(cookieParser());
-
-app.use(session({
-  name: "mangia.sid",
-  secret: process.env.SESSION_SECRET || "dev",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 giorni
-  }
-}));
-
 /* ========================= HELPERS ========================= */
 // ---------- Helpers generali
 const euroString = v => Number(v || 0).toFixed(2);
