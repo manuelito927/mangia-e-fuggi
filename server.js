@@ -122,6 +122,47 @@ app.get("/app", (req, res) => {
   res.render("app", { error: null });
 });
 
+app.post("/app", async (req, res) => {
+  try {
+    const pinInserito = (req.body.pin || "").toString().trim();
+
+    if (!pinInserito) {
+      return res.render("app", { error: "Inserisci il PIN." });
+    }
+
+    const { data, error } = await supabase
+      .from("settings")
+      .select("waiter_pin")
+      .eq("key", "restaurant")
+      .single();
+
+    if (error) {
+      console.error("Errore lettura waiter_pin:", error);
+      return res.render("app", { error: "Errore interno, riprova." });
+    }
+
+    const savedPin = (data?.waiter_pin || "").toString().trim();
+
+    if (!savedPin) {
+      return res.render("app", { error: "PIN non configurato. Vai in Admin > Settings." });
+    }
+
+    if (pinInserito !== savedPin) {
+      return res.render("app", { error: "PIN errato." });
+    }
+
+    // ✅ login ok
+    req.session.isWaiter = true;
+
+    // ✅ redirect finale richiesto
+    return res.redirect("/waiter");
+  } catch (e) {
+    console.error("Eccezione login cameriere (/app):", e);
+    return res.render("app", { error: "Errore interno." });
+  }
+});
+
+
 app.get("/pizza.mp4", (req, res) => {
   const filePath = path.join(__dirname, "public", "pizza.mp4");
   res.sendFile(filePath, (err) => {
