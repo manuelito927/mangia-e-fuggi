@@ -191,17 +191,6 @@ app.get("/pizza.mp4", (req, res) => {
   });
 });
 
-
-app.get("/pizza.mp4", (req, res) => {
-  const filePath = path.join(__dirname, "public", "pizza.mp4");
-  res.sendFile(filePath, (err) => {
-    if (err) {
-      console.error("❌ Video non trovato:", filePath, err?.message);
-      res.status(404).send("pizza.mp4 non trovato in /public");
-    }
-  });
-});
-
 // HSTS + X-CTO + no-store per API/admin
 app.use((req, res, next) => {
   res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
