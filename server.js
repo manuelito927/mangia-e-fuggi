@@ -187,10 +187,15 @@ app.post("/app", async (req, res) => {
       return res.redirect("/waiter");
     }
 
-    if (row.role === "cashier" || row.role === "owner") {
-      req.session.isAdminByPin = true;
-      return res.redirect("/admin"); // oppure "/admin/pos" se vuoi cassa diretta
-    }
+    if (row.role === "cashier") {
+  req.session.isAdminByPin = true;
+  return res.redirect("/admin/pos");
+}
+
+if (row.role === "owner") {
+  req.session.isAdminByPin = true;
+  return res.redirect("/owner");
+}
 
     return res.render("app", { error: "Ruolo non valido." });
   } catch (e) {
