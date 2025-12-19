@@ -552,6 +552,11 @@ app.post("/waiter", async (req, res) => {
   }
 });
 
+app.post("/waiter/logout", (req, res) => {
+  req.session.isWaiter = false;
+  req.session.waiterTable = null;
+  return res.redirect("/app");
+});
 
 // =====================
 // ✅ LOGOUT UNICO (tutti i ruoli)
