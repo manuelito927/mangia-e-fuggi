@@ -341,6 +341,11 @@ app.get("/", (_req, res) => res.render("home"));
 app.get("/menu", (_req, res) => res.render("menu"));
 app.get("/storia", (_req, res) => res.render("storia"));
 
+// ✅ OWNER dashboard (pagina separata dalla cassa)
+app.get("/owner", requireOwner, (req, res) => {
+  res.render("owner", { BASE_URL: getBaseUrl(req) });
+});
+
 // ✅ POS manuale (admin)
 app.get("/admin", (req, res) => {
   // usa SOLO la anon key nel client
