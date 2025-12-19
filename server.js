@@ -277,7 +277,7 @@ function requireWaiter(req, res, next) {
   }
 
   // se chiede HTML lo rimando alla pagina di login cameriere
-  if (req.accepts("html")) {
+if (req.accepts("html")) return res.redirect("/app");
     return res.redirect("/waiter");
   }
 
