@@ -317,6 +317,16 @@ app.use("/admin", (req, res, next) => {
   next();
 });
 
+// ===== Middleware OWNER =====
+function requireOwner(req, res, next) {
+  if (req.session?.staffRole === "owner") return next();
+
+  // Se è una pagina HTML → rimanda al login
+  if (req.accepts("html")) return res.redirect("/app");
+
+  return res.status(403).json({ ok:false, error:"owner_only" });
+}
+
 // =====================
 // ✅ POS CAMERIERE
 // =====================
