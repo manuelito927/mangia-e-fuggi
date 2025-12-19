@@ -312,11 +312,6 @@ app.use("/admin", (req, res, next) => {
   next();
 });
 
-  // login ok → abilita sessione admin per le API
-  req.session.isAdmin = true;
-  next();
-});
-
 // =====================
 // ✅ POS CAMERIERE
 // =====================
