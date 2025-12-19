@@ -150,8 +150,9 @@ app.use("/video", express.static(path.join(__dirname, "public", "video"), {
 }));
 
 app.get("/app", (req, res) => {
-  // se già loggato cameriere → vai diretto alla dashboard cameriere
+  // se già loggato
   if (req.session?.isWaiter) return res.redirect("/waiter");
+  if (req.session?.isAdmin)  return res.redirect("/admin");
 
   res.render("app", { error: null });
 });
@@ -159,43 +160,36 @@ app.get("/app", (req, res) => {
 app.post("/app", async (req, res) => {
   try {
     const pinInserito = (req.body.pin || "").toString().trim();
+    if (!pinInserito) return res.render("app", { error: "Inserisci il PIN." });
 
-    if (!pinInserito) {
-      return res.render("app", { error: "Inserisci il PIN." });
-    }
+    const role = await getRoleByPin(pinInserito);
 
-    const { data, error } = await supabase
-      .from("settings")
-      .select("waiter_pin")
-      .eq("key", "restaurant")
-      .single();
-
-    if (error) {
-      console.error("Errore lettura waiter_pin:", error);
-      return res.render("app", { error: "Errore interno, riprova." });
-    }
-
-    const savedPin = (data?.waiter_pin || "").toString().trim();
-
-    if (!savedPin) {
-      return res.render("app", { error: "PIN non configurato. Vai in Admin > Settings." });
-    }
-
-    if (pinInserito !== savedPin) {
+    if (!role) {
       return res.render("app", { error: "PIN errato." });
     }
 
-    // ✅ login ok
-    req.session.isWaiter = true;
+    // pulisco eventuali login vecchi
+    req.session.isWaiter = false;
+    req.session.isAdmin  = false;
 
-    // ✅ redirect finale richiesto
-    return res.redirect("/waiter");
+    // redirect in base al ruolo
+    if (role === "waiter") {
+      req.session.isWaiter = true;
+      return res.redirect("/waiter");
+    }
+
+    if (role === "cashier" || role === "owner") {
+      // per ora entrano entrambi in /admin (poi crei /owner se vuoi)
+      req.session.isAdmin = true;
+      return res.redirect("/admin");
+    }
+
+    return res.render("app", { error: "Ruolo non riconosciuto." });
   } catch (e) {
-    console.error("Eccezione login cameriere (/app):", e);
+    console.error("Eccezione login /app:", e);
     return res.render("app", { error: "Errore interno." });
   }
 });
-
 
 app.get("/pizza.mp4", (req, res) => {
   const filePath = path.join(__dirname, "public", "pizza.mp4");
