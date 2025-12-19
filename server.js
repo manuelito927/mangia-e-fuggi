@@ -331,9 +331,9 @@ function requireOwner(req, res, next) {
 // ✅ POS CAMERIERE
 // =====================
 app.get("/waiter/pos", requireWaiter, (req, res) => {
-  res.render("pos-waiter", {
+  res.render("waiter", {
     BASE_URL: getBaseUrl(req),
-    loggedIn: true,                       // <-- fondamentale
+    loggedIn: true,
     presetTable: req.session.waiterTable || null,
     error: null
   });
