@@ -116,12 +116,10 @@ app.use("/video", express.static(path.join(__dirname, "public", "video"), {
 }));
 
 app.get("/app", (req, res) => {
-  const SUPABASE_ANON = getEnvAny("SUPABASE_ANON_KEY") || "";
-  res.render("app", {
-    supabaseUrl: SUPABASE_URL,
-    supabaseAnon: SUPABASE_ANON,
-    BASE_URL: getBaseUrl(req)
-  });
+  // se già loggato cameriere → vai diretto alla dashboard cameriere
+  if (req.session?.isWaiter) return res.redirect("/waiter");
+
+  res.render("app", { error: null });
 });
 
 app.get("/pizza.mp4", (req, res) => {
@@ -134,14 +132,6 @@ app.get("/pizza.mp4", (req, res) => {
   });
 });
 
-app.get("/app", (req, res) => {
-  const SUPABASE_ANON = getEnvAny("SUPABASE_ANON_KEY") || "";
-  res.render("app", {
-    supabaseUrl: SUPABASE_URL,
-    supabaseAnon: SUPABASE_ANON,
-    BASE_URL: getBaseUrl(req)
-  });
-});
 
 app.get("/pizza.mp4", (req, res) => {
   const filePath = path.join(__dirname, "public", "pizza.mp4");
