@@ -42,6 +42,22 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 }
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// =====================
+// PIN login: prende il ruolo dal pin_codes
+// =====================
+async function getRoleByPin(pin) {
+  const p = (pin || "").toString().trim();
+
+  const { data, error } = await supabase
+    .from("pin_codes")
+    .select("role")
+    .eq("code_hash", p)     // nel tuo DB è in chiaro (9999, 5678, 12345)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data?.role || "").toString().trim() || null; // "waiter" | "cashier" | "owner"
+}
+
 // ---------- App base
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
