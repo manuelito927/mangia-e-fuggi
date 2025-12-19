@@ -948,7 +948,7 @@ app.post("/api/waiter/orders/:id/update-items", requireWaiter, async (req, res) 
 
     // 2) inserisco righe nuove
     const rows = items.map(it => ({
-      order_id: Number(id),
+order_id: id,
       name: (it.name || "").toString(),
       qty: Number(it.qty || 1),
       price: Number(it.price || 0)
