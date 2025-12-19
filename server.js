@@ -554,43 +554,29 @@ app.post("/waiter", async (req, res) => {
 
 
 // =====================
-// LOGOUT cameriere
+// ✅ LOGOUT UNICO (tutti i ruoli)
 // =====================
-app.post("/waiter/logout", (req, res) => {
-  req.session.isWaiter = false;
-  req.session.destroy(() => {
-    res.redirect("/waiter");
-  });
-});
-
-app.get("/admin/menu-json", async (req, res) => {
+app.post("/logout", (req, res) => {
   try {
-    const { data: categories, error: catError } = await supabase
-      .from("menu_categories")
-      .select("id, name, sort_order, is_active")
-      .order("sort_order", { ascending: true, nullsLast: true });
+    // cancella eventuali flag
+    if (req.session) {
+      req.session.isWaiter = false;
+      req.session.isAdmin = false;
+      req.session.isAdminByPin = false;
+      req.session.staffRole = null;
+      req.session.waiterTable = null;
+      req.session.last_order_id = null;
+    }
 
-    if (catError) throw catError;
-
-    const { data: items, error: itemError } = await supabase
-      .from("menu_items")
-      .select(`
-        id, category_id, name, description, price, is_available, sort_order,
-        item_modifiers (
-          modifier_groups (
-            id, name, is_required, min_selection, max_selection,
-            modifier_options (id, name, extra_price)
-          )
-        )
-      `)
-      .order("sort_order", { ascending: true, nullsLast: true });
-
-    if (itemError) throw itemError;
-
-    res.json({ ok: true, categories, items });
+    // distrugge sessione e cancella cookie
+    req.session.destroy(() => {
+      res.clearCookie("mangia.sid"); // nome cookie = quello che hai in session({ name: "mangia.sid" })
+      return res.redirect("/app");   // pagina PIN unica
+    });
   } catch (e) {
-    console.error("❌ Errore /admin/menu-json:", e);
-    res.status(500).json({ ok: false, error: "Errore caricamento menu avanzato" });
+    console.error("logout error:", e);
+    res.clearCookie("mangia.sid");
+    return res.redirect("/app");
   }
 });
 
