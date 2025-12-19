@@ -109,6 +109,24 @@ app.use(
   })
 );
 
+/* ========================= PARSERS & SESSIONE ========================= */
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(cookieParser());
+
+app.use(session({
+  name: "mangia.sid",
+  secret: process.env.SESSION_SECRET || "dev",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 giorni
+  }
+}));
+
 /* ========================= STATIC ========================= */
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/video", express.static(path.join(__dirname, "public", "video"), {
