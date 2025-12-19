@@ -281,6 +281,9 @@ function requireWaiter(req, res, next) {
 }
 
 app.use("/admin", (req, res, next) => {
+  // ✅ se sei già loggato via PIN (owner/cashier), NON chiedere Basic Auth
+  if (req.session?.isAdmin) return next();
+
   const required = (process.env.ADMIN_PASSWORD || "").trim();
   if (!required) return next();
 
@@ -293,6 +296,10 @@ app.use("/admin", (req, res, next) => {
     res.set("WWW-Authenticate", 'Basic realm="Area Riservata"');
     return res.status(401).send("Accesso riservato");
   }
+
+  req.session.isAdmin = true;
+  next();
+});
 
   // login ok → abilita sessione admin per le API
   req.session.isAdmin = true;
