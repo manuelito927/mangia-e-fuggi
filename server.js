@@ -464,99 +464,11 @@ app.get("/w/:table", (req, res) => {
   return res.redirect("/waiter");
 });
 
-// =====================
-// GET: pagina login cameriere (PIN + eventuale tavolo da QR)
-// =====================
-app.get("/waiter", (req, res) => {
-  const presetTable = req.session.waiterTable || null;
+// ✅ /waiter NON è più login: manda al POS cameriere
+app.get("/waiter", (req, res) => res.redirect("/waiter/pos"));
 
-  // se già loggato → vai direttamente alla dashboard
-  if (req.session.isWaiter) {
-    return res.render("waiter", {
-      loggedIn: true,
-      error: null,
-      presetTable
-    });
-  }
-
-  // non loggato → mostra login PIN
-  return res.render("waiter", {
-    loggedIn: false,
-    error: null,
-    presetTable
-  });
-});
-
-
-// =====================
-// POST: controllo PIN cameriere
-// =====================
-app.post("/waiter", async (req, res) => {
-  const presetTable = req.session.waiterTable || null;
-
-  try {
-    const pinInserito = (req.body.pin || "").toString().trim();
-
-    // PIN mancante
-    if (!pinInserito) {
-      return res.render("waiter", {
-        loggedIn: false,
-        error: "Inserisci il PIN.",
-        presetTable
-      });
-    }
-
-    // leggo PIN salvato
-    const { data, error } = await supabase
-      .from("settings")
-      .select("waiter_pin")
-      .eq("key", "restaurant")
-      .single();
-
-    if (error) {
-      console.error("Errore lettura waiter_pin:", error);
-      return res.render("waiter", {
-        loggedIn: false,
-        error: "Errore interno, riprova.",
-        presetTable
-      });
-    }
-
-    const savedPin = (data?.waiter_pin || "").toString().trim();
-
-    // PIN errato
-    if (pinInserito !== savedPin) {
-      return res.render("waiter", {
-        loggedIn: false,
-        error: "PIN errato.",
-        presetTable
-      });
-    }
-
-    // ✅ PIN corretto
-    req.session.isWaiter = true;
-
-    return res.render("waiter", {
-      loggedIn: true,
-      error: null,
-      presetTable
-    });
-
-  } catch (e) {
-    console.error("Eccezione login cameriere:", e);
-    return res.render("waiter", {
-      loggedIn: false,
-      error: "Errore interno.",
-      presetTable
-    });
-  }
-});
-
-app.post("/waiter/logout", (req, res) => {
-  req.session.isWaiter = false;
-  req.session.waiterTable = null;
-  return res.redirect("/app");
-});
+// ✅ se qualcuno posta ancora il vecchio form, rimanda al login unico
+app.post("/waiter", (req, res) => res.redirect("/app"));
 
 // =====================
 // ✅ LOGOUT UNICO (tutti i ruoli)
