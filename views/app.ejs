@@ -3,24 +3,47 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Mangia & Fuggi — App</title>
+  <title>Mangia & Fuggi — Login Cameriere</title>
 
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/pos.css">
 
-  <!-- Supabase in browser -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Passiamo le env al browser (ANON KEY ok, SERVICE KEY NO) -->
-  <script>
-    window.__SUPABASE_URL__ = "<%= supabaseUrl %>";
-    window.__SUPABASE_ANON__ = "<%= supabaseAnon %>";
-  </script>
+  <style>
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center}
+    .card{width:min(420px,92vw);background:#fff;border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+    .title{font-weight:800;font-size:20px;margin:0 0 8px}
+    .sub{color:#6b6b6b;margin:0 0 16px;font-size:14px}
+    .row{display:flex;gap:10px}
+    input{flex:1;padding:12px 14px;border-radius:12px;border:1px solid #ddd;font-size:16px}
+    button{padding:12px 14px;border-radius:12px;border:0;cursor:pointer;font-weight:700}
+    .err{margin-top:12px;color:#b42318;font-size:14px}
+  </style>
 </head>
-<body>
-  <div id="app"></div>
 
-  <!-- La tua SPA -->
-  <script src="/app.js"></script>
+<body>
+  <div class="card">
+    <h1 class="title">Accesso Cameriere</h1>
+    <p class="sub">Inserisci il PIN per aprire la schermata ordini.</p>
+
+    <form method="POST" action="/waiter-login">
+      <div class="row">
+        <input
+          name="pin"
+          type="password"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          placeholder="PIN cameriere"
+          required
+        />
+        <button type="submit">Entra</button>
+      </div>
+
+      <% if (err === "pin") { %>
+        <div class="err">PIN errato. Riprova.</div>
+      <% } else if (err === "server") { %>
+        <div class="err">Errore server. Riprova tra poco.</div>
+      <% } %>
+    </form>
+  </div>
 </body>
 </html>
