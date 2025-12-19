@@ -332,7 +332,10 @@ function requireOwner(req, res, next) {
 // =====================
 app.get("/waiter/pos", requireWaiter, (req, res) => {
   res.render("pos-waiter", {
-    BASE_URL: getBaseUrl(req)
+    BASE_URL: getBaseUrl(req),
+    loggedIn: true,                       // <-- fondamentale
+    presetTable: req.session.waiterTable || null,
+    error: null
   });
 });
 
