@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mangia & Fuggi — Owner</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div style="max-width:1100px;margin:24px auto;padding:0 16px;">
+    <h1>Owner Dashboard</h1>
+    <p>Benvenuto. Da qui gestisci locale, menu, impostazioni e statistiche.</p>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+      <a href="/admin">Dashboard / Statistiche</a>
+      <a href="/admin/settings">Impostazioni</a>
+      <a href="/admin/pos">Apri Cassa (POS)</a>
+      <a href="/waiter">Area Cameriere</a>
+      <form method="post" action="/logout" style="margin:0;">
+        <button type="submit">Logout</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
