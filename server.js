@@ -162,31 +162,39 @@ app.post("/app", async (req, res) => {
     const pinInserito = (req.body.pin || "").toString().trim();
     if (!pinInserito) return res.render("app", { error: "Inserisci il PIN." });
 
-    const role = await getRoleByPin(pinInserito);
+    // Cerca il PIN nella tabella pin_codes
+    const { data: row, error } = await supabase
+      .from("pin_codes")
+      .select("role")
+      .eq("code_hash", pinInserito)   // (nel tuo caso è il PIN in chiaro)
+      .maybeSingle();
 
-    if (!role) {
+    if (error) {
+      console.error("Errore lettura pin_codes:", error);
+      return res.render("app", { error: "Errore interno, riprova." });
+    }
+
+    if (!row?.role) {
       return res.render("app", { error: "PIN errato." });
     }
 
-    // pulisco eventuali login vecchi
-    req.session.isWaiter = false;
-    req.session.isAdmin  = false;
+    // Salvo ruolo in sessione
+    req.session.staffRole = row.role;
 
-    // redirect in base al ruolo
-    if (role === "waiter") {
+    // Redirect in base al ruolo
+    if (row.role === "waiter") {
       req.session.isWaiter = true;
       return res.redirect("/waiter");
     }
 
-    if (role === "cashier" || role === "owner") {
-      // per ora entrano entrambi in /admin (poi crei /owner se vuoi)
-      req.session.isAdmin = true;
-      return res.redirect("/admin");
+    if (row.role === "cashier" || row.role === "owner") {
+      req.session.isAdminByPin = true;
+      return res.redirect("/admin"); // oppure "/admin/pos" se vuoi cassa diretta
     }
 
-    return res.render("app", { error: "Ruolo non riconosciuto." });
+    return res.render("app", { error: "Ruolo non valido." });
   } catch (e) {
-    console.error("Eccezione login /app:", e);
+    console.error("Eccezione login staff (/app):", e);
     return res.render("app", { error: "Errore interno." });
   }
 });
