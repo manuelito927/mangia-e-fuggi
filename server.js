@@ -289,8 +289,11 @@ function requireWaiter(req, res, next) {
 }
 
 app.use("/admin", (req, res, next) => {
-  // ✅ se sei già loggato via PIN (owner/cashier), NON chiedere Basic Auth
-  if (req.session?.isAdmin) return next();
+  // ✅ Se ha fatto login via PIN come cashier/owner, fallo passare
+  if (req.session?.isAdminByPin && (req.session.staffRole === "cashier" || req.session.staffRole === "owner")) {
+    req.session.isAdmin = true; // così passa anche requireAdminApi
+    return next();
+  }
 
   const required = (process.env.ADMIN_PASSWORD || "").trim();
   if (!required) return next();
