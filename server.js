@@ -183,9 +183,9 @@ app.post("/app", async (req, res) => {
 
     // Redirect in base al ruolo
     if (row.role === "waiter") {
-      req.session.isWaiter = true;
-      return res.redirect("/waiter");
-    }
+  req.session.isWaiter = true;
+  return res.redirect("/waiter/pos");
+}
 
     if (row.role === "cashier") {
   req.session.isAdminByPin = true;
