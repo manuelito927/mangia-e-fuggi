@@ -331,7 +331,7 @@ function renderCart(){
 // ---------- API: menu
 async function loadMenu(){
   setHint("Carico menu...");
-  const r = await fetch("/admin/menu-json", { headers: { "Accept":"application/json" } });
+const r = await fetch("/api/menu", { headers: { "Accept":"application/json" } });
   const j = await r.json().catch(()=>null);
   if (!j || !j.ok) throw new Error("menu_failed");
 
