@@ -541,7 +541,7 @@ function setActiveTable(code){
   loadOpenOrderForTable();
 
   document.querySelectorAll(".tbtn").forEach(b => {
-    b.classList.toggle("active", b.dataset.code === code);
+b.classList.toggle("active", b.dataset.table === code);
   });
 }
 
