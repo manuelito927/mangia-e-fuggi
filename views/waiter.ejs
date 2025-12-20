@@ -377,32 +377,34 @@ let ACTIVE_CAT_ID = null; // null = tutte
   }
 
   // ====================== MENU ======================
-  function renderMenu(){
-    const grid = document.getElementById("menu-grid");
-    const catSel = document.getElementById("cat-filter");
-    const q = (document.getElementById("menu-search").value || "").toLowerCase();
-    const cat = catSel.value ? Number(catSel.value) : null;
+function renderMenu(){
+  const grid = document.getElementById("menu-grid");
+  const q = (document.getElementById("menu-search").value || "").toLowerCase().trim();
 
-    let items = (MENU.items || []).filter(it => it.is_available !== false);
-    if(cat) items = items.filter(it => Number(it.category_id) === cat);
-    if(q) items = items.filter(it => (it.name||"").toLowerCase().includes(q));
+  let items = (MENU.items || []).filter(it => it.is_available !== false);
 
-    if(!items.length){
-      grid.innerHTML = `<div class="muted">Nessun prodotto trovato.</div>`;
-      return;
-    }
-
-    grid.innerHTML = items.map(it => `
-      <div class="mitem" data-mid="${it.id}">
-        <div class="name">${it.name}</div>
-        ${it.description ? `<div class="muted" style="margin-top:4px">${it.description}</div>` : ``}
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-          <span class="badge">${catName(it.category_id)}</span>
-          <span class="price">${fmtMoney(it.price)}</span>
-        </div>
-      </div>
-    `).join("");
+  if (ACTIVE_CAT_ID) {
+    items = items.filter(it => Number(it.category_id) === Number(ACTIVE_CAT_ID));
   }
+
+  if(q) items = items.filter(it => (it.name||"").toLowerCase().includes(q));
+
+  if(!items.length){
+    grid.innerHTML = `<div class="muted">Nessun prodotto trovato.</div>`;
+    return;
+  }
+
+  grid.innerHTML = items.map(it => `
+    <div class="mitem" data-mid="${it.id}">
+      <div class="name">${it.name}</div>
+      ${it.description ? `<div class="muted" style="margin-top:4px">${it.description}</div>` : ``}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <span class="badge">${catName(it.category_id)}</span>
+        <span class="price">${fmtMoney(it.price)}</span>
+      </div>
+    </div>
+  `).join("");
+}
 
   async function loadMenu(){
     const grid = document.getElementById("menu-grid");
