@@ -525,6 +525,53 @@ chips.onclick = (e) => {
     renderMenu();
   }
 
+let ACTIVE_TABLE = null;
+
+function setActiveTable(code){
+  ACTIVE_TABLE = code;
+
+  const inp = document.getElementById("order-table");
+  inp.value = code;
+  inp.readOnly = false;
+
+  // carica subito ordine pending del tavolo (se esiste)
+  loadOpenOrderForTable();
+
+  document.querySelectorAll(".tbtn").forEach(b => {
+    b.classList.toggle("active", b.dataset.code === code);
+  });
+}
+
+async function loadTables(){
+  const box = document.getElementById("tables-grid");
+  box.innerHTML = `<div class="muted">Caricamento...</div>`;
+
+  try{
+    const r = await fetch("/api/waiter/tables");
+    const j = await r.json().catch(()=>null);
+    if(!j || !j.ok) throw new Error("tables");
+
+    const tables = j.tables || [];
+    box.innerHTML = tables.map(t => `
+      <button type="button" class="tbtn ${t.status}" data-code="${t.code}">
+        <div class="code">${t.code}</div>
+        <span class="dot"></span>
+      </button>
+    `).join("");
+  }catch(e){
+    console.error(e);
+    box.innerHTML = `<div class="muted">Errore caricamento tavoli.</div>`;
+  }
+}
+
+document.getElementById("tables-grid").addEventListener("click", (e)=>{
+  const b = e.target.closest(".tbtn");
+  if(!b) return;
+  setActiveTable(b.dataset.code);
+});
+
+document.getElementById("tables-refresh").addEventListener("click", loadTables);
+
   document.getElementById("menu-search").addEventListener("input", renderMenu);
 
   // ✅ FIX: click menu usa data-mid e passa il menuItem vero
