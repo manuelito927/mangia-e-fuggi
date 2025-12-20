@@ -432,22 +432,7 @@ document.getElementById("tables-grid")?.addEventListener("click", (e)=>{
 });
 
 document.getElementById("tables-refresh")?.addEventListener("click", loadTables);
-  const btn = e.target.closest("[data-table]");
-  if(!btn) return;
-
-  const code = btn.getAttribute("data-table");
-  const input = document.getElementById("order-table");
-  if(input){
-    input.readOnly = false;          // se vuoi lasciarlo editabile
-    input.value = code;
-  }
-
-  // evidenzia selezione
-  renderTables();
-});
-
-// bottone aggiorna
-document.getElementById("tables-refresh")?.addEventListener("click", loadTables);
+  
   const PRESET_TABLE = "<%= (presetTable || '').toString().replace(/"/g, '\\"') %>";
   const HAS_PRESET_TABLE = !!PRESET_TABLE;
 
