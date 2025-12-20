@@ -552,7 +552,10 @@ async function loadTables(){
   box.innerHTML = `<div class="muted">Caricamento...</div>`;
 
   try{
-    const r = await fetch("/api/waiter/tables");
+    const r = await fetch("/api/waiter/tables", {
+  headers:{ "Accept":"application/json" },
+  credentials:"include"
+});
     const j = await r.json().catch(()=>null);
     if(!j || !j.ok) throw new Error("tables");
 
