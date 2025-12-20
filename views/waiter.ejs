@@ -364,7 +364,78 @@ let ACTIVE_CAT_ID = null; // null = tutte
   let CART = [];
 
   let CURRENT_ORDER_ID = null;
+// ====================== TAVOLI MAPPA (UI) ======================
+let TABLES = []; // [{ code:"T1", status:"free|occupied|bill" }]
 
+function statusToClass(s){
+  if(s === "bill") return "bill";
+  if(s === "occupied") return "occupied";
+  return "free";
+}
+
+function renderTables(){
+  const grid = document.getElementById("tables-grid");
+  if(!grid) return;
+
+  if(!TABLES.length){
+    grid.innerHTML = `<div class="muted">Nessun tavolo configurato.</div>`;
+    return;
+  }
+
+  const current = (document.getElementById("order-table").value || "").trim();
+
+  grid.innerHTML = TABLES.map(t => {
+    const cls = statusToClass(t.status);
+    const active = (current && current === t.code) ? "active" : "";
+    return `
+      <button type="button" class="tbtn ${cls} ${active}" data-table="${t.code}">
+        <span class="code">${t.code}</span>
+        <span class="dot"></span>
+      </button>
+    `;
+  }).join("");
+}
+
+async function loadTables(){
+  const grid = document.getElementById("tables-grid");
+  if(grid) grid.innerHTML = `<div class="muted">Caricamento tavoli...</div>`;
+
+  try{
+    const r = await fetch("/api/waiter/tables", { headers:{ "Accept":"application/json" } });
+    const j = await r.json().catch(()=>null);
+    if(!j || !j.ok) throw new Error("tables");
+
+    // atteso: j.tables = [{code, status}]
+    TABLES = (j.tables || []).map(x => ({
+      code: (x.code || x.table_code || "").toString(),
+      status: (x.status || "free").toString()
+    })).filter(x => x.code);
+
+    renderTables();
+  }catch(e){
+    console.error(e);
+    if(grid) grid.innerHTML = `<div class="muted">Errore caricamento tavoli.</div>`;
+  }
+}
+
+// click su un tavolo => compila il campo tavolo + (opzionale) carica ordine del tavolo
+document.getElementById("tables-grid")?.addEventListener("click", (e)=>{
+  const btn = e.target.closest("[data-table]");
+  if(!btn) return;
+
+  const code = btn.getAttribute("data-table");
+  const input = document.getElementById("order-table");
+  if(input){
+    input.readOnly = false;          // se vuoi lasciarlo editabile
+    input.value = code;
+  }
+
+  // evidenzia selezione
+  renderTables();
+});
+
+// bottone aggiorna
+document.getElementById("tables-refresh")?.addEventListener("click", loadTables);
   const PRESET_TABLE = "<%= (presetTable || '').toString().replace(/"/g, '\\"') %>";
   const HAS_PRESET_TABLE = !!PRESET_TABLE;
 
