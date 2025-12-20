@@ -286,11 +286,13 @@ function requireAdminApi(req, res, next) {
 function requireWaiter(req, res, next) {
   if (req.session?.isWaiter) return next();
 
-  // Se è una pagina HTML → rimanda al login cameriere
-  if (req.accepts("html")) return res.redirect("/app");
+  // ✅ se è una chiamata API, NON fare redirect: rispondi JSON
+  if (req.path.startsWith("/api")) {
+    return res.status(403).json({ ok: false, error: "waiter_only" });
+  }
 
-  // Se è una chiamata fetch/AJAX → 403
-  return res.status(403).json({ ok: false, error: "waiter_only" });
+  // ✅ se è una pagina HTML, allora sì redirect al login
+  return res.redirect("/app");
 }
 
 app.use("/admin", (req, res, next) => {
