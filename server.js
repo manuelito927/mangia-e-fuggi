@@ -882,7 +882,6 @@ app.get("/api/waiter/tables", async (req, res) => {
     const { data: orders, error } = await supabase
       .from("orders")
       .select("table_code,status")
-      .eq("day", today)
       .eq("order_mode", "table");
 
     if (error) throw error;
