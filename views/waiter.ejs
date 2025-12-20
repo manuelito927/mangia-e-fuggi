@@ -573,7 +573,7 @@ async function loadTables(){
 document.getElementById("tables-grid").addEventListener("click", (e)=>{
   const b = e.target.closest(".tbtn");
   if(!b) return;
-  setActiveTable(b.dataset.code);
+  setActiveTable(b.dataset.table);
 });
 
 document.getElementById("tables-refresh").addEventListener("click", loadTables);
