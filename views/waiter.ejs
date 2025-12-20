@@ -878,15 +878,13 @@ document.getElementById("tables-refresh").addEventListener("click", loadTables);
   });
 
   // BOOT
-  (async()=>{
-    try{ await loadMenu(); } catch(e){
-      console.error(e);
-      document.getElementById("menu-grid").innerHTML = `<div class="muted">Errore caricamento menu.</div>`;
-    }
-    renderCart();
-    loadOrders();
-    setInterval(loadOrders, 10000);
-  })();
+(async()=>{
+  try{ await loadMenu(); } catch(e){ ... }
+  await loadTables();   // ✅ AGGIUNGI
+  renderCart();
+  loadOrders();
+  setInterval(loadOrders, 10000);
+})();
 <% } %>
 </script>
 </body>
