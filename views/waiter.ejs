@@ -182,18 +182,15 @@
           <h2 style="margin:0 0 10px">Menu</h2>
           <p class="muted">Tocca un prodotto per aggiungerlo al carrello.</p>
 
-          <div class="row mt-16">
-            <div>
-              <label style="font-size:13px;">Categoria</label>
-              <select id="cat-filter" class="input" style="margin-top:4px">
-                <option value="">Tutte</option>
-              </select>
-            </div>
-            <div>
-              <label style="font-size:13px;">Cerca</label>
-              <input id="menu-search" class="input" style="margin-top:4px" placeholder="Scrivi un nome..." />
-            </div>
-          </div>
+<div class="mt-16">
+  <label style="font-size:13px;">Categorie</label>
+  <div id="cat-chips" class="chips" style="margin-top:8px"></div>
+</div>
+
+<div class="mt-16">
+  <label style="font-size:13px;">Cerca</label>
+  <input id="menu-search" class="input" style="margin-top:6px" placeholder="Scrivi un nome..." />
+</div>
 
           <div id="menu-grid" class="mt-16"></div>
 
