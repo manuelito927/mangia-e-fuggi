@@ -1029,11 +1029,13 @@ document.getElementById("tables-refresh")?.addEventListener("click", loadTables)
     document.getElementById("menu-grid").innerHTML = `<div class="muted">Errore caricamento menu.</div>`;
   }
 
-  await loadTables(); // ✅ QUESTA RIGA
-
   renderCart();
   loadOrders();
+  loadTables();
+
   setInterval(loadOrders, 10000);
+  setInterval(loadTables, 8000);
+})();
   // opzionale:
   // setInterval(loadTables, 10000);
 })();
