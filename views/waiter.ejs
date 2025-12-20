@@ -97,6 +97,41 @@
   .mitem .muted{ font-size:12px; }
 }
 
+.tablesbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px}
+.legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;color:#7f6b57}
+.lg{width:10px;height:10px;border-radius:999px;display:inline-block}
+.lg.free{background:#1f8f4e}
+.lg.occupied{background:#b42318}
+
+.tables-grid{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:10px;
+}
+@media (max-width:900px){ .tables-grid{grid-template-columns:repeat(4,minmax(0,1fr));} }
+@media (max-width:600px){ .tables-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+
+.tbtn{
+  border:1px solid #edd7c1;
+  background:#fff;
+  border-radius:14px;
+  padding:12px 10px;
+  cursor:pointer;
+  text-align:left;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.tbtn .code{font-weight:900;font-size:16px}
+.tbtn .dot{width:12px;height:12px;border-radius:999px;flex:0 0 12px}
+.tbtn.free .dot{background:#1f8f4e}
+.tbtn.occupied .dot{background:#b42318}
+.tbtn.active{
+  outline:3px solid rgba(123,62,32,.25);
+  border-color:#7b3e20;
+}
   </style>
 </head>
 
