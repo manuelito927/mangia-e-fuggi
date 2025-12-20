@@ -883,6 +883,8 @@ app.get("/api/waiter/tables", async (req, res) => {
       .from("orders")
       .select("table_code,status")
       .eq("order_mode", "table");
+      .gte("created_at", today + "T00:00:00")
+.lt("created_at",  today + "T23:59:59")
 
     if (error) throw error;
 
