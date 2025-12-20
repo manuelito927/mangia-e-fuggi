@@ -1961,6 +1961,42 @@ app.post("/api/waiter/orders/:id/note", requireWaiter, async (req,res)=>{
   }
 });
 
+app.get("/api/waiter/tables", requireWaiter, async (req,res)=>{
+  try{
+    // 1) lista tavoli: se hai una tabella "tables" usala.
+    // Se NON ce l’hai, metti qui una lista fissa per ora.
+    const tables = [
+      "T1","T2","T3","T4","T5","T6","T7","T8","T9","T10"
+    ];
+
+    // 2) prendo ordini pending di oggi
+    const today = new Date().toISOString().slice(0,10);
+
+    const { data: orders, error } = await supabase
+      .from("orders")
+      .select("id, table_code, status, created_at")
+      .eq("status","pending")
+      .gte("created_at", today + "T00:00:00.000Z");
+
+    if(error) throw error;
+
+    const occupiedSet = new Set((orders||[])
+      .map(o => (o.table_code || "").trim())
+      .filter(Boolean)
+    );
+
+    const out = tables.map(code => ({
+      code,
+      status: occupiedSet.has(code) ? "occupied" : "free"
+    }));
+
+    return res.json({ ok:true, tables: out });
+  }catch(e){
+    console.error("tables error:", e);
+    return res.status(500).json({ ok:false });
+  }
+});
+
 // ---- Avvio
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server avviato sulla porta ${PORT}`));
