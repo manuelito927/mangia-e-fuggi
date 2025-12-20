@@ -872,6 +872,39 @@ app.get("/api/waiter/open-order", requireWaiter, async (req, res) => {
   }
 });
 
+app.get("/api/waiter/tables", async (req, res) => {
+  try {
+    const today = new Date().toISOString().slice(0,10);
+
+    // ✅ Tavoli (per ora fissi: T1..T20)
+    const TABLES = Array.from({length: 20}, (_,i)=> `T${i+1}`);
+
+    const { data: orders, error } = await supabase
+      .from("orders")
+      .select("table_code,status")
+      .eq("day", today)
+      .eq("order_mode", "table");
+
+    if (error) throw error;
+
+    const pendingSet = new Set(
+      (orders || [])
+        .filter(o => (o.status || "pending") === "pending")
+        .map(o => (o.table_code || "").trim())
+        .filter(Boolean)
+    );
+
+    const tables = TABLES.map(code => ({
+      code,
+      status: pendingSet.has(code) ? "occupied" : "free"
+    }));
+
+    res.json({ ok:true, tables });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ ok:false, error:"tables_error" });
+  }
+});
 
 // =====================
 // ✅ CAMERIERE: aggiorna righe ordine (sovrascrive order_items e aggiorna totale)
