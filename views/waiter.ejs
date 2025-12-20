@@ -559,7 +559,7 @@ async function loadTables(){
 
     const tables = j.tables || [];
     box.innerHTML = tables.map(t => `
-      <button type="button" class="tbtn ${t.status}" data-code="${t.code}">
+<button type="button" class="tbtn ${t.status}" data-table="${t.code}">
         <div class="code">${t.code}</div>
         <span class="dot"></span>
       </button>
