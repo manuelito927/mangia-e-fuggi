@@ -877,6 +877,78 @@ document.getElementById("tables-refresh").addEventListener("click", loadTables);
     }
   });
 
+// ====================== TAVOLI (mappa) ======================
+let TABLES = [];
+let ACTIVE_TABLE = null;
+
+function tableStatusClass(t){
+  // t.status: "free" | "occupied" | "bill"
+  if(t.status === "bill") return "bill";
+  if(t.status === "occupied") return "occupied";
+  return "free";
+}
+
+function renderTables(){
+  const wrap = document.getElementById("tables-grid");
+  if(!wrap) return;
+
+  if(!TABLES.length){
+    wrap.innerHTML = `<div class="muted">Nessun tavolo configurato.</div>`;
+    return;
+  }
+
+  wrap.innerHTML = TABLES.map(t => `
+    <button type="button"
+      class="tbtn ${tableStatusClass(t)} ${ACTIVE_TABLE===t.code ? "active" : ""}"
+      data-table="${t.code}">
+      <span class="code">${t.code}</span>
+      <span class="dot"></span>
+    </button>
+  `).join("");
+}
+
+async function loadTables(){
+  const wrap = document.getElementById("tables-grid");
+  if(wrap) wrap.innerHTML = `<div class="muted">Caricamento tavoli...</div>`;
+
+  try{
+    const r = await fetch("/api/waiter/tables", { headers:{ "Accept":"application/json" }});
+    const j = await r.json().catch(()=>null);
+    if(!j || !j.ok) throw new Error("tables");
+
+    TABLES = j.tables || [];
+    renderTables();
+  }catch(e){
+    console.error(e);
+    if(wrap) wrap.innerHTML = `<div class="muted">Errore caricamento tavoli.</div>`;
+  }
+}
+
+// click su tavolo => imposta campo tavolo e modalità "table"
+document.getElementById("tables-grid")?.addEventListener("click", (e)=>{
+  const btn = e.target.closest("button[data-table]");
+  if(!btn) return;
+
+  const code = btn.getAttribute("data-table");
+  ACTIVE_TABLE = code;
+
+  // forza modalità al tavolo
+  const modeSel = document.getElementById("order-mode");
+  if(modeSel) modeSel.value = "table";
+
+  const tableInput = document.getElementById("order-table");
+  if(tableInput){
+    // se non stai usando presetTable da QR, lo aggiorna
+    if(!HAS_PRESET_TABLE){
+      tableInput.value = code;
+    }
+  }
+
+  renderTables();
+});
+
+document.getElementById("tables-refresh")?.addEventListener("click", loadTables);
+
   // BOOT
 (async()=>{
   try{ await loadMenu(); } catch(e){ ... }
