@@ -365,62 +365,73 @@ let ACTIVE_CAT_ID = null; // null = tutte
   let CART = [];
 
   let CURRENT_ORDER_ID = null;
-// ====================== TAVOLI MAPPA (UI) ======================
-let TABLES = []; // [{ code:"T1", status:"free|occupied|bill" }]
+// // ====================== TAVOLI (mappa) ======================
+let TABLES = [];
+let ACTIVE_TABLE = null;
 
-function statusToClass(s){
-  if(s === "bill") return "bill";
-  if(s === "occupied") return "occupied";
+function tableStatusClass(t){
+  if(t.status === "bill") return "bill";
+  if(t.status === "occupied") return "occupied";
   return "free";
 }
 
 function renderTables(){
-  const grid = document.getElementById("tables-grid");
-  if(!grid) return;
+  const wrap = document.getElementById("tables-grid");
+  if(!wrap) return;
 
   if(!TABLES.length){
-    grid.innerHTML = `<div class="muted">Nessun tavolo configurato.</div>`;
+    wrap.innerHTML = `<div class="muted">Nessun tavolo configurato.</div>`;
     return;
   }
 
-  const current = (document.getElementById("order-table").value || "").trim();
-
-  grid.innerHTML = TABLES.map(t => {
-    const cls = statusToClass(t.status);
-    const active = (current && current === t.code) ? "active" : "";
-    return `
-      <button type="button" class="tbtn ${cls} ${active}" data-table="${t.code}">
-        <span class="code">${t.code}</span>
-        <span class="dot"></span>
-      </button>
-    `;
-  }).join("");
+  wrap.innerHTML = TABLES.map(t => `
+    <button type="button"
+      class="tbtn ${tableStatusClass(t)} ${ACTIVE_TABLE===t.code ? "active" : ""}"
+      data-table="${t.code}">
+      <span class="code">${t.code}</span>
+      <span class="dot"></span>
+    </button>
+  `).join("");
 }
 
 async function loadTables(){
-  const grid = document.getElementById("tables-grid");
-  if(grid) grid.innerHTML = `<div class="muted">Caricamento tavoli...</div>`;
+  const wrap = document.getElementById("tables-grid");
+  if(wrap) wrap.innerHTML = `<div class="muted">Caricamento tavoli...</div>`;
 
-  try{
-    const r = await fetch("/api/waiter/tables", { headers:{ "Accept":"application/json" } });
-    const j = await r.json().catch(()=>null);
-    if(!j || !j.ok) throw new Error("tables");
+  const r = await fetch("/api/waiter/tables", {
+    headers:{ "Accept":"application/json" },
+    credentials:"include"
+  });
 
-    // atteso: j.tables = [{code, status}]
-    TABLES = (j.tables || []).map(x => ({
-      code: (x.code || x.table_code || "").toString(),
-      status: (x.status || "free").toString()
-    })).filter(x => x.code);
+  const j = await r.json().catch(()=>null);
+  if(!j || !j.ok) throw new Error("tables");
 
-    renderTables();
-  }catch(e){
-    console.error(e);
-    if(grid) grid.innerHTML = `<div class="muted">Errore caricamento tavoli.</div>`;
-  }
+  TABLES = (j.tables || []).map(x => ({
+    code: String(x.code || "").trim(),
+    status: String(x.status || "free").trim()
+  })).filter(x => x.code);
+
+  renderTables();
 }
 
-// click su un tavolo => compila il campo tavolo + (opzionale) carica ordine del tavolo
 document.getElementById("tables-grid")?.addEventListener("click", (e)=>{
+  const btn = e.target.closest("button[data-table]");
+  if(!btn) return;
+
+  const code = btn.getAttribute("data-table");
+  ACTIVE_TABLE = code;
+
+  document.getElementById("order-mode").value = "table";
+
+  const tableInput = document.getElementById("order-table");
+  if(tableInput && !HAS_PRESET_TABLE){
+    tableInput.value = code;
+  }
+
+  renderTables();
+});
+
+document.getElementById("tables-refresh")?.addEventListener("click", loadTables);
   const btn = e.target.closest("[data-table]");
   if(!btn) return;
 
