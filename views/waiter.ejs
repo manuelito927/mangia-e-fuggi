@@ -64,6 +64,39 @@
       .tabs{ gap:8px; }
       .tabbtn{ width:100%; justify-content:center; }
     }
+/* ===== Chips categorie ===== */
+.chips{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding-bottom:6px;
+  -webkit-overflow-scrolling: touch;
+}
+.chip{
+  flex:0 0 auto;
+  border:1px solid #edd7c1;
+  background:#fff;
+  color:#5a3923;
+  padding:10px 14px;
+  border-radius:999px;
+  font-weight:800;
+  cursor:pointer;
+  user-select:none;
+  white-space:nowrap;
+}
+.chip.active{
+  background:#7b3e20;
+  border-color:#7b3e20;
+  color:#fff;
+}
+
+/* ===== Griglia più veloce (meno scroll su mobile) ===== */
+@media (max-width:600px){
+  #menu-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .mitem .name{ font-weight:900; font-size:15px; line-height:1.1; }
+  .mitem .muted{ font-size:12px; }
+}
+
   </style>
 </head>
 
