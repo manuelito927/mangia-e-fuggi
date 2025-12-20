@@ -417,12 +417,25 @@ function renderMenu(){
     MENU.categories = data.categories || [];
     MENU.items = data.items || [];
 
-    const catSel = document.getElementById("cat-filter");
-    catSel.innerHTML = `<option value="">Tutte</option>` + MENU.categories
-      .slice()
-      .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
-      .map(c => `<option value="${c.id}">${c.name}</option>`)
-      .join("");
+    const chips = document.getElementById("cat-chips");
+const cats = MENU.categories
+  .slice()
+  .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+
+chips.innerHTML =
+  `<button type="button" class="chip active" data-cid="">Tutte</button>` +
+  cats.map(c => `<button type="button" class="chip" data-cid="${c.id}">${c.name}</button>`).join("");
+
+chips.onclick = (e) => {
+  const btn = e.target.closest(".chip");
+  if(!btn) return;
+
+  const cid = btn.getAttribute("data-cid");
+  ACTIVE_CAT_ID = cid ? Number(cid) : null;
+
+  Array.from(chips.querySelectorAll(".chip")).forEach(x => x.classList.toggle("active", x === btn));
+  renderMenu();
+};
 
     renderMenu();
   }
