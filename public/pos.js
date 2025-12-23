@@ -207,49 +207,124 @@ function addToCart(it) {
 
 function openModifierModal(it) {
   currentModItem = it;
-  selectedModifiers = []; // Reset selezioni precedenti
+  selectedByGroup = {}; // reset
+
   $("modItemName").textContent = it.name;
   $("modifierGroupsWrapper").innerHTML = "";
   $("modifierModal").style.display = "flex";
 
-  // Cicliamo sui gruppi di modificatori (es: "Aggiunte", "Cottura")
   it.item_modifiers.forEach(rel => {
     const group = rel.modifier_groups;
+
+    // init group selection
+    selectedByGroup[group.id] = [];
+
     const groupDiv = document.createElement("div");
     groupDiv.className = "mod-group";
-    groupDiv.innerHTML = `<h3>${escapeHtml(group.name)} ${group.is_required ? '<span style="color:red">*</span>' : ''}</h3>`;
-    
-    const grid = document.createElement("div");
-    grid.className = "mod-options-grid";
+    groupDiv.dataset.groupId = group.id;
 
-    // Cicliamo sulle singole opzioni (es: "Bufala", "Ben cotta")
+    // se nel DB hai un campo tipo selection_type / max_select meglio,
+    // altrimenti assumiamo "multi" se non specificato.
+    const isSingle =
+      group.selection_type === "single" ||
+      group.max_select === 1 ||
+      group.is_single === true;
+
+    groupDiv.dataset.single = isSingle ? "1" : "0";
+
+    groupDiv.innerHTML = `
+      <h3 style="margin:10px 0 6px">
+        ${escapeHtml(group.name)}
+        ${group.is_required ? '<span style="color:#b42318;font-weight:900"> *</span>' : ''}
+      </h3>
+      <div class="mod-options-grid"></div>
+      <div class="mod-err" style="display:none;color:#b42318;font-size:12px;margin-top:6px">
+        Selezione obbligatoria
+      </div>
+    `;
+
+    const grid = groupDiv.querySelector(".mod-options-grid");
+
     group.modifier_options.forEach(opt => {
       const btn = document.createElement("button");
+      btn.type = "button";
       btn.className = "mod-btn";
+      btn.dataset.groupId = group.id;
+      btn.dataset.optId = opt.id;
+
       btn.innerHTML = `${escapeHtml(opt.name)}<br><small>+€${money(opt.extra_price)}</small>`;
-      
+
       btn.onclick = () => {
-          btn.classList.toggle("selected");
-          const idx = selectedModifiers.findIndex(m => m.id === opt.id);
-          if (idx > -1) selectedModifiers.splice(idx, 1);
-          else selectedModifiers.push(opt);
+        const gId = group.id;
+        const single = groupDiv.dataset.single === "1";
+
+        const arr = selectedByGroup[gId] || [];
+
+        const idx = arr.findIndex(x => x.id === opt.id);
+
+        if (single) {
+          // single-choice: selezioni 1 solo, quindi reset e attiva solo questo
+          selectedByGroup[gId] = [opt];
+
+          // UI: togli selected agli altri del gruppo
+          grid.querySelectorAll(".mod-btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+        } else {
+          // multi-choice: toggle
+          if (idx > -1) {
+            arr.splice(idx, 1);
+            btn.classList.remove("selected");
+          } else {
+            arr.push(opt);
+            btn.classList.add("selected");
+          }
+          selectedByGroup[gId] = arr;
+        }
+
+        // se era required, rimuovi errore quando seleziona
+        groupDiv.style.border = "";
+        groupDiv.querySelector(".mod-err").style.display = "none";
       };
+
       grid.appendChild(btn);
     });
 
-    groupDiv.appendChild(grid);
     $("modifierGroupsWrapper").appendChild(groupDiv);
   });
 
-  // Tasto conferma nel popup
   $("confirmModifiersBtn").onclick = () => {
-    executeAddToCart(currentModItem, selectedModifiers);
+    // ✅ VALIDAZIONE REQUIRED
+    const missing = [];
+    const groups = currentModItem.item_modifiers.map(r => r.modifier_groups);
+
+    groups.forEach(g => {
+      if (g.is_required) {
+        const sel = selectedByGroup[g.id] || [];
+        if (!sel.length) missing.push(g);
+      }
+    });
+
+    if (missing.length) {
+      // evidenzia gruppi mancanti
+      missing.forEach(g => {
+        const el = $("modifierGroupsWrapper").querySelector(`[data-group-id="${g.id}"]`);
+        if (el) {
+          el.style.border = "2px solid #b42318";
+          const err = el.querySelector(".mod-err");
+          if (err) err.style.display = "block";
+        }
+      });
+
+      alert("Seleziona i modificatori obbligatori: " + missing.map(x => x.name).join(", "));
+      return; // blocca conferma
+    }
+
+    // ✅ FLAT LIST di modifiers scelti (come prima)
+    const modsFlat = Object.values(selectedByGroup).flat();
+
+    executeAddToCart(currentModItem, modsFlat);
     closeModifierModal();
   };
-}
-
-function closeModifierModal() {
-  $("modifierModal").style.display = "none";
 }
 
 // Questa funzione effettua l'inserimento vero e proprio nel carrello
