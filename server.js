@@ -696,12 +696,14 @@ app.post("/api/checkout", async (req, res) => {
 
     if (oErr || !order) throw oErr || new Error("order_insert_failed");
 
-    const rows = items.map(it => ({
-      order_id: order.id,
-      name: it.name,
-      price: Number(it.price),
-      qty: Number(it.qty)
-    }));
+const rows = items.map(it => ({
+  order_id: order.id,
+  menu_item_id: it.menu_item_id ? Number(it.menu_item_id) : null,
+  name: it.name,
+  price: Number(it.price),
+  qty: Number(it.qty),
+  modifiers: it.modifiers || null
+}));
 
     const { error: iErr } = await supabase
       .from("order_items")
