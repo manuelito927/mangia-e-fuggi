@@ -1273,6 +1273,76 @@ app.get("/api/menu", async (_req, res) => {
   }
 });
 
+// ====== MENU COMPLETO (con modificatori) ======
+app.get("/api/menu-full", async (_req, res) => {
+  try {
+    const { data: categories, error: cErr } = await supabase
+      .from("menu_categories")
+      .select("id,name,sort_order,is_active")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+    if (cErr) throw cErr;
+
+    const catIds = (categories || []).map(c => c.id);
+
+    let items = [];
+    if (catIds.length) {
+      const { data: rows, error: iErr } = await supabase
+        .from("menu_items")
+        .select("id,category_id,name,description,price,is_available,image_url")
+        .in("category_id", catIds)
+        .order("id", { ascending: true });
+      if (iErr) throw iErr;
+      items = rows || [];
+    }
+
+    // MODIFICATORI (devono esistere le tabelle)
+    const { data: groups, error: gErr } = await supabase
+      .from("modifier_groups")
+      .select("id,name,required,min_select,max_select,sort_order,is_active")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+    if (gErr) throw gErr;
+
+    const groupIds = (groups || []).map(g => g.id);
+
+    let options = [];
+    if (groupIds.length) {
+      const { data: opt, error: oErr } = await supabase
+        .from("modifier_options")
+        .select("id,group_id,name,price_delta,sort_order,is_active")
+        .eq("is_active", true)
+        .in("group_id", groupIds)
+        .order("sort_order", { ascending: true });
+      if (oErr) throw oErr;
+      options = opt || [];
+    }
+
+    const itemIds = (items || []).map(i => i.id);
+    let links = [];
+    if (itemIds.length) {
+      const { data: lk, error: lErr } = await supabase
+        .from("item_modifier_groups")
+        .select("item_id,group_id")
+        .in("item_id", itemIds);
+      if (lErr) throw lErr;
+      links = lk || [];
+    }
+
+    return res.json({
+      ok: true,
+      categories,
+      items,
+      modifier_groups: groups || [],
+      modifier_options: options || [],
+      item_modifier_groups: links || []
+    });
+  } catch (e) {
+    console.error("api/menu-full error:", e);
+    return res.status(500).json({ ok: false, error: "menu_full_failed" });
+  }
+});
+
 // =====================================================================================
 // API STATISTICHE
 // =====================================================================================
