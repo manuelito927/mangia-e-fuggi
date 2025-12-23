@@ -48,6 +48,7 @@ function setActiveTable(code){
   $("tableSelect").value = code;
   renderTablesGrid();
   loadOpenOrdersForTable(); // carica conto automatico
+refreshTablesStatus();
 }
 
 function renderTablesGrid(filterText=""){
