@@ -467,7 +467,10 @@ $("tabCounter")?.addEventListener("click", () => setMode("counter"));
 setMode("tables");
 
 // Griglia tavoli + ricerca
+// Griglia tavoli + ricerca
 renderTablesGrid();
+await refreshTablesStatus(); // <-- QUESTA è la cosa che fa comparire i colori
+
 $("tableSearch")?.addEventListener("input", (e) => renderTablesGrid(e.target.value));
   } catch (e) {
     console.error(e);
