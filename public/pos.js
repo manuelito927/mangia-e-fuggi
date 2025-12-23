@@ -81,7 +81,7 @@ b.className =
 async function refreshTablesStatus(){
   const day = todayISO();
 
-  const r = await fetch(`/api/admin/orders?day=${encodeURIComponent(day)}&status=pending`, {
+fetch(`/api/admin/orders-full?day=...&status=pending`)
     headers: { "Accept":"application/json" }
   });
 
