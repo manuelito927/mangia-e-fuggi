@@ -61,7 +61,12 @@ function renderTablesGrid(filterText=""){
   list.forEach(t => {
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "tableBtn" + (($("tableSelect").value===t) ? " active" : "");
+const status = TABLE_STATUS[t] || "free";
+
+b.className =
+  "tableBtn" +
+  (status === "occupied" ? " t-occupied" : " t-free") +
+  (($("tableSelect").value===t) ? " active" : "");
     b.textContent = t;
     b.onclick = () => setActiveTable(t);
     wrap.appendChild(b);
