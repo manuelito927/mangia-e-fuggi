@@ -78,6 +78,36 @@ b.className =
   }
 }
 
+async function refreshTablesStatus(){
+  const day = todayISO();
+
+  const r = await fetch(`/api/admin/orders?day=${encodeURIComponent(day)}&status=pending`, {
+    headers: { "Accept":"application/json" }
+  });
+
+  const j = await r.json().catch(()=>null);
+
+  if (!j || !j.ok){
+    console.error("[POS] refreshTablesStatus failed:", j);
+    TABLE_STATUS = Object.fromEntries(TABLES.map(t=>[t,"free"]));
+    renderTablesGrid($("tableSearch")?.value || "");
+    return;
+  }
+
+  ALL_PENDING = j.orders || [];
+
+  // default: tutti liberi
+  TABLE_STATUS = Object.fromEntries(TABLES.map(t=>[t,"free"]));
+
+  // se un tavolo ha pending => occupato
+  for (const o of ALL_PENDING){
+    const t = (o.table_code || "").trim().toUpperCase();
+    if (t) TABLE_STATUS[t] = "occupied";
+  }
+
+  renderTablesGrid($("tableSearch")?.value || "");
+}
+
 function setMode(mode){
   activeMode = mode;
   const tabTables = $("tabTables");
