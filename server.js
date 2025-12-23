@@ -775,6 +775,32 @@ if (day) {
 }
 
 app.get("/api/admin/orders", requireAdminApi, listOrdersHandler);
+app.get("/api/admin/orders-full", requireAdminApi, async (req,res) => {
+  try{
+    const day = (req.query.day || "").toString().slice(0,10);
+    const status = (req.query.status || "").toString().trim();
+
+    let q = supabase
+      .from("orders")
+      .select("*, order_items(id,name,qty,price,modifiers)")
+      .order("created_at", { ascending:false });
+
+    if (status) q = q.eq("status", status);
+    if (day) {
+      const { start, end } = localDayBounds(day);
+      q = q.gte("created_at", start).lte("created_at", end);
+    }
+
+    const { data, error } = await q.limit(200);
+    if (error) throw error;
+
+    res.json({ ok:true, orders: data || [] });
+  }catch(e){
+    console.error("orders-full error:", e);
+    res.status(500).json({ ok:false, error:"orders_full_failed" });
+  }
+});
+
 app.get("/api/orders",       requireAdminApi, listOrdersHandler);
 
 // --- azioni su ordini
