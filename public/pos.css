@@ -62,3 +62,23 @@ purple{ background:#f0dcff; }
 
 .modal-footer { padding: 20px; background: #eee; text-align: center; }
 .btn-confirm { width: 100%; padding: 20px; background: #11611b; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; }
+/* ===== TAVOLI (POS) ===== */
+.tableBtn{
+  border: 1px solid #ead8cf;
+  border-radius: 14px;
+  padding: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(0,0,0,.08);
+}
+
+/* Verde = libero */
+.tableBtn.t-free{ border-left: 10px solid #1f8f4e; }
+
+/* Rosso = occupato */
+.tableBtn.t-occupied{ border-left: 10px solid #b42318; }
+
+/* Tavolo selezionato */
+.tableBtn.active{ outline: 3px solid #111; }
+
