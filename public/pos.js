@@ -499,6 +499,7 @@ const items = cart.map(x => ({
   price: x.price,
   modifiers: x.applied_mods || []
 }));
+
   const total = cart.reduce((s,x)=>s + x.price*x.qty, 0);
 
   const r = await fetch("/api/checkout", {
