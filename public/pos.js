@@ -188,7 +188,9 @@ function escapeHtml(s){
 
 // === NUOVA LOGICA MODIFICATORI (Toast-Style) ===
 let currentModItem = null;
-let selectedModifiers = [];
+
+// selections per group: { [groupId]: [opt, opt, ...] }
+let selectedByGroup = {};
 
 function addToCart(it) {
   // Verifichiamo se l'item ha modificatori collegati (struttura dal nuovo server.js)
