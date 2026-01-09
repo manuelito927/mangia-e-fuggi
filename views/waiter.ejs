@@ -1033,8 +1033,8 @@ loadMenu()
     }
   });
 
-setInterval(loadOrders, 10000);
-setInterval(loadTables, 8000);
+setInterval(() => keepScroll(loadOrders), 10000);
+setInterval(() => keepScroll(loadTables), 8000);
 <% } %>
 </script>
 
