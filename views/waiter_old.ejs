@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Modalità cameriere</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="/waiter-pos.css?v=1">
+  <style>
+    body { margin:0; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:#f6efe7; color:#2b1a12; }
+.page { max-width:none; margin:0; padding:12px; }
+    .card { background:#fff6ee; border-radius:18px; padding:24px 20px; box-shadow:0 10px 25px rgba(0,0,0,0.08); border:1px solid #f0dcc7; }
+    h1 { margin:0 0 8px; font-size:26px; font-weight:700; }
+    h2 { margin:24px 0 10px; font-size:18px; }
+    p { margin:4px 0; line-height:1.4; }
+    .input { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #d8c1a6; font-size:16px; box-sizing:border-box; }
+    .button { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:none; padding:10px 18px; font-size:15px; font-weight:600; cursor:pointer; background:#7b3e20; color:#fff; transition:transform .08s ease, box-shadow .08s ease, background .15s; box-shadow:0 4px 10px rgba(0,0,0,0.15); }
+    .button:hover { transform:translateY(-1px); box-shadow:0 6px 14px rgba(0,0,0,0.2); background:#8d4523; }
+    .button.secondary { background:#f0e1cf; color:#5a3923; box-shadow:none; }
+    .button.secondary:hover { background:#e3d3bf; }
+    .button.sm { padding:6px 12px; font-size:13px; box-shadow:none; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .row > * { flex:1; min-width:0; }
+    .mt-8{margin-top:8px;} .mt-16{margin-top:16px;} .mt-24{margin-top:24px;} .mt-32{margin-top:32px;}
+    .error { margin-top:10px; padding:8px 10px; border-radius:10px; background:#ffe5e0; color:#8b1e08; font-size:14px; }
+    .badge { display:inline-flex; padding:3px 10px; border-radius:999px; font-size:12px; background:#f0e1cf; color:#5a3923; }
+    .table-wrap { margin-top:8px; overflow-x:auto; border-radius:14px; border:1px solid #edd7c1; background:#fff; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    thead { background:#faefe1; }
+    th,td { padding:8px 10px; text-align:left; white-space:nowrap; }
+    tbody tr:nth-child(even){ background:#fff9f2; }
+    .status-pill{ display:inline-flex; padding:3px 9px; border-radius:999px; font-size:12px; }
+    .status-pill.pending{ background:#fff1bf; color:#7a5b00; }
+    .status-pill.completed{ background:#d9f7d9; color:#11611b; }
+    .status-pill.canceled{ background:#ffd7d7; color:#8b1e1e; }
+    .muted{ font-size:12px; color:#7f6b57; }
+    .divider{ height:1px; background:#ead7c3; margin:18px 0; }
+    .tag{ font-size:11px; padding:2px 6px; border-radius:8px; background:#f0e1cf; color:#5a3923; margin-left:6px; }
+    .text-center{ text-align:center; }
+
+    .tabs { display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap; }
+    .tabbtn{ border:1px solid #edd7c1; background:#fff; color:#5a3923; padding:8px 14px; border-radius:999px; font-weight:700; cursor:pointer; }
+    .tabbtn.active{ background:#7b3e20; color:#fff; border-color:#7b3e20; }
+    .tabpanel{ display:none; }
+    .tabpanel.active{ display:block; }
+
+    #menu-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+    @media (max-width:900px){ #menu-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width:600px){ #menu-grid{ grid-template-columns:1fr; } }
+
+    .mitem{ background:#fff; border:1px solid #edd7c1; border-radius:14px; padding:10px; cursor:pointer; }
+    .mitem:hover{ background:#fff9f2; }
+    .mitem .name{ font-weight:700; }
+    .mitem .price{ font-weight:700; }
+    .cart-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 0; border-top:1px solid #eee; }
+    .cart-actions{ display:flex; gap:6px; align-items:center; }
+    .qtybtn{ border:1px solid #edd7c1; background:#fff; padding:4px 10px; border-radius:999px; cursor:pointer; }
+
+    @media (max-width:600px){
+      .card{ padding:18px 16px; }
+      h1{ font-size:22px; }
+      .row{ flex-direction:column; align-items:stretch; }
+      th,td{ font-size:12px; padding:6px 8px; }
+      .button{ width:100%; justify-content:center; }
+      .button.sm{ width:auto; }
+      .tabs{ gap:8px; }
+      .tabbtn{ width:100%; justify-content:center; }
+    }
+/* ===== Chips categorie ===== */
+.chips{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding-bottom:6px;
+  -webkit-overflow-scrolling: touch;
+}
+.chip{
+  flex:0 0 auto;
+  border:1px solid #edd7c1;
+  background:#fff;
+  color:#5a3923;
+  padding:10px 14px;
+  border-radius:999px;
+  font-weight:800;
+  cursor:pointer;
+  user-select:none;
+  white-space:nowrap;
+}
+.chip.active{
+  background:#7b3e20;
+  border-color:#7b3e20;
+  color:#fff;
+}
+
+/* ===== Griglia più veloce (meno scroll su mobile) ===== */
+@media (max-width:600px){
+  #menu-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .mitem .name{ font-weight:900; font-size:15px; line-height:1.1; }
+  .mitem .muted{ font-size:12px; }
+}
+
+.tablesbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px}
+.legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;color:#7f6b57}
+.lg{width:10px;height:10px;border-radius:999px;display:inline-block}
+.lg.free{background:#1f8f4e}
+.lg.occupied{background:#b42318}
+
+.tables-grid{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:10px;
+}
+@media (max-width:900px){ .tables-grid{grid-template-columns:repeat(4,minmax(0,1fr));} }
+@media (max-width:600px){ .tables-grid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+
+.tbtn{
+  border:1px solid #edd7c1;
+  background:#fff;
+  border-radius:14px;
+  padding:12px 10px;
+  cursor:pointer;
+  text-align:left;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.tbtn .code{font-weight:900;font-size:16px}
+.tbtn .dot{width:12px;height:12px;border-radius:999px;flex:0 0 12px}
+.tbtn.free .dot{background:#1f8f4e}
+.tbtn.occupied .dot{background:#b42318}
+.lg.bill{background:#caa400}
+.tbtn.bill .dot{background:#caa400}
+.tbtn.active{
+  outline:3px solid rgba(123,62,32,.25);
+  border-color:#7b3e20;
+}
+  </style>
+</head>
+
+<body>
+<div class="page">
+
+  <% if (!loggedIn) { %>
+    <div class="card" style="max-width: 480px; margin: 40px auto;">
+      <h1>Modalità cameriere</h1>
+      <p>Inserisci il PIN salvato nelle impostazioni della pizzeria.</p>
+
+      <% if (presetTable) { %>
+        <p class="muted mt-8">Tavolo impostato da QR: <b><%= presetTable %></b></p>
+      <% } %>
+
+      <form method="POST" action="/waiter" class="mt-16">
+        <label for="pin" style="font-size:14px; font-weight:500;">PIN</label>
+        <input id="pin" name="pin" type="password" maxlength="10" autocomplete="off" class="input mt-8" placeholder="••••" />
+
+        <% if (error) { %>
+          <div class="error"><%= error %></div>
+        <% } %>
+
+        <button type="submit" class="button mt-16">Entra</button>
+      </form>
+    </div>
+  <% } else { %>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <h1>Sei in modalità cameriere ✅</h1>
+          <p class="muted">Operatività veloce: POS + Ordini. Niente statistiche o impostazioni.</p>
+        </div>
+        <div style="text-align:right;">
+<form method="POST" action="/logout">
+            <button type="submit" class="button secondary sm">Esci</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button type="button" class="tabbtn active" data-tab="pos">🧾 POS</button>
+        <button type="button" class="tabbtn" data-tab="orders">📋 Ordini</button>
+
+        <% if (presetTable) { %>
+          <span class="muted" style="margin-left:auto">
+            Tavolo QR: <b><%= presetTable %></b>
+          </span>
+        <% } %>
+      </div>
+
+      <div class="divider"></div>
+
+      <section id="tab-pos" class="tabpanel active">
+        <h2 style="margin-top:0">Nuovo ordine / Modifica ordine tavolo</h2>
+        <p class="muted">Puoi: (1) creare un nuovo ordine, oppure (2) caricare l’ordine del tavolo fatto dal QR e modificarlo.</p>
+
+        <form id="new-order-form" class="mt-16">
+          <div class="row">
+            <div>
+              <label style="font-size:13px;">Modalità</label>
+              <select id="order-mode" class="input" style="margin-top:4px">
+                <option value="table">Al tavolo</option>
+                <option value="takeaway">Asporto</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="font-size:13px;">Tavolo / Codice</label>
+
+              <% if (presetTable) { %>
+                <div class="muted" style="margin-top:6px">
+                  Stai lavorando su <b><%= presetTable %></b>
+                  <button type="button" id="change-table-btn" class="button secondary sm" style="margin-left:10px">
+                    Cambia tavolo
+                  </button>
+                </div>
+              <% } %>
+
+              <input
+                id="order-table"
+                class="input"
+                style="margin-top:4px"
+                placeholder="Es. T1, SALA..."
+                value="<%= presetTable || '' %>"
+                <%= presetTable ? "readonly" : "" %>
+              />
+            </div>
+          </div>
+
+          <!-- ✅ AZIONI EDIT ORDINE -->
+          <div class="row mt-16">
+            <button type="button" class="button secondary" id="load-open-order-btn">📥 Carica ordine del tavolo</button>
+            <button type="button" class="button secondary" id="save-edit-order-btn" style="display:none">✅ Salva modifiche (ordine esistente)</button>
+          </div>
+          <div id="edit-order-hint" class="mt-8 muted"></div>
+
+          <div class="row mt-16">
+            <div>
+              <label style="font-size:13px;">Nome cliente (opzionale)</label>
+              <input id="order-name" class="input" style="margin-top:4px" placeholder="Nome" />
+            </div>
+            <div>
+              <label style="font-size:13px;">Telefono (opzionale)</label>
+              <input id="order-phone" class="input" style="margin-top:4px" placeholder="Telefono" />
+            </div>
+          </div>
+
+          <div class="mt-16">
+            <label style="font-size:13px;">Nota per cucina (opzionale)</label>
+            <textarea id="order-note" class="input" style="margin-top:4px" rows="2" placeholder="Scrivi eventuali indicazioni..."></textarea>
+          </div>
+
+          <div class="divider"></div>
+
+<div class="divider"></div>
+
+<h2 style="margin:0 0 10px">Tavoli</h2>
+<p class="muted" style="margin-top:0">Tocca un tavolo per iniziare. Verde libero, rosso occupato.</p>
+
+<div class="tablesbar">
+  <div class="legend">
+    <span class="lg free"></span><span>Libero</span>
+    <span class="lg occupied"></span><span>Occupato</span>
+<span class="lg bill"></span><span>Conto</span>
+  </div>
+
+  <button type="button" class="button secondary sm" id="tables-refresh">Aggiorna</button>
+</div>
+
+<div id="tables-grid" class="tables-grid">
+  <div class="muted">Caricamento tavoli...</div>
+</div>
+          <h2 style="margin:0 0 10px">Menu</h2>
+          <p class="muted">Tocca un prodotto per aggiungerlo al carrello.</p>
+
+<div class="mt-16">
+  <label style="font-size:13px;">Categorie</label>
+  <div id="cat-chips" class="chips" style="margin-top:8px"></div>
+</div>
+
+<div class="mt-16">
+  <label style="font-size:13px;">Cerca</label>
+  <input id="menu-search" class="input" style="margin-top:6px" placeholder="Scrivi un nome..." />
+</div>
+
+          <div id="menu-grid" class="mt-16"></div>
+
+          <div class="divider"></div>
+
+          <h2 style="margin:0 0 10px">Carrello</h2>
+          <div id="cart-box" class="muted">Carrello vuoto.</div>
+
+          <div class="row mt-24">
+            <div>
+              <span class="muted">Totale:</span>
+              <strong id="order-total">€ 0,00</strong>
+            </div>
+            <div style="text-align:right;">
+              <button type="submit" class="button">Invia ordine alla cucina (NUOVO)</button>
+            </div>
+          </div>
+
+          <div id="new-order-message" class="mt-8 muted"></div>
+        </form>
+      </section>
+
+      <section id="tab-orders" class="tabpanel">
+        <h2 style="margin-top:0">Ordini attivi</h2>
+        <p class="muted">
+          Solo gli ordini di oggi, ordinati dal più recente.
+          <span class="tag">Aggiornamento automatico ogni 10s</span>
+        </p>
+
+        <div class="mt-8">
+          <button type="button" class="button secondary sm" id="refresh-orders-btn">Aggiorna ora</button>
+        </div>
+
+        <div class="table-wrap mt-16">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tavolo</th>
+                <th>Stato</th>
+                <th>Modo</th>
+                <th>Totale</th>
+                <th>Creato</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="orders-body">
+              <tr>
+                <td colspan="7" class="text-center muted">Caricamento ordini...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  <% } %>
+</div>
+
+<script>
+<% if (loggedIn) { %>
+  // ====================== TAB SWITCH ======================
+  const tabBtns = Array.from(document.querySelectorAll(".tabbtn"));
+  const tabPos = document.getElementById("tab-pos");
+  const tabOrders = document.getElementById("tab-orders");
+
+  function setTab(name){
+    tabBtns.forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+    tabPos.classList.toggle("active", name === "pos");
+    tabOrders.classList.toggle("active", name === "orders");
+    history.replaceState(null, "", "#"+name);
+  }
+
+  tabBtns.forEach(btn => btn.addEventListener("click", () => setTab(btn.dataset.tab)));
+  const hash = (location.hash || "").replace("#","");
+  if (hash === "orders") setTab("orders");
+
+  // ====================== STATE ======================
+  let MENU = { categories: [], items: [] };
+let ACTIVE_CAT_ID = null; // null = tutte
+
+  // CART item:
+  // { key, id, name, price, qty, note }
+  let CART = [];
+
+  let CURRENT_ORDER_ID = null;
+  
+  const PRESET_TABLE = "<%= (presetTable || '').toString().replace(/"/g, '\\"') %>";
+  const HAS_PRESET_TABLE = !!PRESET_TABLE;
+
+  if (HAS_PRESET_TABLE) {
+    const tableInput = document.getElementById("order-table");
+    if (tableInput) {
+      tableInput.value = PRESET_TABLE;
+      tableInput.readOnly = true;
+    }
+    const btn = document.getElementById("change-table-btn");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const ok = confirm("Vuoi cambiare tavolo? (Sblocca il campo)");
+        if (!ok) return;
+        tableInput.readOnly = false;
+        tableInput.focus();
+        tableInput.select();
+      });
+    }
+  }
+
+  // ====================== HELPERS ======================
+  const fmtMoney = (x) => {
+    const n = Number(x || 0);
+    return "€ " + n.toFixed(2).replace(".", ",");
+  };
+
+  function cartTotal(){
+    return CART.reduce((s,i)=> s + (Number(i.price)*Number(i.qty)), 0);
+  }
+
+  function catName(id){
+    const c = (MENU.categories||[]).find(x => Number(x.id) === Number(id));
+    return c ? c.name : "—";
+  }
+
+  function findCartItemByKey(key){
+    return CART.find(x => x.key === key);
+  }
+
+  // ====================== RENDER CART (con note per prodotto) ======================
+  function renderCart(){
+    const box = document.getElementById("cart-box");
+    const totalEl = document.getElementById("order-total");
+    totalEl.textContent = fmtMoney(cartTotal());
+
+    if(!CART.length){
+      box.textContent = "Carrello vuoto.";
+      return;
+    }
+
+    box.innerHTML = CART.map(it => `
+      <div class="cart-row" style="align-items:flex-start;">
+        <div style="flex:1; min-width:0;">
+          <div>
+            <b>${it.name}</b> <span class="muted">(${fmtMoney(it.price)})</span>
+          </div>
+
+          <!-- nota per singolo prodotto -->
+          <textarea
+            class="input"
+            data-note-key="${it.key}"
+            rows="2"
+            placeholder="Nota per questo prodotto (es. senza sale, ben cotto...)"
+            style="margin-top:6px; font-size:13px; padding:8px 10px;"
+          >${it.note ? it.note : ""}</textarea>
+        </div>
+
+        <div class="cart-actions" style="margin-left:10px; padding-top:2px;">
+          <button type="button" class="qtybtn" data-act="dec" data-key="${it.key}">-</button>
+          <b>${it.qty}</b>
+          <button type="button" class="qtybtn" data-act="inc" data-key="${it.key}">+</button>
+          <button type="button" class="qtybtn" data-act="del" data-key="${it.key}">🗑</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  // ====================== ADD/UPDATE CART ======================
+  function addToCart(menuItem){
+    const key = "id:" + menuItem.id;
+    const existing = findCartItemByKey(key);
+
+    if(existing){
+      existing.qty += 1;
+    } else {
+      CART.push({
+        key,
+        id: menuItem.id,
+        name: menuItem.name,
+        price: Number(menuItem.price),
+        qty: 1,
+        note: "" // nota per prodotto
+      });
+    }
+    renderCart();
+  }
+
+  // ====================== MENU ======================
+function renderMenu(){
+  const grid = document.getElementById("menu-grid");
+  const q = (document.getElementById("menu-search").value || "").toLowerCase().trim();
+
+  let items = (MENU.items || []).filter(it => it.is_available !== false);
+
+  if (ACTIVE_CAT_ID) {
+    items = items.filter(it => Number(it.category_id) === Number(ACTIVE_CAT_ID));
+  }
+
+  if(q) items = items.filter(it => (it.name||"").toLowerCase().includes(q));
+
+  if(!items.length){
+    grid.innerHTML = `<div class="muted">Nessun prodotto trovato.</div>`;
+    return;
+  }
+
+  grid.innerHTML = items.map(it => `
+    <div class="mitem" data-mid="${it.id}">
+      <div class="name">${it.name}</div>
+      ${it.description ? `<div class="muted" style="margin-top:4px">${it.description}</div>` : ``}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <span class="badge">${catName(it.category_id)}</span>
+        <span class="price">${fmtMoney(it.price)}</span>
+      </div>
+    </div>
+  `).join("");
+}
+
+  async function loadMenu(){
+    const grid = document.getElementById("menu-grid");
+    grid.innerHTML = `<div class="muted">Caricamento menu...</div>`;
+
+    const res = await fetch("/api/menu", { headers: { "Accept":"application/json" } });
+    const data = await res.json().catch(()=>null);
+    if(!data || !data.ok) throw new Error("menu");
+
+    MENU.categories = data.categories || [];
+    MENU.items = data.items || [];
+
+    const chips = document.getElementById("cat-chips");
+const cats = MENU.categories
+  .slice()
+  .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+
+chips.innerHTML =
+  `<button type="button" class="chip active" data-cid="">Tutte</button>` +
+  cats.map(c => `<button type="button" class="chip" data-cid="${c.id}">${c.name}</button>`).join("");
+
+chips.onclick = (e) => {
+  const btn = e.target.closest(".chip");
+  if(!btn) return;
+
+  const cid = btn.getAttribute("data-cid");
+  ACTIVE_CAT_ID = cid ? Number(cid) : null;
+
+  Array.from(chips.querySelectorAll(".chip")).forEach(x => x.classList.toggle("active", x === btn));
+  renderMenu();
+};
+
+    renderMenu();
+  }
+
+let ACTIVE_TABLE = null;
+
+function setActiveTable(code){
+  ACTIVE_TABLE = code;
+
+  const inp = document.getElementById("order-table");
+  inp.value = code;
+  inp.readOnly = false;
+
+  // carica subito ordine pending del tavolo (se esiste)
+  loadOpenOrderForTable();
+
+  document.querySelectorAll(".tbtn").forEach(b => {
+b.classList.toggle("active", b.dataset.table === code);
+  });
+}
+
+async function loadTables(){
+  const box = document.getElementById("tables-grid");
+  box.innerHTML = `<div class="muted">Caricamento...</div>`;
+
+  try{
+    const r = await fetch("/api/waiter/tables", {
+  headers:{ "Accept":"application/json" },
+  credentials:"include"
+});
+    const j = await r.json().catch(()=>null);
+    if(!j || !j.ok) throw new Error("tables");
+
+    const tables = j.tables || [];
+    box.innerHTML = tables.map(t => `
+<button type="button" class="tbtn ${t.status}" data-table="${t.code}">
+        <div class="code">${t.code}</div>
+        <span class="dot"></span>
+      </button>
+    `).join("");
+  }catch(e){
+    console.error(e);
+    box.innerHTML = `<div class="muted">Errore caricamento tavoli.</div>`;
+  }
+}
+
+document.getElementById("tables-grid").addEventListener("click", (e)=>{
+  const b = e.target.closest(".tbtn");
+  if(!b) return;
+  setActiveTable(b.dataset.table);
+});
+
+document.getElementById("tables-refresh").addEventListener("click", loadTables);
+
+  document.getElementById("menu-search").addEventListener("input", renderMenu);
+
+  // ✅ FIX: click menu usa data-mid e passa il menuItem vero
+  document.getElementById("menu-grid").addEventListener("click", (e)=>{
+    const card = e.target.closest("[data-mid]");
+    if(!card) return;
+    const id = Number(card.getAttribute("data-mid"));
+    const it = (MENU.items||[]).find(x => Number(x.id) === id);
+    if(it) addToCart(it);
+  });
+
+  // ✅ FIX: click carrello usa data-key
+  document.getElementById("cart-box").addEventListener("click", (e)=>{
+    const b = e.target.closest("[data-act]");
+    if(!b) return;
+
+    const key = b.getAttribute("data-key");
+    const act = b.getAttribute("data-act");
+    const it = findCartItemByKey(key);
+    if(!it) return;
+
+    if(act === "inc") it.qty += 1;
+    if(act === "dec") it.qty = Math.max(1, it.qty - 1);
+    if(act === "del") CART = CART.filter(x => x.key !== key);
+
+    renderCart();
+  });
+
+  // ✅ Nota prodotto: input live (funziona anche dopo renderCart perché ascoltiamo sul container)
+  document.getElementById("cart-box").addEventListener("input", (e)=>{
+    const t = e.target.closest("textarea[data-note-key]");
+    if(!t) return;
+    const key = t.getAttribute("data-note-key");
+    const it = findCartItemByKey(key);
+    if(!it) return;
+    it.note = t.value;
+  });
+
+  // ====================== MODIFICA ORDINE DEL TAVOLO (QR) ======================
+  async function loadOpenOrderForTable(){
+    const table = (document.getElementById("order-table").value || "").trim();
+    const hint = document.getElementById("edit-order-hint");
+    hint.textContent = "";
+
+    if(!table){
+      alert("Inserisci il tavolo (es. T1).");
+      return;
+    }
+
+    const resp = await fetch(`/api/waiter/open-order?table=${encodeURIComponent(table)}`);
+    const data = await resp.json().catch(()=>null);
+    if(!data || !data.ok){
+      alert("Errore caricamento ordine del tavolo.");
+      return;
+    }
+
+    if(!data.order){
+      CURRENT_ORDER_ID = null;
+      document.getElementById("save-edit-order-btn").style.display = "none";
+      hint.textContent = "Nessun ordine pending trovato per questo tavolo (ancora).";
+      return;
+    }
+
+    CURRENT_ORDER_ID = data.order.id;
+
+    // Qui supporto anche note prodotto se il backend le manda già.
+    CART = (data.items || []).map(x => {
+      const name = x.name || x.item_name;
+      const price = Number(x.price ?? x.unit_price ?? 0);
+      const qty = Number(x.qty ?? x.quantity ?? 1);
+      const note = (x.note ?? x.item_note ?? x.product_note ?? "") + "";
+
+      // Provo a ricollegare al menu per id
+      const menuItem = (MENU.items||[]).find(m => (m.name || "").trim() === (name || "").trim());
+      const id = menuItem ? menuItem.id : null;
+
+      return {
+        key: id ? `id:${id}` : `name:${name}`,
+        id,
+        name,
+        price,
+        qty,
+        note
+      };
+    });
+
+    document.getElementById("order-note").value = data.order.customer_note || "";
+    renderCart();
+
+    document.getElementById("save-edit-order-btn").style.display = "inline-flex";
+    hint.textContent = `✅ Ordine #${CURRENT_ORDER_ID} caricato. Ora puoi modificare quantità, eliminare/aggiungere prodotti e mettere note per prodotto + nota generale. Poi clicca "Salva modifiche".`;
+  }
+
+  async function saveEditsToCurrentOrder(){
+    const hint = document.getElementById("edit-order-hint");
+    hint.textContent = "";
+
+    if(!CURRENT_ORDER_ID){
+      alert("Prima carica l’ordine del tavolo.");
+      return;
+    }
+    if(!CART.length){
+      alert("Carrello vuoto: aggiungi almeno un prodotto.");
+      return;
+    }
+
+    const total = cartTotal();
+    const note  = (document.getElementById("order-note").value || "").trim();
+
+    // ✅ invio anche note per prodotto
+    const items = CART.map(x => ({
+      name: x.name,
+      qty: x.qty,
+      price: x.price,
+      note: (x.note || "").trim()
+    }));
+
+    const r1 = await fetch(`/api/waiter/orders/${CURRENT_ORDER_ID}/update-items`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ items, total })
+    });
+    const j1 = await r1.json().catch(()=>null);
+    if(!j1 || !j1.ok){
+      alert("Errore nel salvataggio righe/totale.");
+      return;
+    }
+
+    const r2 = await fetch(`/api/waiter/orders/${CURRENT_ORDER_ID}/note`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ note })
+    });
+    const j2 = await r2.json().catch(()=>null);
+    if(!j2 || !j2.ok){
+      console.warn("note not saved");
+    }
+
+    hint.textContent = `✅ Modifiche salvate su ordine #${CURRENT_ORDER_ID} — Totale ${fmtMoney(total)}.`;
+    loadOrders();
+  }
+
+  document.getElementById("load-open-order-btn").addEventListener("click", loadOpenOrderForTable);
+  document.getElementById("save-edit-order-btn").addEventListener("click", saveEditsToCurrentOrder);
+
+  // ====================== NUOVO ORDINE (checkout) ======================
+  document.getElementById("new-order-form").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const msgEl = document.getElementById("new-order-message");
+    msgEl.style.color = "#7f6b57";
+    msgEl.textContent = "";
+
+    if(!CART.length){
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Aggiungi almeno un prodotto.";
+      return;
+    }
+
+    const mode  = document.getElementById("order-mode").value;
+    const table = document.getElementById("order-table").value.trim();
+    const name  = document.getElementById("order-name").value.trim();
+    const phone = document.getElementById("order-phone").value.trim();
+    const note  = document.getElementById("order-note").value.trim();
+
+    if(mode === "table" && !table){
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Inserisci il tavolo (es. T1).";
+      return;
+    }
+
+    // ✅ invio anche note per prodotto
+    const items = CART.map(x => ({
+      name: x.name,
+      qty: x.qty,
+      price: x.price,
+      note: (x.note || "").trim()
+    }));
+    const total = cartTotal();
+
+    try{
+      const resp = await fetch("/api/checkout", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          tableCode: (mode === "table") ? table : null,
+          items,
+          total,
+          orderMode: (mode === "table") ? "table" : "takeaway",
+          customerName: name || null,
+          customerPhone: phone || null,
+          customerNote: note || null
+        })
+      });
+      const data = await resp.json();
+      if(!data.ok) throw new Error(data.error || "error");
+
+      CART = [];
+      renderCart();
+
+      CURRENT_ORDER_ID = null;
+      document.getElementById("save-edit-order-btn").style.display = "none";
+      document.getElementById("edit-order-hint").textContent = "";
+
+      if (HAS_PRESET_TABLE) {
+        document.getElementById("order-table").value = PRESET_TABLE;
+        document.getElementById("order-table").readOnly = true;
+      } else {
+        document.getElementById("order-table").value = "";
+      }
+
+      document.getElementById("order-name").value  = "";
+      document.getElementById("order-phone").value = "";
+      document.getElementById("order-note").value  = "";
+
+      msgEl.style.color = "#11611b";
+      msgEl.textContent = "✅ Ordine inviato (ID: " + data.order_id + ").";
+
+      setTab("orders");
+      loadOrders();
+    }catch(err){
+      console.error(err);
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Errore nell'invio ordine.";
+    }
+  });
+
+  // ====================== LISTA ORDINI ======================
+  async function loadOrders() {
+    const tbody = document.getElementById("orders-body");
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Caricamento...</td></tr>`;
+
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const resp = await fetch("/api/waiter/orders?day=" + encodeURIComponent(today));
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "error");
+
+      const orders = data.orders || [];
+      if (!orders.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Nessun ordine per oggi.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = orders.map(o => {
+        const created = o.created_at ? new Date(o.created_at) : null;
+        const hh = created ? String(created.getHours()).padStart(2,"0") : "--";
+        const mm = created ? String(created.getMinutes()).padStart(2,"0") : "--";
+
+        const statusClass =
+          o.status === "completed" ? "completed" :
+          o.status === "canceled" ? "canceled" : "pending";
+
+        const modeLabel =
+          o.order_mode === "takeaway" ? "Asporto" :
+          (o.order_mode === "home" ? "Da casa" : "Tavolo");
+
+        return `
+          <tr>
+            <td>#${o.id}</td>
+            <td>${o.table_code || "-"}</td>
+            <td><span class="status-pill ${statusClass}">${o.status}</span></td>
+            <td>${modeLabel}</td>
+            <td>${fmtMoney(o.total || 0)}</td>
+            <td>${hh}:${mm}</td>
+            <td>
+              <button class="button sm" data-act="complete" data-id="${o.id}">Completa</button>
+              <button class="button sm secondary" data-act="cancel" data-id="${o.id}">Annulla</button>
+              <button class="button sm secondary" data-act="restore" data-id="${o.id}">Ripristina</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Errore nel caricamento ordini.</td></tr>`;
+    }
+  }
+
+  document.getElementById("refresh-orders-btn").addEventListener("click", loadOrders);
+
+  document.getElementById("orders-body").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+
+    const id  = btn.getAttribute("data-id");
+    const act = btn.getAttribute("data-act");
+
+    const map = { complete: "complete", cancel: "cancel", restore: "restore" };
+    const endpoint = map[act];
+    if (!endpoint) return;
+
+    try {
+      const resp = await fetch(`/api/waiter/orders/${id}/${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" }
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "error");
+      loadOrders();
+    } catch (err) {
+      console.error(err);
+      alert("Errore nell'aggiornare l'ordine.");
+    }
+  });
+
+  // BOOT
+(async()=>{
+  try{ await loadMenu(); } catch(e){
+    console.error(e);
+    document.getElementById("menu-grid").innerHTML = `<div class="muted">Errore caricamento menu.</div>`;
+  }
+
+  renderCart();
+  loadOrders();
+  loadTables();
+
+  setInterval(loadOrders, 10000);
+  setInterval(loadTables, 8000);
+  // opzionale:
+  // setInterval(loadTables, 10000);
+})();
+<% } %>
+</script>
+<script>
+  console.log("✅ waiter.ejs JS caricato");
+  document.addEventListener("click", () => console.log("🖱 click ok"));
+</script>
+<!-- MODAL MODIFICATORI (WAITER) -->
+<div id="modifierModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    ...
+  </div>
+</div>
+</body>
+</html>
