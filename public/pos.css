@@ -1,93 +1,15 @@
-body { font-family: system-ui, -apple-system, Arial; background:#f6f1ea; margin:0; }
-.wrap { max-width:1200px; margin:0 auto; padding:16px; }
-.top { background:#fff; padding:12px 16px; border-radius:14px; box-shadow:0 4px 18px rgba(0,0,0,.06); }
-.row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-h1 { margin:0 0 10px 0; font-size:20px; }
-.grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px; margin-top:14px; }
-.panel { background:#fff; border-radius:14px; padding:12px; box-shadow:0 4px 18px rgba(0,0,0,.06); }
-.tileGrid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; }
-.tile { border:0; border-radius:14px; padding:14px; font-weight:700; cursor:pointer; box-shadow:0 8px 18px rgba(0,0,0,.08); }
-.tile.active { outline:3px solid #111; }
-.tile.item { background:#f3efe8; text-align:left; }
-.tile .t { font-size:14px; }
-.tile .p { font-size:12px; opacity:.75; margin-top:6px; }
-
-.red{ background:#ffdddd; }
-.green{ background:#dcffe0; }
-.orange{ background:#ffe9d1; }
-purple{ background:#f0dcff; }
-.gray{ background:#e7e7e7; }
-
-.cart .lines { display:flex; flex-direction:column; gap:8px; margin:10px 0; }
-.line { display:flex; gap:10px; justify-content:space-between; align-items:center; background:#f7f2ea; border-radius:12px; padding:10px; }
-.ln { flex:1; font-weight:600; }
-.lp { width:90px; text-align:right; font-weight:800; }
-.lc { display:flex; gap:6px; }
-.mini { border:0; border-radius:10px; padding:8px 10px; cursor:pointer; }
-.primary { background:#6b3b1e; color:#fff; font-weight:800; }
-.tot { font-size:18px; font-weight:900; margin-top:6px; }
-.actions { display:flex; gap:10px; margin-top:10px; }
-.hint { margin-top:10px; opacity:.75; font-size:13px; }
-
-@media (max-width: 980px){
-  .grid{ grid-template-columns: 1fr; }
-  .tileGrid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+/* ==============================
+   BASE
+============================== */
+body {
+  font-family: system-ui, -apple-system, Arial;
+  background: #f6f1ea;
+  margin: 0;
 }
 
-/* Modal Estetica Toast-Style */
-.modal {
-  position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
-  background-color: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center;
-}
-.modal-content {
-  background: #fdfdfd; padding: 0; border-radius: 15px; width: 95%; max-width: 600px;
-  max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;
-}
-.modal-header { padding: 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
-#modifierGroupsWrapper { padding: 20px; overflow-y: auto; flex-grow: 1; }
-
-/* Griglia opzioni: tasti grandi e tattili */
-.mod-group { margin-bottom: 25px; }
-.mod-options-grid { 
-  display: grid; 
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-  gap: 12px; 
-  margin-top: 10px;
-}
-.mod-btn {
-  padding: 20px 10px; border: 2px solid #ccc; border-radius: 10px;
-  background: white; font-weight: bold; font-size: 14px; transition: 0.2s;
-}
-.mod-btn.selected { border-color: #8b1e08; background: #8b1e08; color: white; }
-
-.modal-footer { padding: 20px; background: #eee; text-align: center; }
-.btn-confirm { width: 100%; padding: 20px; background: #11611b; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; }
-/* ===== TAVOLI (POS) ===== */
-.tableBtn{
-  border: 1px solid #ead8cf;
-  border-radius: 14px;
-  padding: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  background: #fff;
-  box-shadow: 0 8px 18px rgba(0,0,0,.08);
-}
-
-/* Verde = libero */
-.tableBtn.t-free{ border-left: 10px solid #1f8f4e; }
-
-/* Rosso = occupato */
-.tableBtn.t-occupied{ border-left: 10px solid #b42318; }
-
-/* Tavolo selezionato */
-.tableBtn.active{ outline: 3px solid #111; }
-
-/* =========================================================
-   OVERRIDE PALMARE (layout come nella foto)
-   Incollare IN FONDO al file
-   ========================================================= */
-
-/* Il body già ok. Questa shell gestisce tutto a schermo intero */
+/* ==============================
+   LAYOUT PALMARE (POS)
+============================== */
 .posShell{
   height: 100vh;
   display: flex;
@@ -97,34 +19,101 @@ purple{ background:#f0dcff; }
 
 /* Header sopra */
 .posHeader{
-  background: transparent;
   padding: 10px 12px 6px;
 }
 
-/* IMPORTANTE: se nel pos.ejs hai ancora .wrap, togliamo il max-width */
-.posShell .wrap{
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
+/* Barra alta */
+.topBar{
+  background:#fff;
+  padding:12px 16px;
+  border-radius:14px;
+  box-shadow:0 4px 18px rgba(0,0,0,.06);
 }
 
-/* Il blocco top (quello bianco) resta bello */
-.posHeader .topBar,
-.posHeader .top{
-  background: #fff;
-  padding: 12px 16px;
+h1{ margin:0 0 10px 0; font-size:20px; }
+
+/* Tabs + search + logout */
+.tabs{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.tab{
+  border:1px solid #ead8cf;
+  background:#fff;
+  color:#2b1a12;
+  padding:8px 14px;
+  border-radius:999px;
+  font-weight:800;
+  cursor:pointer;
+}
+.tab.active{
+  background:#6b3b1e;
+  color:#fff;
+  border-color:#6b3b1e;
+}
+
+.search input{
+  width: 240px;
+  max-width: 70vw;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid #ead8cf;
+  font-size:14px;
+  box-sizing:border-box;
+}
+
+.logoutForm{ display:inline; }
+.logoutBtn{
+  border:0;
+  border-radius:12px;
+  padding:10px 12px;
+  cursor:pointer;
+  background:#f0e1cf;
+  color:#5a3923;
+  font-weight:800;
+}
+
+/* Vista tavoli */
+.tablesView{ margin-top: 10px; }
+.tablesGrid{
+  display:grid;
+  grid-template-columns:repeat(6, minmax(0,1fr));
+  gap:10px;
+}
+@media (max-width: 900px){
+  .tablesGrid{ grid-template-columns:repeat(4, minmax(0,1fr)); }
+}
+@media (max-width: 600px){
+  .tablesGrid{ grid-template-columns:repeat(3, minmax(0,1fr)); }
+}
+
+/* Tavolo (bottoni) */
+.tableBtn{
+  border: 1px solid #ead8cf;
   border-radius: 14px;
-  box-shadow: 0 4px 18px rgba(0,0,0,.06);
+  padding: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(0,0,0,.08);
+}
+.tableBtn.t-free{ border-left: 10px solid #1f8f4e; }
+.tableBtn.t-occupied{ border-left: 10px solid #b42318; }
+.tableBtn.active{ outline: 3px solid #111; }
+
+/* Vista banco (placeholder) */
+.counterView .hint{
+  margin-top:10px;
+  opacity:.75;
+  font-size:13px;
 }
 
-/* Main: area ordine sopra (scrollabile) */
+/* ==============================
+   MAIN (ORDINE SOPRA)
+============================== */
 .posMain{
   flex: 1;
   overflow: auto;
   padding: 8px 12px 10px;
 }
 
-/* Pannello ordine */
 .orderPanel{
   background:#fff;
   border-radius:14px;
@@ -132,7 +121,6 @@ purple{ background:#f0dcff; }
   box-shadow:0 4px 18px rgba(0,0,0,.06);
 }
 
-/* Riga titolo + totale */
 .orderTitleRow{
   display:flex;
   align-items:center;
@@ -141,28 +129,73 @@ purple{ background:#f0dcff; }
   margin-bottom:8px;
 }
 .orderTitleRow h2{ margin:0; font-size:18px; }
-.orderMeta{ display:flex; gap:8px; align-items:baseline; }
+
+.orderMeta{
+  display:flex;
+  gap:8px;
+  align-items:baseline;
+}
 .orderMetaValue{ font-weight:900; }
 
-/* Linee carrello: riuso tue classi (line/ln/lp ecc) */
-.orderPanel .lines{
+.lines{
   display:flex;
   flex-direction:column;
   gap:8px;
   margin:10px 0;
 }
 
-/* Azioni: su palmare meglio andare a capo */
-.orderPanel .actions{
+.line{
+  display:flex;
+  gap:10px;
+  justify-content:space-between;
+  align-items:center;
+  background:#f7f2ea;
+  border-radius:12px;
+  padding:10px;
+}
+.ln{ flex:1; font-weight:600; }
+.lp{ width:90px; text-align:right; font-weight:800; }
+.lc{ display:flex; gap:6px; }
+
+.mini{
+  border:0;
+  border-radius:10px;
+  padding:8px 10px;
+  cursor:pointer;
+}
+
+.primary{
+  background:#6b3b1e;
+  color:#fff;
+  font-weight:800;
+}
+
+.actions{
   display:flex;
   flex-wrap:wrap;
   gap:10px;
+  margin-top:10px;
 }
-.orderPanel .actions button{
+.actions button{
   flex: 1 1 48%;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 12px;
+  font-weight: 800;
+  cursor:pointer;
+  background:#f0e1cf;
+  color:#5a3923;
+}
+.actions button.primary{
+  background:#6b3b1e;
+  color:#fff;
 }
 
-/* Dock fisso in basso: categorie + griglia prodotti */
+.hint{ margin-top:10px; opacity:.75; font-size:13px; }
+
+/* ==============================
+   DOCK BASSO (CATEGORIE + PRODOTTI)
+============================== */
 .posDock{
   position: sticky;
   bottom: 0;
@@ -171,65 +204,148 @@ purple{ background:#f0dcff; }
   padding: 10px 10px 12px;
 }
 
-/* Barra categorie in basso (scroll orizzontale) */
+.catBar{ margin-bottom: 10px; }
+
 .catRow{
   display:flex;
   gap:10px;
   overflow-x:auto;
-  padding-bottom: 6px;
+  padding-bottom:6px;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Le categorie sono "tile": le trasformiamo in tab */
-.catRow .tile,
-.catRow button{
+/* Bottoni categoria (riuso .tile) */
+.tile{
+  border:0;
+  border-radius:14px;
+  padding:14px;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:0 8px 18px rgba(0,0,0,.08);
+  background:#fff;
+}
+.catRow .tile{
   flex: 0 0 auto;
   padding: 10px 12px;
   border-radius: 12px;
-  background: #fff;
   box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  white-space: nowrap;
 }
-.catRow .tile.active{
-  outline: 3px solid #111;
-}
+.tile.active{ outline: 3px solid #111; }
 
-/* Area griglia prodotti (grande, scroll interna) */
+/* Area prodotti scroll */
 .prodArea{
-  max-height: 42vh;   /* aumenta a 48-52vh se la vuoi più grande */
+  max-height: 42vh;      /* aumenta se vuoi più griglia */
   overflow-y: auto;
 }
 
-/* Griglia prodotti: 4 colonne come foto */
+/* Griglia prodotti grande */
 .prodGrid{
   display:grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap:10px;
 }
 
-/* Tasti prodotto grandi (riuso .tile.item) */
-.prodGrid .tile,
-.prodGrid button{
+/* Prodotto */
+.tile.item{
+  background:#b9cbe6;
+  text-align:center;
   height: 78px;
-  border-radius: 10px;
   padding: 10px;
-  font-weight: 800;
-  box-shadow: 0 8px 18px rgba(0,0,0,.08);
+  border-radius: 10px;
+  font-weight: 900;
+}
+.tile .t{ font-size:14px; }
+.tile .p{ font-size:12px; opacity:.75; margin-top:6px; }
+
+.prodGrid .tile:active{ transform: scale(0.985); }
+
+/* colori utili (se li usi) */
+.red{ background:#ffdddd; }
+.green{ background:#dcffe0; }
+.orange{ background:#ffe9d1; }
+.purple{ background:#f0dcff; }
+.gray{ background:#e7e7e7; }
+
+/* Mobile */
+@media (max-width: 520px){
+  .prodGrid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .tile.item{ height: 86px; }
+  .actions button{ flex: 1 1 100%; }
+  .search input{ width: 100%; max-width: 100%; }
 }
 
-/* Prodotti: look "palmare gestionale" */
-.prodGrid .tile.item{
-  background: #b9cbe6;
+/* ==============================
+   MODAL MODIFICATORI
+============================== */
+.modal{
+  position: fixed;
+  z-index: 1000;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content{
+  background: #fdfdfd;
+  padding: 0;
+  border-radius: 15px;
+  width: 95%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.modal-header{
+  padding: 20px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+}
+#modifierGroupsWrapper{
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.mod-group{ margin-bottom: 25px; }
+.mod-options-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.mod-btn{
+  padding: 20px 10px;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  background: white;
+  font-weight: bold;
+  font-size: 14px;
+  transition: 0.2s;
+}
+.mod-btn.selected{
+  border-color: #8b1e08;
+  background: #8b1e08;
+  color: white;
+}
+
+.modal-footer{
+  padding: 20px;
+  background: #eee;
   text-align: center;
 }
 
-/* Miglior tap feedback */
-.prodGrid .tile:active,
-.prodGrid button:active{
-  transform: scale(0.985);
-}
-
-/* Mobile: tasti ancora più grandi e 3 colonne se schermo stretto */
-@media (max-width: 520px){
-  .prodGrid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
-  .prodGrid .tile{ height: 86px; }
-  .orderPanel .actions button{ flex: 1 1 100%; }
+.btn-confirm{
+  width: 100%;
+  padding: 20px;
+  background: #11611b;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: bold;
 }
