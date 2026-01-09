@@ -909,5 +909,15 @@ document.getElementById("tables-refresh").addEventListener("click", loadTables);
   console.log("✅ waiter.ejs JS caricato");
   document.addEventListener("click", () => console.log("🖱 click ok"));
 </script>
+<!-- MODAL MODIFICATORI (WAITER) -->
+<div id="modifierModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h2 id="modItemName">Nome Prodotto</h2>
+    <div id="modifierGroupsWrapper"></div>
+    <div class="modal-actions">
+      <button type="button" onclick="closeModifierModal()" class="btn-cancel">Annulla</button>
+      <button type="button" id="confirmModifiersBtn" class="btn-confirm">Aggiungi al carrello</button>
+    </div>
+  </div>
 </body>
 </html>
