@@ -721,7 +721,7 @@ function keepScroll(fn){
     setActiveTable(b.dataset.table);
   });
 
-  document.getElementById("tables-refresh").addEventListener("click", loadTables);
+document.getElementById("tables-refresh").addEventListener("click", () => keepScroll(loadTables));
 
   // ====================== EVENTI MENU/CARRELLO ======================
   document.getElementById("menu-search").addEventListener("input", renderMenu);
