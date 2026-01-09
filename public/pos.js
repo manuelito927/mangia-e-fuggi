@@ -81,12 +81,14 @@ b.className =
 async function refreshTablesStatus(){
   const day = todayISO();
 
-fetch(`/api/admin/orders-full?day=...&status=pending`)
-    headers: { "Accept":"application/json" }
+  const day = todayISO();
+
+  const r = await fetch(`/api/admin/orders-full?day=${encodeURIComponent(day)}&status=pending`, {
+    headers: { "Accept": "application/json" }
   });
 
-  const j = await r.json().catch(()=>null);
-
+  const j = await r.json().catch(() => null);
+  
   if (!j || !j.ok){
     console.error("[POS] refreshTablesStatus failed:", j);
     TABLE_STATUS = Object.fromEntries(TABLES.map(t=>[t,"free"]));
