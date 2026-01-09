@@ -543,4 +543,482 @@
 
     if(!CART.length){
       box.textContent = "Carrello vuoto.";
-      box.class
+      box.classList.add("muted");
+      return;
+    }
+
+    box.classList.remove("muted");
+
+    box.innerHTML = CART.map(it => `
+      <div class="cart-row">
+        <div style="flex:1; min-width:0;">
+          <div class="cart-name">${it.name}</div>
+          <div class="cart-sub">${fmtMoney(it.price)}</div>
+
+          <textarea
+            class="field"
+            data-note-key="${it.key}"
+            rows="2"
+            placeholder="Nota (es. senza sale, ben cotto...)"
+            style="margin-top:6px; font-size:12px; padding:8px 10px;"
+          >${it.note ? it.note : ""}</textarea>
+        </div>
+
+        <div class="qtywrap" style="margin-left:8px;">
+          <button type="button" class="qtybtn" data-act="dec" data-key="${it.key}">-</button>
+          <b>${it.qty}</b>
+          <button type="button" class="qtybtn" data-act="inc" data-key="${it.key}">+</button>
+          <button type="button" class="qtybtn" data-act="del" data-key="${it.key}">🗑</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  // ====================== ADD/UPDATE CART ======================
+  function addToCart(menuItem){
+    const key = "id:" + menuItem.id;
+    const existing = findCartItemByKey(key);
+
+    if(existing){
+      existing.qty += 1;
+    } else {
+      CART.push({
+        key,
+        id: menuItem.id,
+        name: menuItem.name,
+        price: Number(menuItem.price),
+        qty: 1,
+        note: ""
+      });
+    }
+    renderCart();
+  }
+
+  // ====================== MENU ======================
+  function renderMenu(){
+    const grid = document.getElementById("menu-grid");
+    const q = (document.getElementById("menu-search").value || "").toLowerCase().trim();
+
+    let items = (MENU.items || []).filter(it => it.is_available !== false);
+
+    if (ACTIVE_CAT_ID) {
+      items = items.filter(it => Number(it.category_id) === Number(ACTIVE_CAT_ID));
+    }
+
+    if(q) items = items.filter(it => (it.name||"").toLowerCase().includes(q));
+
+    if(!items.length){
+      grid.innerHTML = `<div class="muted" style="padding:10px 12px;">Nessun prodotto trovato.</div>`;
+      return;
+    }
+
+    grid.innerHTML = items.map(it => `
+      <div class="mitem" data-mid="${it.id}">
+        <div>
+          <div class="name">${it.name}</div>
+          ${it.description ? `<div class="desc">${it.description}</div>` : ``}
+        </div>
+        <div class="foot">
+          <span class="badge">${catName(it.category_id)}</span>
+          <span class="price">${fmtMoney(it.price)}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  async function loadMenu(){
+    const grid = document.getElementById("menu-grid");
+    grid.innerHTML = `<div class="muted" style="padding:10px 12px;">Caricamento menu...</div>`;
+
+    const res = await fetch("/api/menu", { headers: { "Accept":"application/json" } });
+    const data = await res.json().catch(()=>null);
+    if(!data || !data.ok) throw new Error("menu");
+
+    MENU.categories = data.categories || [];
+    MENU.items = data.items || [];
+
+    const chips = document.getElementById("cat-chips");
+    const cats = MENU.categories.slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+
+    chips.innerHTML =
+      `<button type="button" class="chip active" data-cid="">Tutte</button>` +
+      cats.map(c => `<button type="button" class="chip" data-cid="${c.id}">${c.name}</button>`).join("");
+
+    chips.onclick = (e) => {
+      const btn = e.target.closest(".chip");
+      if(!btn) return;
+
+      const cid = btn.getAttribute("data-cid");
+      ACTIVE_CAT_ID = cid ? Number(cid) : null;
+
+      Array.from(chips.querySelectorAll(".chip")).forEach(x => x.classList.toggle("active", x === btn));
+      renderMenu();
+    };
+
+    renderMenu();
+  }
+
+  // ====================== TAVOLI ======================
+  let ACTIVE_TABLE = null;
+
+  function setActiveTable(code){
+    ACTIVE_TABLE = code;
+
+    const inp = document.getElementById("order-table");
+    inp.value = code;
+    inp.readOnly = false;
+
+    loadOpenOrderForTable();
+
+    document.querySelectorAll(".tbtn").forEach(b => {
+      b.classList.toggle("active", b.dataset.table === code);
+    });
+  }
+
+  async function loadTables(){
+    const box = document.getElementById("tables-grid");
+    box.innerHTML = `<div class="muted">Caricamento...</div>`;
+
+    try{
+      const r = await fetch("/api/waiter/tables", {
+        headers:{ "Accept":"application/json" },
+        credentials:"include"
+      });
+      const j = await r.json().catch(()=>null);
+      if(!j || !j.ok) throw new Error("tables");
+
+      const tables = j.tables || [];
+      box.innerHTML = tables.map(t => `
+        <button type="button" class="tbtn ${t.status}" data-table="${t.code}">
+          <div class="code">${t.code}</div>
+          <span class="dot"></span>
+        </button>
+      `).join("");
+    }catch(e){
+      console.error(e);
+      box.innerHTML = `<div class="muted">Errore caricamento tavoli.</div>`;
+    }
+  }
+
+  document.getElementById("tables-grid").addEventListener("click", (e)=>{
+    const b = e.target.closest(".tbtn");
+    if(!b) return;
+    setActiveTable(b.dataset.table);
+  });
+
+  document.getElementById("tables-refresh").addEventListener("click", loadTables);
+
+  // ====================== EVENTI MENU/CARRELLO ======================
+  document.getElementById("menu-search").addEventListener("input", renderMenu);
+
+  document.getElementById("menu-grid").addEventListener("click", (e)=>{
+    const card = e.target.closest("[data-mid]");
+    if(!card) return;
+    const id = Number(card.getAttribute("data-mid"));
+    const it = (MENU.items||[]).find(x => Number(x.id) === id);
+    if(it) addToCart(it);
+  });
+
+  document.getElementById("cart-box").addEventListener("click", (e)=>{
+    const b = e.target.closest("[data-act]");
+    if(!b) return;
+
+    const key = b.getAttribute("data-key");
+    const act = b.getAttribute("data-act");
+    const it = findCartItemByKey(key);
+    if(!it) return;
+
+    if(act === "inc") it.qty += 1;
+    if(act === "dec") it.qty = Math.max(1, it.qty - 1);
+    if(act === "del") CART = CART.filter(x => x.key !== key);
+
+    renderCart();
+  });
+
+  document.getElementById("cart-box").addEventListener("input", (e)=>{
+    const t = e.target.closest("textarea[data-note-key]");
+    if(!t) return;
+    const key = t.getAttribute("data-note-key");
+    const it = findCartItemByKey(key);
+    if(!it) return;
+    it.note = t.value;
+  });
+
+  // ====================== MODIFICA ORDINE DEL TAVOLO (QR) ======================
+  async function loadOpenOrderForTable(){
+    const table = (document.getElementById("order-table").value || "").trim();
+    const hint = document.getElementById("edit-order-hint");
+    hint.textContent = "";
+
+    if(!table){
+      alert("Inserisci il tavolo (es. T1).");
+      return;
+    }
+
+    const resp = await fetch(`/api/waiter/open-order?table=${encodeURIComponent(table)}`);
+    const data = await resp.json().catch(()=>null);
+    if(!data || !data.ok){
+      alert("Errore caricamento ordine del tavolo.");
+      return;
+    }
+
+    if(!data.order){
+      CURRENT_ORDER_ID = null;
+      document.getElementById("save-edit-order-btn").style.display = "none";
+      hint.textContent = "Nessun ordine pending trovato per questo tavolo (ancora).";
+      return;
+    }
+
+    CURRENT_ORDER_ID = data.order.id;
+
+    CART = (data.items || []).map(x => {
+      const name = x.name || x.item_name;
+      const price = Number(x.price ?? x.unit_price ?? 0);
+      const qty = Number(x.qty ?? x.quantity ?? 1);
+      const note = (x.note ?? x.item_note ?? x.product_note ?? "") + "";
+
+      const menuItem = (MENU.items||[]).find(m => (m.name || "").trim() === (name || "").trim());
+      const id = menuItem ? menuItem.id : null;
+
+      return {
+        key: id ? `id:${id}` : `name:${name}`,
+        id,
+        name,
+        price,
+        qty,
+        note
+      };
+    });
+
+    document.getElementById("order-note").value = data.order.customer_note || "";
+    renderCart();
+
+    document.getElementById("save-edit-order-btn").style.display = "inline-flex";
+    hint.textContent = `✅ Ordine #${CURRENT_ORDER_ID} caricato. Modifica e poi salva.`;
+  }
+
+  async function saveEditsToCurrentOrder(){
+    const hint = document.getElementById("edit-order-hint");
+    hint.textContent = "";
+
+    if(!CURRENT_ORDER_ID){
+      alert("Prima carica l’ordine del tavolo.");
+      return;
+    }
+    if(!CART.length){
+      alert("Carrello vuoto: aggiungi almeno un prodotto.");
+      return;
+    }
+
+    const total = cartTotal();
+    const note  = (document.getElementById("order-note").value || "").trim();
+
+    const items = CART.map(x => ({
+      name: x.name,
+      qty: x.qty,
+      price: x.price,
+      note: (x.note || "").trim()
+    }));
+
+    const r1 = await fetch(`/api/waiter/orders/${CURRENT_ORDER_ID}/update-items`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ items, total })
+    });
+    const j1 = await r1.json().catch(()=>null);
+    if(!j1 || !j1.ok){
+      alert("Errore nel salvataggio righe/totale.");
+      return;
+    }
+
+    const r2 = await fetch(`/api/waiter/orders/${CURRENT_ORDER_ID}/note`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ note })
+    });
+    const j2 = await r2.json().catch(()=>null);
+    if(!j2 || !j2.ok){
+      console.warn("note not saved");
+    }
+
+    hint.textContent = `✅ Modifiche salvate su ordine #${CURRENT_ORDER_ID} — Totale ${fmtMoney(total)}.`;
+    loadOrders();
+  }
+
+  document.getElementById("load-open-order-btn").addEventListener("click", loadOpenOrderForTable);
+  document.getElementById("save-edit-order-btn").addEventListener("click", saveEditsToCurrentOrder);
+
+  // ====================== NUOVO ORDINE (checkout) ======================
+  document.getElementById("new-order-form").addEventListener("submit", async (e)=>{
+    e.preventDefault();
+
+    const msgEl = document.getElementById("new-order-message");
+    msgEl.style.color = "#7f6b57";
+    msgEl.textContent = "";
+
+    if(!CART.length){
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Aggiungi almeno un prodotto.";
+      return;
+    }
+
+    const mode  = document.getElementById("order-mode").value;
+    const table = document.getElementById("order-table").value.trim();
+    const note  = document.getElementById("order-note").value.trim();
+
+    if(mode === "table" && !table){
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Inserisci il tavolo (es. T1).";
+      return;
+    }
+
+    const items = CART.map(x => ({
+      name: x.name,
+      qty: x.qty,
+      price: x.price,
+      note: (x.note || "").trim()
+    }));
+    const total = cartTotal();
+
+    try{
+      const resp = await fetch("/api/checkout", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          tableCode: (mode === "table") ? table : null,
+          items,
+          total,
+          orderMode: (mode === "table") ? "table" : "takeaway",
+          customerNote: note || null
+        })
+      });
+      const data = await resp.json();
+      if(!data.ok) throw new Error(data.error || "error");
+
+      CART = [];
+      renderCart();
+
+      CURRENT_ORDER_ID = null;
+      document.getElementById("save-edit-order-btn").style.display = "none";
+      document.getElementById("edit-order-hint").textContent = "";
+
+      if (HAS_PRESET_TABLE) {
+        document.getElementById("order-table").value = PRESET_TABLE;
+        document.getElementById("order-table").readOnly = true;
+      } else {
+        document.getElementById("order-table").value = "";
+      }
+      document.getElementById("order-note").value  = "";
+
+      msgEl.style.color = "#11611b";
+      msgEl.textContent = "✅ Ordine inviato (ID: " + data.order_id + ").";
+
+      setTab("orders");
+      loadOrders();
+      loadTables();
+    }catch(err){
+      console.error(err);
+      msgEl.style.color = "#8b1e08";
+      msgEl.textContent = "Errore nell'invio ordine.";
+    }
+  });
+
+  // ====================== LISTA ORDINI ======================
+  async function loadOrders() {
+    const tbody = document.getElementById("orders-body");
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Caricamento...</td></tr>`;
+
+    try {
+      const today = new Date().toISOString().slice(0,10);
+      const resp = await fetch("/api/waiter/orders?day=" + encodeURIComponent(today));
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "error");
+
+      const orders = data.orders || [];
+      if (!orders.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Nessun ordine per oggi.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = orders.map(o => {
+        const created = o.created_at ? new Date(o.created_at) : null;
+        const hh = created ? String(created.getHours()).padStart(2,"0") : "--";
+        const mm = created ? String(created.getMinutes()).padStart(2,"0") : "--";
+
+        const statusClass =
+          o.status === "completed" ? "completed" :
+          o.status === "canceled" ? "canceled" : "pending";
+
+        const modeLabel =
+          o.order_mode === "takeaway" ? "Asporto" :
+          (o.order_mode === "home" ? "Da casa" : "Tavolo");
+
+        return `
+          <tr>
+            <td>#${o.id}</td>
+            <td>${o.table_code || "-"}</td>
+            <td><span class="status-pill ${statusClass}">${o.status}</span></td>
+            <td>${modeLabel}</td>
+            <td>${fmtMoney(o.total || 0)}</td>
+            <td>${hh}:${mm}</td>
+            <td>
+              <button class="btn sm" data-act="complete" data-id="${o.id}">Completa</button>
+              <button class="btn sm secondary" data-act="cancel" data-id="${o.id}">Annulla</button>
+              <button class="btn sm secondary" data-act="restore" data-id="${o.id}">Ripristina</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    } catch (err) {
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center muted">Errore nel caricamento ordini.</td></tr>`;
+    }
+  }
+
+  document.getElementById("refresh-orders-btn").addEventListener("click", loadOrders);
+
+  document.getElementById("orders-body").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+
+    const id  = btn.getAttribute("data-id");
+    const act = btn.getAttribute("data-act");
+
+    const map = { complete: "complete", cancel: "cancel", restore: "restore" };
+    const endpoint = map[act];
+    if (!endpoint) return;
+
+    try {
+      const resp = await fetch(`/api/waiter/orders/${id}/${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" }
+      });
+      const data = await resp.json();
+      if (!data.ok) throw new Error(data.error || "error");
+      loadOrders();
+      loadTables();
+    } catch (err) {
+      console.error(err);
+      alert("Errore nell'aggiornare l'ordine.");
+    }
+  });
+
+  // ====================== BOOT ======================
+  (async()=>{
+    try{ await loadMenu(); } catch(e){
+      console.error(e);
+      document.getElementById("menu-grid").innerHTML = `<div class="muted" style="padding:10px 12px;">Errore caricamento menu.</div>`;
+    }
+
+    renderCart();
+    loadOrders();
+    loadTables();
+
+    setInterval(loadOrders, 10000);
+    setInterval(loadTables, 8000);
+  })();
+<% } %>
+</script>
+
+</body>
+</html>
