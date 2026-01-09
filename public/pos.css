@@ -82,3 +82,154 @@ purple{ background:#f0dcff; }
 /* Tavolo selezionato */
 .tableBtn.active{ outline: 3px solid #111; }
 
+/* =========================================================
+   OVERRIDE PALMARE (layout come nella foto)
+   Incollare IN FONDO al file
+   ========================================================= */
+
+/* Il body già ok. Questa shell gestisce tutto a schermo intero */
+.posShell{
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f6f1ea;
+}
+
+/* Header sopra */
+.posHeader{
+  background: transparent;
+  padding: 10px 12px 6px;
+}
+
+/* IMPORTANTE: se nel pos.ejs hai ancora .wrap, togliamo il max-width */
+.posShell .wrap{
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Il blocco top (quello bianco) resta bello */
+.posHeader .topBar,
+.posHeader .top{
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.06);
+}
+
+/* Main: area ordine sopra (scrollabile) */
+.posMain{
+  flex: 1;
+  overflow: auto;
+  padding: 8px 12px 10px;
+}
+
+/* Pannello ordine */
+.orderPanel{
+  background:#fff;
+  border-radius:14px;
+  padding:12px;
+  box-shadow:0 4px 18px rgba(0,0,0,.06);
+}
+
+/* Riga titolo + totale */
+.orderTitleRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+.orderTitleRow h2{ margin:0; font-size:18px; }
+.orderMeta{ display:flex; gap:8px; align-items:baseline; }
+.orderMetaValue{ font-weight:900; }
+
+/* Linee carrello: riuso tue classi (line/ln/lp ecc) */
+.orderPanel .lines{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin:10px 0;
+}
+
+/* Azioni: su palmare meglio andare a capo */
+.orderPanel .actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.orderPanel .actions button{
+  flex: 1 1 48%;
+}
+
+/* Dock fisso in basso: categorie + griglia prodotti */
+.posDock{
+  position: sticky;
+  bottom: 0;
+  background: #e9eef5;
+  border-top: 1px solid rgba(0,0,0,0.10);
+  padding: 10px 10px 12px;
+}
+
+/* Barra categorie in basso (scroll orizzontale) */
+.catRow{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding-bottom: 6px;
+}
+
+/* Le categorie sono "tile": le trasformiamo in tab */
+.catRow .tile,
+.catRow button{
+  flex: 0 0 auto;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+.catRow .tile.active{
+  outline: 3px solid #111;
+}
+
+/* Area griglia prodotti (grande, scroll interna) */
+.prodArea{
+  max-height: 42vh;   /* aumenta a 48-52vh se la vuoi più grande */
+  overflow-y: auto;
+}
+
+/* Griglia prodotti: 4 colonne come foto */
+.prodGrid{
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap:10px;
+}
+
+/* Tasti prodotto grandi (riuso .tile.item) */
+.prodGrid .tile,
+.prodGrid button{
+  height: 78px;
+  border-radius: 10px;
+  padding: 10px;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(0,0,0,.08);
+}
+
+/* Prodotti: look "palmare gestionale" */
+.prodGrid .tile.item{
+  background: #b9cbe6;
+  text-align: center;
+}
+
+/* Miglior tap feedback */
+.prodGrid .tile:active,
+.prodGrid button:active{
+  transform: scale(0.985);
+}
+
+/* Mobile: tasti ancora più grandi e 3 colonne se schermo stretto */
+@media (max-width: 520px){
+  .prodGrid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .prodGrid .tile{ height: 86px; }
+  .orderPanel .actions button{ flex: 1 1 100%; }
+}
