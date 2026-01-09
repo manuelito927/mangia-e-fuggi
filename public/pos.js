@@ -473,10 +473,13 @@ async function loadOpenOrdersForTable(){
   setHint("Carico conto tavolo...");
   const day = todayISO();
 
-fetch(`/api/admin/orders-full?day=...&status=pending`)
-    headers: { "Accept":"application/json" }
+  const day = todayISO();
+
+  const r = await fetch(`/api/admin/orders-full?day=${encodeURIComponent(day)}&status=pending`, {
+    headers: { "Accept": "application/json" }
   });
-  const j = await r.json().catch(()=>null);
+
+  const j = await r.json().catch(() => null);
   if (!j || !j.ok) {
     setHint("Errore nel caricamento ordini.", "err");
     return;
