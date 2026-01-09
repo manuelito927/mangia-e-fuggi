@@ -535,6 +535,21 @@
     return CART.find(x => x.key === key);
   }
 
+// ====================== KEEP SCROLL (anti-salto) ======================
+function keepScroll(fn){
+  const y = window.scrollY;
+  const active = document.activeElement;
+
+  return Promise.resolve()
+    .then(fn)
+    .finally(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, y);
+        if (active && active.focus) active.focus({ preventScroll: true });
+      });
+    });
+}
+
   // ====================== RENDER CART ======================
   function renderCart(){
     const box = document.getElementById("cart-box");
