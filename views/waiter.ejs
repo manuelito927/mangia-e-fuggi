@@ -990,7 +990,7 @@ function keepScroll(fn){
     }
   }
 
-  document.getElementById("refresh-orders-btn").addEventListener("click", loadOrders);
+document.getElementById("refresh-orders-btn").addEventListener("click", () => keepScroll(loadOrders));
 
   document.getElementById("orders-body").addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-act]");
