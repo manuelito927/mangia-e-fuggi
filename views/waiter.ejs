@@ -1004,19 +1004,22 @@
   });
 
   // ====================== BOOT ======================
-  (async()=>{
-    try{ await loadMenu(); } catch(e){
-      console.error(e);
-      document.getElementById("menu-grid").innerHTML = `<div class="muted" style="padding:10px 12px;">Errore caricamento menu.</div>`;
-    }
-
+loadMenu()
+  .then(() => {
     renderCart();
     loadOrders();
     loadTables();
+  })
+  .catch(e => {
+    console.error(e);
+    const grid = document.getElementById("menu-grid");
+    if (grid) {
+      grid.innerHTML = '<div class="muted" style="padding:10px">Errore caricamento menu.</div>';
+    }
+  });
 
-    setInterval(loadOrders, 10000);
-    setInterval(loadTables, 8000);
-  })();
+setInterval(loadOrders, 10000);
+setInterval(loadTables, 8000);
 <% } %>
 </script>
 
